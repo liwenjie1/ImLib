@@ -1,0 +1,69 @@
+-- Merging decision tree log ---
+manifest
+ADDED from /Volumes/Transcend/testFolder/FaceShow_Android/libs/imlib/src/main/AndroidManifest.xml:2:1-21:12
+INJECTED from /Volumes/Transcend/testFolder/FaceShow_Android/libs/imlib/src/main/AndroidManifest.xml:2:1-21:12
+INJECTED from /Volumes/Transcend/testFolder/FaceShow_Android/libs/imlib/src/main/AndroidManifest.xml:2:1-21:12
+INJECTED from /Volumes/Transcend/testFolder/FaceShow_Android/libs/imlib/src/main/AndroidManifest.xml:2:1-21:12
+INJECTED from /Volumes/Transcend/testFolder/FaceShow_Android/libs/imlib/src/main/AndroidManifest.xml:2:1-21:12
+INJECTED from /Volumes/Transcend/testFolder/FaceShow_Android/libs/imlib/src/main/AndroidManifest.xml:2:1-21:12
+INJECTED from /Volumes/Transcend/testFolder/FaceShow_Android/libs/imlib/src/main/AndroidManifest.xml:2:1-21:12
+	package
+		ADDED from /Volumes/Transcend/testFolder/FaceShow_Android/libs/imlib/src/main/AndroidManifest.xml:4:5-28
+		INJECTED from /Volumes/Transcend/testFolder/FaceShow_Android/libs/imlib/src/main/AndroidManifest.xml
+		INJECTED from /Volumes/Transcend/testFolder/FaceShow_Android/libs/imlib/src/main/AndroidManifest.xml
+	android:versionName
+		INJECTED from /Volumes/Transcend/testFolder/FaceShow_Android/libs/imlib/src/main/AndroidManifest.xml
+		ADDED from /Volumes/Transcend/testFolder/FaceShow_Android/libs/imlib/src/main/AndroidManifest.xml:2:1-21:12
+		INJECTED from /Volumes/Transcend/testFolder/FaceShow_Android/libs/imlib/src/main/AndroidManifest.xml
+	xmlns:tools
+		ADDED from /Volumes/Transcend/testFolder/FaceShow_Android/libs/imlib/src/main/AndroidManifest.xml:3:5-51
+	android:versionCode
+		INJECTED from /Volumes/Transcend/testFolder/FaceShow_Android/libs/imlib/src/main/AndroidManifest.xml
+		ADDED from /Volumes/Transcend/testFolder/FaceShow_Android/libs/imlib/src/main/AndroidManifest.xml:2:1-21:12
+		INJECTED from /Volumes/Transcend/testFolder/FaceShow_Android/libs/imlib/src/main/AndroidManifest.xml
+	xmlns:android
+		ADDED from /Volumes/Transcend/testFolder/FaceShow_Android/libs/imlib/src/main/AndroidManifest.xml:2:11-69
+application
+ADDED from /Volumes/Transcend/testFolder/FaceShow_Android/libs/imlib/src/main/AndroidManifest.xml:6:5-19:19
+	android:supportsRtl
+		ADDED from /Volumes/Transcend/testFolder/FaceShow_Android/libs/imlib/src/main/AndroidManifest.xml:9:9-35
+	android:allowBackup
+		ADDED from /Volumes/Transcend/testFolder/FaceShow_Android/libs/imlib/src/main/AndroidManifest.xml:8:9-35
+	tools:replace
+		ADDED from /Volumes/Transcend/testFolder/FaceShow_Android/libs/imlib/src/main/AndroidManifest.xml:10:9-37
+	android:name
+		ADDED from /Volumes/Transcend/testFolder/FaceShow_Android/libs/imlib/src/main/AndroidManifest.xml:7:9-38
+activity#com.yanxiu.im.business.msglist.activity.ImMsgListActivity
+ADDED from /Volumes/Transcend/testFolder/FaceShow_Android/libs/imlib/src/main/AndroidManifest.xml:11:9-81
+	android:name
+		ADDED from /Volumes/Transcend/testFolder/FaceShow_Android/libs/imlib/src/main/AndroidManifest.xml:11:19-78
+activity#com.yanxiu.im.business.photoview.activity.ImGalleryActivity
+ADDED from /Volumes/Transcend/testFolder/FaceShow_Android/libs/imlib/src/main/AndroidManifest.xml:12:9-14:52
+	android:theme
+		ADDED from /Volumes/Transcend/testFolder/FaceShow_Android/libs/imlib/src/main/AndroidManifest.xml:14:13-49
+	android:name
+		ADDED from /Volumes/Transcend/testFolder/FaceShow_Android/libs/imlib/src/main/AndroidManifest.xml:13:13-74
+activity#com.yanxiu.im.business.contacts.activity.ContactsActivity
+ADDED from /Volumes/Transcend/testFolder/FaceShow_Android/libs/imlib/src/main/AndroidManifest.xml:15:9-17:52
+	android:screenOrientation
+		ADDED from /Volumes/Transcend/testFolder/FaceShow_Android/libs/imlib/src/main/AndroidManifest.xml:17:13-49
+	android:name
+		ADDED from /Volumes/Transcend/testFolder/FaceShow_Android/libs/imlib/src/main/AndroidManifest.xml:16:13-72
+activity#com.yanxiu.im.business.msglist.activity.ImSetingActivity
+ADDED from /Volumes/Transcend/testFolder/FaceShow_Android/libs/imlib/src/main/AndroidManifest.xml:18:9-89
+	android:name
+		ADDED from /Volumes/Transcend/testFolder/FaceShow_Android/libs/imlib/src/main/AndroidManifest.xml:18:19-77
+uses-sdk
+INJECTED from /Volumes/Transcend/testFolder/FaceShow_Android/libs/imlib/src/main/AndroidManifest.xml reason: use-sdk injection requested
+INJECTED from /Volumes/Transcend/testFolder/FaceShow_Android/libs/imlib/src/main/AndroidManifest.xml
+INJECTED from /Volumes/Transcend/testFolder/FaceShow_Android/libs/imlib/src/main/AndroidManifest.xml
+INJECTED from /Volumes/Transcend/testFolder/FaceShow_Android/libs/imlib/src/main/AndroidManifest.xml
+INJECTED from /Volumes/Transcend/testFolder/FaceShow_Android/libs/imlib/src/main/AndroidManifest.xml
+	android:targetSdkVersion
+		INJECTED from /Volumes/Transcend/testFolder/FaceShow_Android/libs/imlib/src/main/AndroidManifest.xml
+		ADDED from /Volumes/Transcend/testFolder/FaceShow_Android/libs/imlib/src/main/AndroidManifest.xml
+		INJECTED from /Volumes/Transcend/testFolder/FaceShow_Android/libs/imlib/src/main/AndroidManifest.xml
+	android:minSdkVersion
+		INJECTED from /Volumes/Transcend/testFolder/FaceShow_Android/libs/imlib/src/main/AndroidManifest.xml
+		ADDED from /Volumes/Transcend/testFolder/FaceShow_Android/libs/imlib/src/main/AndroidManifest.xml
+		INJECTED from /Volumes/Transcend/testFolder/FaceShow_Android/libs/imlib/src/main/AndroidManifest.xml

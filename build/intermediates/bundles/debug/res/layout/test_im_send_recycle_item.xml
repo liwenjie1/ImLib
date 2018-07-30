@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingLeft="0dp"
+    android:paddingRight="15dp"
+    android:paddingTop="15dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="right">
+
+            <RelativeLayout
+                android:id="@+id/rl_img"
+                android:layout_width="80dp"
+                android:layout_height="80dp">
+
+                <ImageView
+                    android:id="@+id/iv_image"
+                    android:layout_width="80dp"
+                    android:layout_height="80dp"
+                     />
+
+                <com.yanxiu.im.business.view.ProgressImageContainer_new
+                    android:id="@+id/customize_progress_image_container_new"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+            </RelativeLayout>
+
+
+            <TextView
+                android:id="@+id/tv_text"
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:background="@drawable/bg_msg_blue"
+                android:gravity="center_vertical"
+                android:lineSpacingExtra="4dp"
+                android:minHeight="40dp"
+                android:paddingBottom="10dp"
+                android:paddingLeft="10dp"
+                android:paddingRight="16dp"
+                android:paddingTop="10dp"
+                android:textColor="#ffffff"
+                android:textSize="16dp"
+                tools:text="这就是个测试行高 测试测试测试测试测试测试测绘测试" />
+
+            <ImageView
+                android:id="@+id/iv_fail"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_centerVertical="true"
+                android:layout_marginLeft="-34dp"
+                android:layout_marginTop="15dp"
+                android:layout_toLeftOf="@id/tv_text"
+                android:src="@drawable/icon_send_state_failed" />
+
+            <ProgressBar
+                android:id="@+id/progress_bar_loading_state"
+                style="@android:style/Widget.ProgressBar.Small"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_centerVertical="true"
+                android:layout_marginLeft="-34dp"
+                android:layout_marginTop="15dp" />
+        </RelativeLayout>
+    </LinearLayout>
+
+</RelativeLayout>
