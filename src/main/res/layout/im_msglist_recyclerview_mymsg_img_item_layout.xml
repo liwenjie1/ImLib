@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:im="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+
+    android:layout_height="wrap_content"
+    android:background="@null">
+
+    <TextView
+        android:id="@+id/date"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="@dimen/im_msglist_item_topmergin"
+        android:background="@drawable/im_msglist_date_bg"
+        android:gravity="center"
+        android:paddingLeft="@dimen/im_msglist_date_leftpadding"
+        android:paddingRight="@dimen/im_msglist_date_rightpadding"
+        android:text="星期八"
+        android:textColor="@color/im_msglist_date_textColor"
+        android:visibility="visible" />
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/date"
+        android:id="@+id/rl_msg"
+        android:layout_marginTop="15dp"
+        android:background="@null">
+
+        <ImageView
+            android:id="@+id/sender_avaral"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_alignParentRight="true"
+            android:scaleType="fitXY"
+            tools:src="@drawable/im_chat_default" />
+
+        <com.yanxiu.im.business.view.RoundCornerMaskView_new
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_alignParentRight="true"
+            im:corner_radius="5dp"
+            im:mask_color="#dfe3e5" />
+
+        <!--<RelativeLayout-->
+        <!--android:id="@+id/rl_msg"-->
+        <!--android:layout_width="wrap_content"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:layout_alignTop="@id/sender_avaral"-->
+        <!--android:layout_marginLeft="64dp"-->
+        <!--android:layout_marginRight="5dp"-->
+        <!--android:layout_toLeftOf="@id/sender_avaral">-->
+        <com.yanxiu.im.business.view.ProgressImageContainer_new
+            android:id="@+id/msg_imageView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignTop="@+id/sender_avaral"
+            android:layout_marginRight="5dp"
+            android:layout_toLeftOf="@+id/sender_avaral" />
+
+        <!--</RelativeLayout>-->
+
+        <ProgressBar
+            android:id="@+id/state_sending_progressbar"
+            style="@android:style/Widget.ProgressBar.Small"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_alignLeft="@id/msg_imageView"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="-34dp"
+            android:layout_marginTop="15dp" />
+
+        <ImageView
+            android:id="@+id/state_fail_imageview"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_alignLeft="@id/msg_imageView"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="-34dp"
+            android:layout_marginTop="15dp"
+            android:src="@drawable/icon_send_state_failed" />
+    </RelativeLayout>
+
+    <View
+        android:visibility="gone"
+        android:id="@+id/bottom_padding_view"
+        android:layout_width="match_parent"
+        android:layout_height="10dp"
+        android:layout_below="@+id/rl_msg" />
+</RelativeLayout>

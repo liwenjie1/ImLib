@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.yanxiu.im">
+
+    <application
+        android:name=".ImApplication"
+        android:allowBackup="true"
+        android:supportsRtl="true"
+        tools:replace="android:name">
+        <activity android:name=".business.msglist.activity.ImMsgListActivity" />
+        <activity
+            android:name=".business.photoview.activity.ImGalleryActivity"
+            android:theme="@style/AppFullScreen" />
+        <activity
+            android:name=".business.contacts.activity.ContactsActivity"
+            android:screenOrientation="portrait" />
+        <activity android:name=".business.msglist.activity.ImSetingActivity"></activity>
+    </application>
+
+</manifest>
