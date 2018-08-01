@@ -16,6 +16,7 @@ import com.yanxiu.im.business.topiclist.adapter.topicviewholder.ImGroupTopicView
 import com.yanxiu.im.business.topiclist.adapter.topicviewholder.ImPrivateTopicViewHolder;
 import com.yanxiu.im.business.topiclist.adapter.topicviewholder.ImTopicBaseViewHolder;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -33,10 +34,9 @@ public final class ImTopicListRecyclerViewAdapter<E extends TopicItemBean> exten
 
     /**
      * viewtype
-     * */
-    public final int TOPIC_TYPE_GROUP=1;
-    public final int TOPIC_TYPE_PRIVATE=2;
-
+     */
+    public final int TOPIC_TYPE_GROUP = 1;
+    public final int TOPIC_TYPE_PRIVATE = 2;
 
 
     /**
@@ -50,10 +50,11 @@ public final class ImTopicListRecyclerViewAdapter<E extends TopicItemBean> exten
 
     public ImTopicListRecyclerViewAdapter(Context mContext) {
         this.mContext = mContext;
+        dataList = new ArrayList<>();
     }
 
     public void setDataList(List<E> dataList) {
-        this.dataList = dataList;
+        this.dataList=dataList;
     }
 
     public List<E> getDataList() {
@@ -62,9 +63,9 @@ public final class ImTopicListRecyclerViewAdapter<E extends TopicItemBean> exten
 
     @Override
     public int getItemViewType(int position) {
-        if (TextUtils.equals(dataList.get(position).getType(),"1")) {//私聊
+        if (TextUtils.equals(dataList.get(position).getType(), "1")) {//私聊
             return TOPIC_TYPE_PRIVATE;
-        }else {//其他 默认 群聊
+        } else {//其他 默认 群聊
             return TOPIC_TYPE_GROUP;
         }
     }
@@ -75,9 +76,9 @@ public final class ImTopicListRecyclerViewAdapter<E extends TopicItemBean> exten
         View view = LayoutInflater.from(mContext)
                 .inflate(R.layout.im_topiclist_recyclerview_item_layout, parent, false);
 
-        if (viewType==TOPIC_TYPE_PRIVATE) {
+        if (viewType == TOPIC_TYPE_PRIVATE) {
             return new ImPrivateTopicViewHolder(view);
-        }else {
+        } else {
             return new ImGroupTopicViewHolder(view);
         }
     }
@@ -113,7 +114,6 @@ public final class ImTopicListRecyclerViewAdapter<E extends TopicItemBean> exten
     public int getItemCount() {
         return dataList == null ? 0 : dataList.size();
     }
-
 
 
     private RecyclerViewItemLongClickListener mRecyclerViewItemLongClickListener;

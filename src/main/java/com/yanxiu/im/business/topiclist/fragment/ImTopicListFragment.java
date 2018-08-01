@@ -14,6 +14,7 @@ import com.bumptech.glide.GlideBuilder;
 import com.bumptech.glide.load.engine.cache.DiskLruCacheFactory;
 import com.test.yanxiu.common_base.ui.FaceShowBaseFragment;
 import com.test.yanxiu.common_base.ui.PublicLoadLayout;
+import com.test.yanxiu.common_base.utils.SharedSingleton;
 import com.test.yanxiu.common_base.utils.talkingdata.EventUpdate;
 import com.yanxiu.ImConfig;
 import com.yanxiu.im.Constants;
@@ -355,7 +356,9 @@ public class ImTopicListFragment extends FaceShowBaseFragment
         //取消mqtt 订阅
         mqttConnectPresenter.unsubscribeTopic(topicId);
         //通知UI 更新
-        mRecyclerAdapter.notifyDataSetChanged();
+        synchronized (SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST)) {
+            mRecyclerAdapter.notifyDataSetChanged();
+        }
         //eventbus 通知 MsgListActivity 如果被删除的topic正在展示，关闭topic对应的聊天界面
         EventBus.getDefault().post(new MsgListTopicRemovedEvent(topicId));
         topicListPresenter.doCheckRedDot(mRecyclerAdapter.getDataList());
@@ -397,7 +400,9 @@ public class ImTopicListFragment extends FaceShowBaseFragment
      */
     @Override
     public void onTopicListUpdate() {
-        mRecyclerAdapter.notifyDataSetChanged();
+        synchronized (SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST)) {
+            mRecyclerAdapter.notifyDataSetChanged();
+        }
         //检查红点状态
         topicListPresenter.doCheckRedDot(mRecyclerAdapter.getDataList());
 
