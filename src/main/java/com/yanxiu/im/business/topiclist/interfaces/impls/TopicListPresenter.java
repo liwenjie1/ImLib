@@ -357,6 +357,8 @@ public class TopicListPresenter implements TopicListContract.Presenter {
         targetTopic.setLatestMsgId(msg.getMsgId());
         DatabaseManager.updateTopicWithTopicItemBean(targetTopic);
         ImTopicSorter.insertTopicToTop(targetTopic.getTopicId(), topics);
+        //收到新消息后 进行日期处理
+        processMsgListDateInfo(targetTopic.getMsgList());
         //通知Ui更新
         if (view != null) {
             mHandler.post(new Runnable() {
