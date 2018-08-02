@@ -567,8 +567,11 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
         if (currentTopic != null && event.topicId != currentTopic.getTopicId()) {
             return;
         }
-        //关闭当前界面
-        finish();
+        //关闭当前界面 学员端
+        if (Constants.APP_TYPE==Constants.APP_TYPE_STUDENT) {
+            finish();
+        }
+        //管理端 不处理
     }
 
     /**

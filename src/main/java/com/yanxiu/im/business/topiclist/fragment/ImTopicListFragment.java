@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,6 +15,7 @@ import com.bumptech.glide.GlideBuilder;
 import com.bumptech.glide.load.engine.cache.DiskLruCacheFactory;
 import com.test.yanxiu.common_base.ui.FaceShowBaseFragment;
 import com.test.yanxiu.common_base.ui.PublicLoadLayout;
+import com.test.yanxiu.common_base.utils.SharedSingleton;
 import com.test.yanxiu.common_base.utils.talkingdata.EventUpdate;
 import com.yanxiu.ImConfig;
 import com.yanxiu.im.Constants;
@@ -27,11 +29,13 @@ import com.yanxiu.im.business.interfaces.RecyclerViewItemOnClickListener;
 import com.yanxiu.im.business.interfaces.TitlebarActionListener;
 import com.yanxiu.im.business.msglist.activity.ImMsgListActivity;
 import com.yanxiu.im.business.topiclist.adapter.ImTopicListRecyclerViewAdapter;
+import com.yanxiu.im.business.topiclist.adapter.NpaLinearLayoutManager;
 import com.yanxiu.im.business.topiclist.interfaces.MqttConnectContract;
 import com.yanxiu.im.business.topiclist.interfaces.TopicListContract;
 import com.yanxiu.im.business.topiclist.interfaces.impls.MqttConnectPresenter;
 import com.yanxiu.im.business.topiclist.interfaces.impls.TopicListPresenter;
 import com.yanxiu.im.business.view.ImTitleLayout;
+import com.yanxiu.im.db.DbMember;
 import com.yanxiu.im.event.MigrateMockTopicEvent;
 import com.yanxiu.im.event.MsgListMigrateMockTopicEvent;
 import com.yanxiu.im.event.MsgListNewMsgEvent;
@@ -108,8 +112,8 @@ public class ImTopicListFragment extends FaceShowBaseFragment
     private void viewInit(View view) {
         mImTitleLayout = view.findViewById(R.id.im_title_layout);
         im_topiclist_fragment_recyclerview = view.findViewById(R.id.im_topiclist_fragment_recyclerview);
-        LinearLayoutManager layoutManager
-                = new LinearLayoutManager(getActivity(), LinearLayoutManager.VERTICAL, false);
+        NpaLinearLayoutManager layoutManager
+                = new NpaLinearLayoutManager(getActivity(), LinearLayoutManager.VERTICAL, false);
         layoutManager.setStackFromEnd(false);
         im_topiclist_fragment_recyclerview.setLayoutManager(layoutManager);
 
@@ -226,7 +230,9 @@ public class ImTopicListFragment extends FaceShowBaseFragment
     @Override
     public void onTopicUpdate(long topicId) {
         mqttConnectPresenter.subscribeTopic(topicId);
-        mRecyclerAdapter.notifyDataSetChanged();
+        synchronized (SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST)) {
+            mRecyclerAdapter.notifyDataSetChanged();
+        }
         //检查红点状态
         topicListPresenter.doCheckRedDot(mRecyclerAdapter.getDataList());
         EventBus.getDefault().post(new MsgListTopicUpdateEvent(topicId));
@@ -310,7 +316,9 @@ public class ImTopicListFragment extends FaceShowBaseFragment
      */
     @Override
     public void onNewMsgReceived(long topicId) {
-        mRecyclerAdapter.notifyDataSetChanged();
+        synchronized (SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST)) {
+            mRecyclerAdapter.notifyDataSetChanged();
+        }
         //eventbus 通知 activity更新
         EventBus.getDefault().post(new MsgListNewMsgEvent(topicId));
         topicListPresenter.doCheckRedDot(mRecyclerAdapter.getDataList());
@@ -354,19 +362,28 @@ public class ImTopicListFragment extends FaceShowBaseFragment
     public void onRemovedFromTopic(long topicId) {
         //取消mqtt 订阅
         mqttConnectPresenter.unsubscribeTopic(topicId);
-        //通知UI 更新
-        mRecyclerAdapter.notifyDataSetChanged();
         //eventbus 通知 MsgListActivity 如果被删除的topic正在展示，关闭topic对应的聊天界面
+        //这里学员端和管理端有区别 学员端需要 退出 msglist 界面 管理端 只需要需要更新 member 信息
         EventBus.getDefault().post(new MsgListTopicRemovedEvent(topicId));
         topicListPresenter.doCheckRedDot(mRecyclerAdapter.getDataList());
         //回调给mainactivity
         if (mImUserRemoveFromTopicListener != null) {
             int remainSize = 0;
+            //遍历判断 datalist 所有 topic 的 member 列表中是否包含当前用户
             for (TopicItemBean itemBean : mRecyclerAdapter.getDataList()) {
                 if (TextUtils.equals(itemBean.getType(), "2")) {
-                    remainSize++;
+                    //群聊 判断 member 是否包含 当前 member
+                    if (itemBean.getMembers()!=null) {
+                        for (DbMember remainMember : itemBean.getMembers()) {
+                            if (remainMember.getImId()== Constants.imId) {
+                                remainSize++;
+                                break;
+                            }
+                        }
+                    }
                 }
             }
+            Log.i(TAG, "onRemovedFromTopic: 剩余 topic 数量 "+remainSize);
             mImUserRemoveFromTopicListener.onUserRemoved(remainSize);
         }
     }
@@ -397,7 +414,9 @@ public class ImTopicListFragment extends FaceShowBaseFragment
      */
     @Override
     public void onTopicListUpdate() {
-        mRecyclerAdapter.notifyDataSetChanged();
+        synchronized (SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST)) {
+            mRecyclerAdapter.notifyDataSetChanged();
+        }
         //检查红点状态
         topicListPresenter.doCheckRedDot(mRecyclerAdapter.getDataList());
 
@@ -419,7 +438,9 @@ public class ImTopicListFragment extends FaceShowBaseFragment
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         //topic的消息队列有变化，需要对topic的信息（latestMsgId）进行更新设置并重新排序
-        mRecyclerAdapter.notifyDataSetChanged();
+        synchronized (SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST)) {
+            mRecyclerAdapter.notifyDataSetChanged();
+        }
         topicListPresenter.doCheckRedDot(mRecyclerAdapter.getDataList());
     }
 
