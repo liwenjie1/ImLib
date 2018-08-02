@@ -5,7 +5,6 @@ import com.qiniu.android.storage.UpCompletionHandler;
 import com.qiniu.android.storage.UpProgressHandler;
 import com.qiniu.android.storage.UploadManager;
 import com.qiniu.android.storage.UploadOptions;
-import com.test.yanxiu.common_base.ui.BaseApplication;
 import com.yanxiu.im.Constants;
 import com.yanxiu.im.bean.MsgItemBean;
 import com.yanxiu.im.bean.net_bean.ImMsg_new;
@@ -13,6 +12,7 @@ import com.yanxiu.im.net.GetQiNiuTokenRequest_new;
 import com.yanxiu.im.net.GetQiNiuTokenResponse_new;
 import com.yanxiu.im.net.SaveImageMsgRequest_new;
 import com.yanxiu.im.net.SaveImageMsgResponse_new;
+import com.yanxiu.lib.yx_basic_library.YXApplication;
 import com.yanxiu.lib.yx_basic_library.network.IYXHttpCallback;
 import com.yanxiu.lib.yx_basic_library.network.YXRequestBase;
 
@@ -71,7 +71,7 @@ public class ImageSender extends SenderBase {
      */
     private void imageCompress() {
         //鲁班压缩
-        Luban.with(BaseApplication.getContext())
+        Luban.with(YXApplication.getContext())
                 .load(mMsgItemBean.getLocalViewUrl())
                 .setTargetDir(SenderUtil.getCompressPath())
                 .ignoreBy(200)
