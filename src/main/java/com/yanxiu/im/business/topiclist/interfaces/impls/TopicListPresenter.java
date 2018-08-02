@@ -666,6 +666,10 @@ public class TopicListPresenter implements TopicListContract.Presenter {
                         if (removedMember.getImId()== Constants.imId) {
                             //自己被移除 topic 删除本地数据库
                             DatabaseManager.deleteTopicById(imTopic.topicId);
+                            /*如果是学员端 这里需要将 topic 列表进行删除 */
+                            if (Constants.APP_TYPE==Constants.APP_TYPE_STUDENT) {
+                                TopicInMemoryUtils.removeTopicFromListById(topicId,topics);
+                            }
                             mHandler.post(new Runnable() {
                                 @Override
                                 public void run() {

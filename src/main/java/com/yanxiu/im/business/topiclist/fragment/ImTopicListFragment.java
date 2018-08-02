@@ -362,6 +362,10 @@ public class ImTopicListFragment extends FaceShowBaseFragment
     public void onRemovedFromTopic(long topicId) {
         //取消mqtt 订阅
         mqttConnectPresenter.unsubscribeTopic(topicId);
+        /*学员端 刷新界面*/
+        if (Constants.APP_TYPE==Constants.APP_TYPE_STUDENT) {
+            mRecyclerAdapter.notifyDataSetChanged();
+        }
         //eventbus 通知 MsgListActivity 如果被删除的topic正在展示，关闭topic对应的聊天界面
         //这里学员端和管理端有区别 学员端需要 退出 msglist 界面 管理端 只需要需要更新 member 信息
         EventBus.getDefault().post(new MsgListTopicRemovedEvent(topicId));
