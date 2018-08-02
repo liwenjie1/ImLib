@@ -813,7 +813,11 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
     public void onIconClicked(int p) {
         //检查 点击的用户是否可以打开私聊
         MsgItemBean msgItemBean = msgRecyclerAdapter.getDataList().get(p);
-
+        //检查自己是否被删除
+        if (!msgListPresenter.checkUserExsist(Constants.imId,currentTopic)) {
+            Toast.makeText(ImMsgListActivity.this,"【您已被移除此班级】",Toast.LENGTH_SHORT).show();
+            return;
+        }
         //检查用户存在性
         if (msgListPresenter.checkUserExsist(msgItemBean.getSenderId(),currentTopic)) {
             if (msgListPresenter.doCheckMemberChat(msgItemBean.getSenderId(), currentTopic)) {
