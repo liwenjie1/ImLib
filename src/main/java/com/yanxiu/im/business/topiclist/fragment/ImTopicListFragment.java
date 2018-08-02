@@ -95,7 +95,7 @@ public class ImTopicListFragment extends FaceShowBaseFragment
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         if (root == null) {
-            mPublicLoadLayout=new PublicLoadLayout(getContext());
+            mPublicLoadLayout = new PublicLoadLayout(getContext());
             root = inflater.inflate(R.layout.im_topiclist_fragment, container, false);
             viewInit(root);
             mPublicLoadLayout.setContentView(root);
@@ -202,7 +202,7 @@ public class ImTopicListFragment extends FaceShowBaseFragment
             //获取topiclist 在onGetDbTopicList 中回调
             topicListPresenter.doGetDbTopicList(Constants.imId);
             mImTitleLayout.enableRightBtn(true);
-        }else {
+        } else {
             mImTitleLayout.enableRightBtn(false);
             mPublicLoadLayout.showOtherErrorView("服务器连接失败，请重新登录");
         }
@@ -231,6 +231,7 @@ public class ImTopicListFragment extends FaceShowBaseFragment
     public void onTopicUpdate(long topicId) {
         mqttConnectPresenter.subscribeTopic(topicId);
         synchronized (SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST)) {
+            mRecyclerAdapter.setDataList((List<TopicItemBean>) SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST));
             mRecyclerAdapter.notifyDataSetChanged();
         }
         //检查红点状态
@@ -317,6 +318,7 @@ public class ImTopicListFragment extends FaceShowBaseFragment
     @Override
     public void onNewMsgReceived(long topicId) {
         synchronized (SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST)) {
+            mRecyclerAdapter.setDataList((List<TopicItemBean>) SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST));
             mRecyclerAdapter.notifyDataSetChanged();
         }
         //eventbus 通知 activity更新
@@ -363,8 +365,11 @@ public class ImTopicListFragment extends FaceShowBaseFragment
         //取消mqtt 订阅
         mqttConnectPresenter.unsubscribeTopic(topicId);
         /*学员端 刷新界面*/
-        if (Constants.APP_TYPE==Constants.APP_TYPE_STUDENT) {
-            mRecyclerAdapter.notifyDataSetChanged();
+        if (Constants.APP_TYPE == Constants.APP_TYPE_STUDENT) {
+            synchronized (SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST)) {
+                mRecyclerAdapter.setDataList((List<TopicItemBean>) SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST));
+                mRecyclerAdapter.notifyDataSetChanged();
+            }
         }
         //eventbus 通知 MsgListActivity 如果被删除的topic正在展示，关闭topic对应的聊天界面
         //这里学员端和管理端有区别 学员端需要 退出 msglist 界面 管理端 只需要需要更新 member 信息
@@ -377,9 +382,9 @@ public class ImTopicListFragment extends FaceShowBaseFragment
             for (TopicItemBean itemBean : mRecyclerAdapter.getDataList()) {
                 if (TextUtils.equals(itemBean.getType(), "2")) {
                     //群聊 判断 member 是否包含 当前 member
-                    if (itemBean.getMembers()!=null) {
+                    if (itemBean.getMembers() != null) {
                         for (DbMember remainMember : itemBean.getMembers()) {
-                            if (remainMember.getImId()== Constants.imId) {
+                            if (remainMember.getImId() == Constants.imId) {
                                 remainSize++;
                                 break;
                             }
@@ -387,7 +392,7 @@ public class ImTopicListFragment extends FaceShowBaseFragment
                     }
                 }
             }
-            Log.i(TAG, "onRemovedFromTopic: 剩余 topic 数量 "+remainSize);
+            Log.i(TAG, "onRemovedFromTopic: 剩余 topic 数量 " + remainSize);
             mImUserRemoveFromTopicListener.onUserRemoved(remainSize);
         }
     }
@@ -419,6 +424,7 @@ public class ImTopicListFragment extends FaceShowBaseFragment
     @Override
     public void onTopicListUpdate() {
         synchronized (SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST)) {
+            mRecyclerAdapter.setDataList((List<TopicItemBean>) SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST));
             mRecyclerAdapter.notifyDataSetChanged();
         }
         //检查红点状态

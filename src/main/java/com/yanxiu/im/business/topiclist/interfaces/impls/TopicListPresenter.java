@@ -128,6 +128,36 @@ public class TopicListPresenter implements TopicListContract.Presenter {
                 List<TopicItemBean> maybeNeedUpdateMsgTopicList = new ArrayList<>();
                 // 3
                 //获取用户服务器上所有的topic
+                /*由于删除需求的限制 管理端用户被某个 topic 删除后不能立即 将数据库删除  （需求 被删除依然可以看见历史消息 ）所以这里每次在获取用户最新的 topic 列表时进行一次统一的删除操作
+                * 删除那些 本地有 服务器上没有的 topic（群聊）
+                * */
+                ArrayList<TopicItemBean> deteletedTopic=new ArrayList<>();
+                if (ret.data.topic == null) {
+                    ret.data.topic=new ArrayList<>();
+                }
+
+                for (TopicItemBean dbtopic : topicsFromDb) {
+                    if (TextUtils.equals(dbtopic.getType(),"2")) {
+                        boolean remain=false;
+                        for (ImTopic_new remainTopic : ret.data.topic) {
+                            if (dbtopic.getTopicId()==remainTopic.topicId) {
+                                remain=true;
+                                break;
+                            }
+                        }
+                        //如果已经不在了 。。。 加入到待删除列表中
+                        if (!remain) {
+                            deteletedTopic.add(dbtopic);
+                        }
+                    }
+                }
+                //删除 topic 数据库
+                for (TopicItemBean deleteTopic : deteletedTopic) {
+                    DatabaseManager.deleteTopicById(deleteTopic.getTopicId());
+                }
+                //内存中删除 已经失效的 topic
+                topicsFromDb.removeAll(deteletedTopic);
+
                 //检查是否需要更新member 不需要更新member的topic 加入到mayBeNeedUpdateMsgTopicList
                 checkTopicNeedUpdateMembers(ret, topicsFromDb, maybeNeedUpdateMsgTopicList);
                 //已经分完组
@@ -234,69 +264,71 @@ public class TopicListPresenter implements TopicListContract.Presenter {
                         dbTopic.setLatestMsgTime(imTopic.latestMsgTime);
                         dbTopic.setLatestMsgId(imTopic.latestMsgId);
                     }
-
-                    boolean hasThisTopic = false;
-                    // 更新UI使用的topicList内的topic member列表
-                    for (TopicItemBean uiTopic : topicList) {
-                        if (uiTopic.getTopicId() == imTopic.topicId) {
-                            hasThisTopic = true;
-                            uiTopic.setTopicId(imTopic.topicId);
-                            uiTopic.setName(imTopic.topicName);
-                            uiTopic.setType(imTopic.topicType);
-                            uiTopic.setChange(imTopic.topicChange);
-                            uiTopic.setGroup(imTopic.topicGroup);
-                            //latestMsgID latset msgTime
-                            uiTopic.setMembers(dbTopic.getMembers());//TODO：member对象变了
-                            tempTopic = uiTopic;
-                        }
-                    }
-
-                    if (!hasThisTopic) {
-                        //列表中目前不包含 相同topicid 的topic
-                        tempTopic = dbTopic;
-                        tempTopic.setShowDot(true);
-                        //如果没有消息内容  排序需要 latest 时间
-                        if (tempTopic.getLatestMsgId() == 0) {
-                            tempTopic.setLatestMsgTime(System.currentTimeMillis());
-                        }
-
-                        //首先判断 dbtopic 为私聊才判断
-                        if (!TopicInMemoryUtils.isPrivateTopic(dbTopic)) {
-                            topicList.add(dbTopic);
-                        } else {
-                            if (!TopicInMemoryUtils.hasTheSameMockPrivateTopic(dbTopic.getMembers(), topicList)) {
-                                //检查mocktopic 没有对应的mocktopic 直接加入到topiclist 中 进行列表更新
-                                topicList.add(dbTopic);
+                    synchronized (topicList) {
+                        boolean hasThisTopic = false;
+                        // 更新UI使用的topicList内的topic member列表
+                        for (TopicItemBean uiTopic : topicList) {
+                            if (uiTopic.getTopicId() == imTopic.topicId) {
+                                hasThisTopic = true;
+                                uiTopic.setTopicId(imTopic.topicId);
+                                uiTopic.setName(imTopic.topicName);
+                                uiTopic.setType(imTopic.topicType);
+                                uiTopic.setChange(imTopic.topicChange);
+                                uiTopic.setGroup(imTopic.topicGroup);
+                                //latestMsgID latset msgTime
+                                uiTopic.setMembers(dbTopic.getMembers());//TODO：member对象变了
+                                tempTopic = uiTopic;
                             }
                         }
-                        //新topic 通知订阅
-                        if (view != null) {
-                            //加入了 新topic
-                            final TopicItemBean finalTempTopic = tempTopic;
-                            mHandler.post(new Runnable() {
-                                @Override
-                                public void run() {
-                                    view.onAddedToTopic(finalTempTopic.getTopicId());
-                                }
-                            });
 
+                        if (!hasThisTopic) {
+                            //列表中目前不包含 相同topicid 的topic
+                            tempTopic = dbTopic;
+                            tempTopic.setShowDot(true);
+                            //如果没有消息内容  排序需要 latest 时间
+                            if (tempTopic.getLatestMsgId() == 0) {
+                                tempTopic.setLatestMsgTime(System.currentTimeMillis());
+                            }
+
+                            //首先判断 dbtopic 为私聊才判断
+                            if (!TopicInMemoryUtils.isPrivateTopic(dbTopic)) {
+                                topicList.add(dbTopic);
+                            } else {
+                                if (!TopicInMemoryUtils.hasTheSameMockPrivateTopic(dbTopic.getMembers(), topicList)) {
+                                    //检查mocktopic 没有对应的mocktopic 直接加入到topiclist 中 进行列表更新
+                                    topicList.add(dbTopic);
+                                }
+                            }
+                            //新topic 通知订阅
+                            if (view != null) {
+                                //加入了 新topic
+                                final TopicItemBean finalTempTopic = tempTopic;
+                                mHandler.post(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        view.onAddedToTopic(finalTempTopic.getTopicId());
+                                    }
+                                });
+
+                            }
                         }
-                    }
-                    //topic list 中的 topic 有更新  增加 或 latestmsgid 更新
+                        //topic list 中的 topic 有更新  增加 或 latestmsgid 更新
                     if (fromMqtt) {
                         //如果是 mqtt 是在线状态加入了新的 topic 执行插入排序
                         ImTopicSorter.insertTopicToTop(tempTopic.getTopicId(), topicList);
                     } else {
                         ImTopicSorter.sortByLatestTime(topicList);
                     }
-                    if (view != null) {
-                        //通知 UI list 更新 （排序）
-                        mHandler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                view.onTopicListUpdate();
-                            }
-                        });
+//                        ImTopicSorter.sortByLatestTime(topicList);
+                        if (view != null) {
+                            //通知 UI list 更新 （排序）
+                            mHandler.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    view.onTopicListUpdate();
+                                }
+                            });
+                        }
                     }
                 }
                 // 4，对于需要更新members的topic，等待更新完members，再去取msgs
@@ -382,7 +414,6 @@ public class TopicListPresenter implements TopicListContract.Presenter {
             }
         }
         // TODO: 2018/5/22 删除数据库 中topic信息
-
         topics.remove(removedTopic);
         if (view != null) {
             final TopicItemBean finalRemovedTopic = removedTopic;
@@ -593,18 +624,18 @@ public class TopicListPresenter implements TopicListContract.Presenter {
      *
      */
     /**
-    * create by 朱晓龙 2018/8/2 上午11:19
+     * create by 朱晓龙 2018/8/2 上午11:19
      * 用户在某个 topic 被删除的时候 列表并不进行更新
-     *
+     * <p>
      * 只对被删除的 topic 进行 member 删除  topicmemberlist 中删除当前用户的 member 用于后续操作的判断依据
-     *
+     * <p>
      * 学员端与 管理端的区别是在收到删除通知后 是否跳转班级选择界面
-     *
+     * <p>
      * 而在 收到加入 topic 通知时 需要及时刷新列表
      *
      * @param topicId 收到 mqtt 删除推送的 topicID
-     * @param topics 用户当前所有的 topic
-    */
+     * @param topics  用户当前所有的 topic
+     */
     public void checkUserRemove(final long topicId, final List<TopicItemBean> topics) {
         com.yanxiu.im.net.TopicGetTopicsRequest_new getTopicsRequest = new com.yanxiu.im.net.TopicGetTopicsRequest_new();
         getTopicsRequest.imToken = Constants.imToken;
@@ -630,28 +661,28 @@ public class TopicListPresenter implements TopicListContract.Presenter {
                     return;
                 }
                 //获取当前本地持有的 topic 对象
-                final TopicItemBean targetLocalTopic=TopicInMemoryUtils.findTopicByTopicId(topicId,topics);
+                final TopicItemBean targetLocalTopic = TopicInMemoryUtils.findTopicByTopicId(topicId, topics);
                 //获取 推送的 目标 topic
                 imTopic = ret.data.topic.get(0);
                 //获取 目标 topic 的最新 member 列表
                 imMemberList = imTopic.members;
                 /* 对比 当前用户持有的 topic member 列表与 服务器返回的最新 member 列表 删除被移除的 member*/
                 synchronized (targetLocalTopic.getMembers()) {//可能同时两条 或多条 同一个 topic 的 member 推送 造成多线程操作 memberlist 所以加锁
-                    ArrayList<DbMember> dbMembershasBeenDel=new ArrayList<>();
-                    if (targetLocalTopic.getMembers()==null) {
+                    ArrayList<DbMember> dbMembershasBeenDel = new ArrayList<>();
+                    if (targetLocalTopic.getMembers() == null) {
                         // 不知道怎么办
                         return;
                     }
-                    if (imMemberList==null) {
+                    if (imMemberList == null) {
                         //为了 member 统一删除方法
-                        imMemberList=new ArrayList<>();
+                        imMemberList = new ArrayList<>();
                     }
 
                     for (DbMember dbMember : targetLocalTopic.getMembers()) {
-                        boolean remain=false;
+                        boolean remain = false;
                         for (ImTopic_new.Member remainMember : imMemberList) {
-                            if (dbMember.getImId()==remainMember.memberId) {
-                                remain=true;
+                            if (dbMember.getImId() == remainMember.memberId) {
+                                remain = true;
                                 break;
                             }
                         }
@@ -663,12 +694,10 @@ public class TopicListPresenter implements TopicListContract.Presenter {
                     targetLocalTopic.getMembers().removeAll(dbMembershasBeenDel);
                     //判断被移除的 member 是不是自己
                     for (DbMember removedMember : dbMembershasBeenDel) {
-                        if (removedMember.getImId()== Constants.imId) {
-                            //自己被移除 topic 删除本地数据库
-                            DatabaseManager.deleteTopicById(imTopic.topicId);
+                        if (removedMember.getImId() == Constants.imId) {
                             /*如果是学员端 这里需要将 topic 列表进行删除 */
-                            if (Constants.APP_TYPE==Constants.APP_TYPE_STUDENT) {
-                                TopicInMemoryUtils.removeTopicFromListById(topicId,topics);
+                            if (Constants.APP_TYPE == Constants.APP_TYPE_STUDENT) {
+                                TopicInMemoryUtils.removeTopicFromListById(topicId, topics);
                             }
                             mHandler.post(new Runnable() {
                                 @Override
@@ -678,7 +707,7 @@ public class TopicListPresenter implements TopicListContract.Presenter {
                                     }
                                 }
                             });
-                        }else {//如果不是自己被移除  通知 其他人被移除
+                        } else {//如果不是自己被移除  通知 其他人被移除
                             mHandler.post(new Runnable() {
                                 @Override
                                 public void run() {

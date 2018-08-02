@@ -8,6 +8,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.test.yanxiu.common_base.utils.SharedSingleton;
 import com.yanxiu.im.R;
 import com.yanxiu.im.bean.TopicItemBean;
 import com.yanxiu.im.business.interfaces.RecyclerViewItemLongClickListener;
@@ -54,11 +55,12 @@ public final class ImTopicListRecyclerViewAdapter<E extends TopicItemBean> exten
     }
 
     public void setDataList(List<E> dataList) {
-        this.dataList=dataList;
+        this.dataList.clear();
+        this.dataList.addAll(dataList);
     }
 
     public List<E> getDataList() {
-        return dataList;
+        return SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST);
     }
 
     @Override
