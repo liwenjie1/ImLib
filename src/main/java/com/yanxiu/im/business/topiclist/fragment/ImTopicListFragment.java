@@ -449,6 +449,7 @@ public class ImTopicListFragment extends FaceShowBaseFragment
         super.onActivityResult(requestCode, resultCode, data);
         //topic的消息队列有变化，需要对topic的信息（latestMsgId）进行更新设置并重新排序
         synchronized (SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST)) {
+            mRecyclerAdapter.setDataList((List<TopicItemBean>) SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST));
             mRecyclerAdapter.notifyDataSetChanged();
         }
         topicListPresenter.doCheckRedDot(mRecyclerAdapter.getDataList());

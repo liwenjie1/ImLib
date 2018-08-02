@@ -311,15 +311,18 @@ public class TopicListPresenter implements TopicListContract.Presenter {
                                 });
 
                             }
+                            //如果 原有列表中不含有 mqtt 推送的新加入 topic 需要置顶操作
+                            if (fromMqtt) {
+//                        如果是 mqtt 是在线状态加入了新的 topic 执行插入排序
+                                ImTopicSorter.insertTopicToTop(tempTopic.getTopicId(), topicList);
+                            } else {
+                                ImTopicSorter.sortByLatestTime(topicList);
+                            }
+                        }else {
+                            //如果 mqtt 推送的已经在 topic 中 不排序？
+                            //topic list 中的 topic 有更新  增加 或 latestmsgid 更新
+                            ImTopicSorter.sortByLatestTime(topicList);
                         }
-                        //topic list 中的 topic 有更新  增加 或 latestmsgid 更新
-                    if (fromMqtt) {
-                        //如果是 mqtt 是在线状态加入了新的 topic 执行插入排序
-                        ImTopicSorter.insertTopicToTop(tempTopic.getTopicId(), topicList);
-                    } else {
-                        ImTopicSorter.sortByLatestTime(topicList);
-                    }
-//                        ImTopicSorter.sortByLatestTime(topicList);
                         if (view != null) {
                             //通知 UI list 更新 （排序）
                             mHandler.post(new Runnable() {
