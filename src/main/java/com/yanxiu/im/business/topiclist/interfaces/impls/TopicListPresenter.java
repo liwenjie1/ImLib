@@ -321,7 +321,9 @@ public class TopicListPresenter implements TopicListContract.Presenter {
                         }else {
                             //如果 mqtt 推送的已经在 topic 中 不排序？
                             //topic list 中的 topic 有更新  增加 或 latestmsgid 更新
-                            ImTopicSorter.sortByLatestTime(topicList);
+                            if (!fromMqtt) {
+                                ImTopicSorter.sortByLatestTime(topicList);
+                            }
                         }
                         if (view != null) {
                             //通知 UI list 更新 （排序）
