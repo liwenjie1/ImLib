@@ -5,7 +5,6 @@ import com.qiniu.android.storage.UpCompletionHandler;
 import com.qiniu.android.storage.UpProgressHandler;
 import com.qiniu.android.storage.UploadManager;
 import com.qiniu.android.storage.UploadOptions;
-import com.test.yanxiu.common_base.ui.BaseApplication;
 import com.yanxiu.im.Constants;
 import com.yanxiu.im.bean.MsgItemBean;
 import com.yanxiu.im.bean.net_bean.ImMsg_new;
