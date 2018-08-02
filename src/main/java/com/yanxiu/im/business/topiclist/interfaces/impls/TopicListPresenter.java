@@ -9,6 +9,7 @@ import com.yanxiu.im.Constants;
 import com.yanxiu.im.bean.MsgItemBean;
 import com.yanxiu.im.bean.TopicItemBean;
 import com.yanxiu.im.bean.net_bean.ImMsg_new;
+import com.yanxiu.im.bean.net_bean.ImTopic_new;
 import com.yanxiu.im.business.topiclist.interfaces.TopicListContract;
 import com.yanxiu.im.business.topiclist.sorter.ImTopicSorter;
 import com.yanxiu.im.business.utils.ImServerDataChecker;
@@ -23,7 +24,6 @@ import com.yanxiu.lib.yx_basic_library.network.IYXHttpCallback;
 import com.yanxiu.lib.yx_basic_library.network.YXRequestBase;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 import okhttp3.Request;
@@ -588,7 +588,23 @@ public class TopicListPresenter implements TopicListContract.Presenter {
      * <p>
      * <p>
      * 3 在区分成员角色的模式下  管理员不能被删除
+     *
+     *
+     *
      */
+    /**
+    * create by 朱晓龙 2018/8/2 上午11:19
+     * 用户在某个 topic 被删除的时候 列表并不进行更新
+     *
+     * 只对被删除的 topic 进行 member 删除  topicmemberlist 中删除当前用户的 member 用于后续操作的判断依据
+     *
+     * 学员端与 管理端的区别是在收到删除通知后 是否跳转班级选择界面
+     *
+     * 而在 收到加入 topic 通知时 需要及时刷新列表
+     *
+     * @param topicId 收到 mqtt 删除推送的 topicID
+     * @param topics 用户当前所有的 topic
+    */
     public void checkUserRemove(final long topicId, final List<TopicItemBean> topics) {
         com.yanxiu.im.net.TopicGetTopicsRequest_new getTopicsRequest = new com.yanxiu.im.net.TopicGetTopicsRequest_new();
         getTopicsRequest.imToken = Constants.imToken;
@@ -613,91 +629,60 @@ public class TopicListPresenter implements TopicListContract.Presenter {
                     //TODO:疑问：如果topic为空，是否意味着该topic已被删除？暂时不处理
                     return;
                 }
+                //获取当前本地持有的 topic 对象
+                final TopicItemBean targetLocalTopic=TopicInMemoryUtils.findTopicByTopicId(topicId,topics);
+                //获取 推送的 目标 topic
                 imTopic = ret.data.topic.get(0);
+                //获取 目标 topic 的最新 member 列表
                 imMemberList = imTopic.members;
-                if (imTopic.members == null || imTopic.members.isEmpty()) {
-                    //member为空，视为topic被删除
-                    DatabaseManager.deleteTopicById(imTopic.topicId);
-                    TopicInMemoryUtils.removeTopicFromListById(imTopic.topicId, topics);
+                /* 对比 当前用户持有的 topic member 列表与 服务器返回的最新 member 列表 删除被移除的 member*/
+                synchronized (targetLocalTopic.getMembers()) {//可能同时两条 或多条 同一个 topic 的 member 推送 造成多线程操作 memberlist 所以加锁
+                    ArrayList<DbMember> dbMembershasBeenDel=new ArrayList<>();
+                    if (targetLocalTopic.getMembers()==null) {
+                        // 不知道怎么办
+                        return;
+                    }
+                    if (imMemberList==null) {
+                        //为了 member 统一删除方法
+                        imMemberList=new ArrayList<>();
+                    }
 
-                    final com.yanxiu.im.bean.net_bean.ImTopic_new finalImTopic = imTopic;
-                    mHandler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            if (view != null) {
-                                view.onRemovedFromTopic(finalImTopic.topicId);
+                    for (DbMember dbMember : targetLocalTopic.getMembers()) {
+                        boolean remain=false;
+                        for (ImTopic_new.Member remainMember : imMemberList) {
+                            if (dbMember.getImId()==remainMember.memberId) {
+                                remain=true;
+                                break;
                             }
                         }
-                    });
-                    return;
-                }
-
-                ArrayList<Long> hasDeletedMemberList = new ArrayList<>();//被删除的memberId的集合
-                TopicItemBean topicItemBean = TopicInMemoryUtils.findTopicByTopicId(imTopic.topicId, topics);//找到对应的topic
-
-                if (topicItemBean != null) { //如果为空，说明在内存中没有找到对应的topic，那么，就无需再执行后续操作
-                    List<DbMember> dbMemberList = topicItemBean.getMembers();
-
-                    if (dbMemberList != null && !dbMemberList.isEmpty()) {
-                        //查找被删除的member start
-                        for (int j = 0; j < dbMemberList.size(); j++) {
-                            DbMember dbMember = dbMemberList.get(j);
-                            boolean imMemberHasDelete = true;
-                            for (int i = 0; i < imMemberList.size(); i++) { //遍历新的member
-                                com.yanxiu.im.bean.net_bean.ImTopic_new.Member imMember = imMemberList.get(i);
-                                if (dbMember.getImId() == imMember.memberId) { //依然存在，没被删除
-                                    imMemberHasDelete = false;
-                                    break;
-                                }
-                            }
-                            if (imMemberHasDelete) {
-                                if (dbMember.getImId() == Constants.imId) { //是当前用户被删除了，相当于topic被删除了
-                                    DatabaseManager.deleteTopicById(imTopic.topicId);
-                                    TopicInMemoryUtils.removeTopicFromListById(imTopic.topicId, topics);
+                        if (!remain) {//如果用户已经不再列表中
+                            dbMembershasBeenDel.add(dbMember);
+                        }
+                    }
+                    //删除那些不在列表中的 member
+                    targetLocalTopic.getMembers().removeAll(dbMembershasBeenDel);
+                    //判断被移除的 member 是不是自己
+                    for (DbMember removedMember : dbMembershasBeenDel) {
+                        if (removedMember.getImId()== Constants.imId) {
+                            //自己被移除 topic 删除本地数据库
+                            DatabaseManager.deleteTopicById(imTopic.topicId);
+                            mHandler.post(new Runnable() {
+                                @Override
+                                public void run() {
                                     if (view != null) {
-                                        final com.yanxiu.im.bean.net_bean.ImTopic_new finalImTopic1 = imTopic;
-                                        mHandler.post(new Runnable() {
-                                            @Override
-                                            public void run() {
-                                                view.onRemovedFromTopic(finalImTopic1.topicId);
-                                            }
-                                        });
-
-                                    }
-                                    return;
-                                } else {
-                                    hasDeletedMemberList.add(dbMember.getImId());
-                                }
-                            }
-
-                        }
-
-                        //在内存中，移除掉被删除的member start
-                        if (hasDeletedMemberList != null && !hasDeletedMemberList.isEmpty()) {
-                            boolean hasDelete = false;
-                            for (int i = 0; i < hasDeletedMemberList.size(); i++) {
-                                long hasDeletedMemberId = hasDeletedMemberList.get(i);//已经被删除的memberid
-                                Iterator<DbMember> iterator = dbMemberList.iterator();
-                                while (iterator.hasNext()) {
-                                    DbMember dbMember = iterator.next();
-                                    if (dbMember.getImId() == hasDeletedMemberId) {
-                                        //移除
-                                        iterator.remove();
-                                        hasDelete = true;
+                                        view.onRemovedFromTopic(targetLocalTopic.getTopicId());
                                     }
                                 }
-                            }
-                            if (hasDelete) {
-                                mHandler.post(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        if (view != null) {
-                                            view.onOtherMemberRemoveFromTopic(topicId);
-                                        }
+                            });
+                        }else {//如果不是自己被移除  通知 其他人被移除
+                            mHandler.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    if (view != null) {
+                                        view.onOtherMemberRemoveFromTopic(targetLocalTopic.getTopicId());
                                     }
-                                });
-
-                            }
+                                }
+                            });
                         }
                     }
                 }
