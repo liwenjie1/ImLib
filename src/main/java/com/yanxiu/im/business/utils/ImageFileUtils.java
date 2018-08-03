@@ -4,7 +4,8 @@ import android.content.Context;
 import android.graphics.BitmapFactory;
 import android.text.TextUtils;
 
-import com.test.yanxiu.common_base.utils.ScreenUtils;
+
+import com.yanxiu.lib.yx_basic_library.util.YXScreenUtil;
 
 import java.io.File;
 
@@ -42,7 +43,7 @@ public class ImageFileUtils {
      * @return
      */
     public static Integer[] getPicShowWH(Context context, int width, int height) {
-        float baseSize = ScreenUtils.dpToPx(context, 140);
+        float baseSize = YXScreenUtil.dpToPx(context, 140);
         float iResultWidth = baseSize;
         float iResultHeight = baseSize;
 
