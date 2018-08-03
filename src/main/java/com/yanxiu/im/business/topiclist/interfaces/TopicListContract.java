@@ -17,7 +17,7 @@ public interface TopicListContract {
         void onNewMsgReceived(long topicId);
 
 
-        void onRemovedFromTopic(long topicId);
+        void onRemovedFromTopic(long topicId,String topicName);
         void onOtherMemberRemoveFromTopic(long topicId);
         void onAddedToTopic(long topicId);
         void onRedDotState(boolean showing);

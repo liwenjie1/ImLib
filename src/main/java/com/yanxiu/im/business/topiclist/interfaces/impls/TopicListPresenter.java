@@ -425,7 +425,7 @@ public class TopicListPresenter implements TopicListContract.Presenter {
             mHandler.post(new Runnable() {
                 @Override
                 public void run() {
-                    view.onRemovedFromTopic(finalRemovedTopic.getTopicId());
+                    view.onRemovedFromTopic(finalRemovedTopic.getTopicId(),finalRemovedTopic.getGroup());
                 }
             });
 
@@ -708,7 +708,7 @@ public class TopicListPresenter implements TopicListContract.Presenter {
                                 @Override
                                 public void run() {
                                     if (view != null) {
-                                        view.onRemovedFromTopic(targetLocalTopic.getTopicId());
+                                        view.onRemovedFromTopic(targetLocalTopic.getTopicId(),targetLocalTopic.getGroup());
                                     }
                                 }
                             });
