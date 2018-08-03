@@ -230,6 +230,9 @@ public class ImTopicListFragment extends FaceShowBaseFragment
     @Override
     public void onTopicUpdate(long topicId) {
         mqttConnectPresenter.subscribeTopic(topicId);
+        if (SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST) == null) {
+            return;
+        }
         synchronized (SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST)) {
             mRecyclerAdapter.setDataList((List<TopicItemBean>) SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST));
             mRecyclerAdapter.notifyDataSetChanged();
@@ -317,6 +320,9 @@ public class ImTopicListFragment extends FaceShowBaseFragment
      */
     @Override
     public void onNewMsgReceived(long topicId) {
+        if (SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST) == null) {
+            return;
+        }
         synchronized (SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST)) {
             mRecyclerAdapter.setDataList((List<TopicItemBean>) SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST));
             mRecyclerAdapter.notifyDataSetChanged();
@@ -366,6 +372,9 @@ public class ImTopicListFragment extends FaceShowBaseFragment
         mqttConnectPresenter.unsubscribeTopic(topicId);
         /*学员端 刷新界面*/
         if (Constants.APP_TYPE == Constants.APP_TYPE_STUDENT) {
+            if (SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST) == null) {
+                return;
+            }
             synchronized (SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST)) {
                 mRecyclerAdapter.setDataList((List<TopicItemBean>) SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST));
                 mRecyclerAdapter.notifyDataSetChanged();
@@ -423,6 +432,9 @@ public class ImTopicListFragment extends FaceShowBaseFragment
      */
     @Override
     public void onTopicListUpdate() {
+        if (SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST) == null) {
+            return;
+        }
         synchronized (SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST)) {
             mRecyclerAdapter.setDataList((List<TopicItemBean>) SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST));
             mRecyclerAdapter.notifyDataSetChanged();
@@ -448,6 +460,9 @@ public class ImTopicListFragment extends FaceShowBaseFragment
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         //topic的消息队列有变化，需要对topic的信息（latestMsgId）进行更新设置并重新排序
+        if (SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST) == null) {
+            return;
+        }
         synchronized (SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST)) {
             mRecyclerAdapter.setDataList((List<TopicItemBean>) SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST));
             mRecyclerAdapter.notifyDataSetChanged();
