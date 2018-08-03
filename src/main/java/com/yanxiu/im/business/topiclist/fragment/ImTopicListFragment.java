@@ -10,6 +10,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import com.bumptech.glide.GlideBuilder;
 import com.bumptech.glide.load.engine.cache.DiskLruCacheFactory;
@@ -34,6 +35,7 @@ import com.yanxiu.im.business.topiclist.interfaces.MqttConnectContract;
 import com.yanxiu.im.business.topiclist.interfaces.TopicListContract;
 import com.yanxiu.im.business.topiclist.interfaces.impls.MqttConnectPresenter;
 import com.yanxiu.im.business.topiclist.interfaces.impls.TopicListPresenter;
+import com.yanxiu.im.business.utils.TopicInMemoryUtils;
 import com.yanxiu.im.business.view.ImTitleLayout;
 import com.yanxiu.im.db.DbMember;
 import com.yanxiu.im.event.MigrateMockTopicEvent;
@@ -367,7 +369,7 @@ public class ImTopicListFragment extends FaceShowBaseFragment
      * @param topicId 被移除的topicid 通知MsgListActivity是用来判断是否是正在展示的topic
      */
     @Override
-    public void onRemovedFromTopic(long topicId) {
+    public void onRemovedFromTopic(long topicId,String topicName) {
         //取消mqtt 订阅
         mqttConnectPresenter.unsubscribeTopic(topicId);
         /*学员端 刷新界面*/
@@ -375,10 +377,15 @@ public class ImTopicListFragment extends FaceShowBaseFragment
             if (SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST) == null) {
                 return;
             }
+
             synchronized (SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST)) {
                 mRecyclerAdapter.setDataList((List<TopicItemBean>) SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST));
                 mRecyclerAdapter.notifyDataSetChanged();
             }
+            final TopicItemBean topic = TopicInMemoryUtils.findTopicByTopicId(topicId, mRecyclerAdapter.getDataList());
+            Toast.makeText(getActivity(), "【已被移出" + topicName + "】", Toast.LENGTH_SHORT).show();
+
+
         }
         //eventbus 通知 MsgListActivity 如果被删除的topic正在展示，关闭topic对应的聊天界面
         //这里学员端和管理端有区别 学员端需要 退出 msglist 界面 管理端 只需要需要更新 member 信息
