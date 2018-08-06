@@ -16,6 +16,7 @@ import com.bumptech.glide.GlideBuilder;
 import com.bumptech.glide.load.engine.cache.DiskLruCacheFactory;
 import com.test.yanxiu.common_base.ui.FaceShowBaseFragment;
 import com.test.yanxiu.common_base.ui.PublicLoadLayout;
+import com.test.yanxiu.common_base.utils.EscapeCharacterUtils;
 import com.test.yanxiu.common_base.utils.SharedSingleton;
 import com.test.yanxiu.common_base.utils.talkingdata.EventUpdate;
 import com.yanxiu.ImConfig;
@@ -341,7 +342,7 @@ public class ImTopicListFragment extends FaceShowBaseFragment
      * {@link ImTopicListFragment#onAddedToTopic(long)}
      * 2、有用户被当前的某个topic移除
      * 当前用户被移除
-     * {@link ImTopicListFragment#onRemovedFromTopic(long)}
+     * {@link ImTopicListFragment#onRemovedFromTopic(long, String)} }
      * 其他用户被移除
      * {@link ImTopicListFragment#onOtherMemberRemoveFromTopic(long)}
      *
@@ -383,7 +384,7 @@ public class ImTopicListFragment extends FaceShowBaseFragment
                 mRecyclerAdapter.notifyDataSetChanged();
             }
             final TopicItemBean topic = TopicInMemoryUtils.findTopicByTopicId(topicId, mRecyclerAdapter.getDataList());
-            Toast.makeText(getActivity(), "【已被移出" + topicName + "】", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getActivity(), "【已被移出" + EscapeCharacterUtils.unescape(topicName) + "】", Toast.LENGTH_SHORT).show();
 
 
         }
