@@ -26,5 +26,6 @@ android {
 }
 dependencies {
     api imLibDependencies.values()
+    api project(path: ':base_lib')
     api project(path: ':common_base')
 }
