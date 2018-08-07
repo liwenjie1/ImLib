@@ -7,6 +7,7 @@ import android.content.ServiceConnection;
 import android.os.IBinder;
 import android.text.TextUtils;
 
+import com.test.yanxiu.common_base.utils.SharedSingleton;
 import com.yanxiu.im.Constants;
 import com.yanxiu.im.bean.TopicItemBean;
 import com.yanxiu.im.business.topiclist.interfaces.MqttConnectContract;
@@ -45,6 +46,11 @@ public class MqttConnectPresenter implements MqttConnectContract.Presenter {
 
 
     public void subscribeTopics(List<TopicItemBean> topics) {
+        //空判断
+        if (topics == null) {
+            YXLogger.e("immqtt", "topiclist is null ");
+            return;
+        }
         for (TopicItemBean topic : topics) {
             subscribeTopic(topic.getTopicId());
         }
@@ -144,9 +150,12 @@ public class MqttConnectPresenter implements MqttConnectContract.Presenter {
                     reconnectTimer.schedule(new TimerTask() {
                         @Override
                         public void run() {
-                            // 重连必须重新给一个clientId，否则直接失败
-                            binder.init();
-                            binder.connect();
+
+                            if (SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST) != null) {
+                                // 重连必须重新给一个clientId，否则直接失败
+                                binder.init();
+                                binder.connect();
+                            }
                         }
                     }, 30 * 1000);
                 }
@@ -186,6 +195,10 @@ public class MqttConnectPresenter implements MqttConnectContract.Presenter {
             //异常
             return;
         }
+        if (binder != null) {
+            //binder ！=null 说明 已经进行过绑定
+            binder.disconnect();
+        }
         getImHostRequest(new GetImHostCallBack() {
             @Override
             public void onSuccess(String host) {
@@ -207,7 +220,7 @@ public class MqttConnectPresenter implements MqttConnectContract.Presenter {
                 try {
                     activity.unbindService(mqttServiceConnection);
                 } catch (Exception e) {
-                    YXLogger.e("MQTT",e.getMessage());
+                    YXLogger.e("MQTT", e.getMessage());
                 }
             }
         }
