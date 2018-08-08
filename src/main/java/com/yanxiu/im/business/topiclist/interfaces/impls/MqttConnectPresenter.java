@@ -181,6 +181,7 @@ public class MqttConnectPresenter implements MqttConnectContract.Presenter {
 
         @Override
         public void onServiceDisconnected(ComponentName componentName) {
+            binder=null;
             if (reconnectTimer != null) {
                 reconnectTimer.cancel();
                 reconnectTimer.purge();
