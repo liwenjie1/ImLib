@@ -16,6 +16,7 @@ import com.yanxiu.im.business.interfaces.RecyclerViewItemOnClickListener;
 import com.yanxiu.im.business.topiclist.adapter.topicviewholder.ImGroupTopicViewHolder;
 import com.yanxiu.im.business.topiclist.adapter.topicviewholder.ImPrivateTopicViewHolder;
 import com.yanxiu.im.business.topiclist.adapter.topicviewholder.ImTopicBaseViewHolder;
+import com.yanxiu.im.manager.DatabaseManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -60,7 +61,11 @@ public final class ImTopicListRecyclerViewAdapter<E extends TopicItemBean> exten
     }
 
     public List<E> getDataList() {
-        //test
+        //test 数据被回收 的情况 获取会 null 重新由数据库读取一遍
+        if (SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST)==null) {
+            final List<TopicItemBean> beans = DatabaseManager.topicsFromDb();
+            SharedSingleton.getInstance().set(SharedSingleton.KEY_TOPIC_LIST,beans==null?new ArrayList<TopicItemBean>():beans);
+        }
         return SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST);
     }
 

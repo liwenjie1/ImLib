@@ -261,6 +261,9 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
 
     private void sortInsertTopics(long topicId) {
         List<TopicItemBean> topics = SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST);
+        if (topics==null) {
+            return;
+        }
         ImTopicSorter.insertTopicToTop(topicId, topics);
     }
 
@@ -643,6 +646,9 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
                 }
                 //更新内存中所有 topic 的 member 信息 以及 用户自己的 im 信息
                 ArrayList<TopicItemBean> topics = SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST);
+                if (topics == null) {
+                    return;
+                }
                 if (dbTopic.getMembers() != null) {
                     for (DbMember dbMember : dbTopic.getMembers()) {
                         //更新所有相同 member 的信息
@@ -677,6 +683,9 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
     @Override
     public void openPrivateTopicByMember(long memberId, long fromTopicId) {
         List<TopicItemBean> topics = SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST);
+        if (topics == null) {
+            return;
+        }
         final TopicItemBean targetPrivateTopic = TopicInMemoryUtils.findPrivateTopicByMemberId(memberId, topics);
         if (targetPrivateTopic == null) {
             //如果没有找到私聊 创建mocktopic
@@ -715,6 +724,9 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
     public void openTopicByTopicId(long topicId) {
         List<TopicItemBean> topics = SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST);
         //查找目标topic
+        if (topics == null) {
+            return;
+        }
         final TopicItemBean targetTopic = TopicInMemoryUtils.findTopicByTopicId(topicId, topics);
         //数据库获取最新一页 msg
         ArrayList<MsgItemBean> msgsFromDb =
@@ -750,8 +762,10 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
     public TopicItemBean createMockTopicForMsg(long memberId, long fromTopic) {
         List<TopicItemBean> topics = SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST);
         TopicItemBean mockTopic = DatabaseManager.createMockTopic(memberId, fromTopic);
-        topics.add(mockTopic);
-        ImTopicSorter.sortByLatestTime(topics);
+        if (topics!=null) {
+            topics.add(mockTopic);
+            ImTopicSorter.sortByLatestTime(topics);
+        }
         return mockTopic;
     }
 
@@ -760,6 +774,9 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
      */
     public boolean checkNullTopicCanbeMerged(long topicId, long memberId) {
         List<TopicItemBean> topics = SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST);
+        if (topics==null) {
+            return false;
+        }
         TopicItemBean targetTopic = TopicInMemoryUtils.findTopicByTopicId(topicId, topics);
         if (targetTopic == null) {
             return false;

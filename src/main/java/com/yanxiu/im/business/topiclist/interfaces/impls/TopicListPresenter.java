@@ -125,23 +125,28 @@ public class TopicListPresenter implements TopicListContract.Presenter {
 
             @Override
             public void onSuccess(YXRequestBase request, TopicGetMemberTopicsResponse_new ret) {
+                if (topicsFromDb==null) {
+                    return;
+                }
+
+
                 List<TopicItemBean> maybeNeedUpdateMsgTopicList = new ArrayList<>();
                 // 3
                 //获取用户服务器上所有的topic
                 /*由于删除需求的限制 管理端用户被某个 topic 删除后不能立即 将数据库删除  （需求 被删除依然可以看见历史消息 ）所以这里每次在获取用户最新的 topic 列表时进行一次统一的删除操作
-                * 删除那些 本地有 服务器上没有的 topic（群聊）
-                * */
-                ArrayList<TopicItemBean> deteletedTopic=new ArrayList<>();
+                 * 删除那些 本地有 服务器上没有的 topic（群聊）
+                 * */
+                ArrayList<TopicItemBean> deteletedTopic = new ArrayList<>();
                 if (ret.data.topic == null) {
-                    ret.data.topic=new ArrayList<>();
+                    ret.data.topic = new ArrayList<>();
                 }
 
                 for (TopicItemBean dbtopic : topicsFromDb) {
-                    if (TextUtils.equals(dbtopic.getType(),"2")) {
-                        boolean remain=false;
+                    if (TextUtils.equals(dbtopic.getType(), "2")) {
+                        boolean remain = false;
                         for (ImTopic_new remainTopic : ret.data.topic) {
-                            if (dbtopic.getTopicId()==remainTopic.topicId) {
-                                remain=true;
+                            if (dbtopic.getTopicId() == remainTopic.topicId) {
+                                remain = true;
                                 break;
                             }
                         }
@@ -251,6 +256,10 @@ public class TopicListPresenter implements TopicListContract.Presenter {
 
             @Override
             public void onSuccess(YXRequestBase request, com.yanxiu.im.net.TopicGetTopicsResponse_new ret) {
+                if (topicList==null) {
+                    return;
+                }
+
                 // 更新数据库
                 List<TopicItemBean> topicsToUpdateMsgs = new ArrayList<>();
 
@@ -318,7 +327,7 @@ public class TopicListPresenter implements TopicListContract.Presenter {
                             } else {
                                 ImTopicSorter.sortByLatestTime(topicList);
                             }
-                        }else {
+                        } else {
                             //如果 mqtt 推送的已经在 topic 中 不排序？
                             //topic list 中的 topic 有更新  增加 或 latestmsgid 更新
                             if (!fromMqtt) {
@@ -376,6 +385,10 @@ public class TopicListPresenter implements TopicListContract.Presenter {
     @Override
     public void doReceiveNewMsg(MsgItemBean msg) {
         List<TopicItemBean> topics = SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST);
+        if (topics==null) {
+            return;
+        }
+
         final TopicItemBean targetTopic = TopicInMemoryUtils.findTopicByTopicId(msg.getTopicId(), topics);
         if (targetTopic.getMsgList() == null) {
             targetTopic.setMsgList(new ArrayList<MsgItemBean>());
@@ -411,6 +424,9 @@ public class TopicListPresenter implements TopicListContract.Presenter {
     @Override
     public void doRemoveFromTopic(long topicId) {
         List<TopicItemBean> topics = SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST);
+        if (topics==null) {
+            return;
+        }
         TopicItemBean removedTopic = null;
         for (TopicItemBean topicItemBean : topics) {
             if (topicItemBean.getTopicId() == topicId) {
@@ -425,7 +441,7 @@ public class TopicListPresenter implements TopicListContract.Presenter {
             mHandler.post(new Runnable() {
                 @Override
                 public void run() {
-                    view.onRemovedFromTopic(finalRemovedTopic.getTopicId(),finalRemovedTopic.getGroup());
+                    view.onRemovedFromTopic(finalRemovedTopic.getTopicId(), finalRemovedTopic.getGroup());
                 }
             });
 
@@ -435,6 +451,9 @@ public class TopicListPresenter implements TopicListContract.Presenter {
     @Override
     public void doAddedToTopic(long topicId, boolean mqtt) {
         List<TopicItemBean> topics = SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST);
+        if (topics==null) {
+            return;
+        }
         //在网络请求结果中回调给UI
         updateTopicsWithMembers(topics, topicId + "", mqtt);
     }
@@ -475,6 +494,9 @@ public class TopicListPresenter implements TopicListContract.Presenter {
      */
     private void updateEachTopicMsgs(List<TopicItemBean> topics) {
         totalRetryTimes = 10;
+        if (topics==null) {
+            return;
+        }
         for (TopicItemBean topic : topics) {
             doGetTopicMsgsRequest(topic);
         }
@@ -657,6 +679,9 @@ public class TopicListPresenter implements TopicListContract.Presenter {
 
             @Override
             public void onSuccess(YXRequestBase request, com.yanxiu.im.net.TopicGetTopicsResponse_new ret) {
+                if (topics==null) {
+                    return;
+                }
                 // 更新数据库
                 List<TopicItemBean> topicsNeedUpdateMember = new ArrayList<>();
                 com.yanxiu.im.bean.net_bean.ImTopic_new imTopic = null;
@@ -708,7 +733,7 @@ public class TopicListPresenter implements TopicListContract.Presenter {
                                 @Override
                                 public void run() {
                                     if (view != null) {
-                                        view.onRemovedFromTopic(targetLocalTopic.getTopicId(),targetLocalTopic.getGroup());
+                                        view.onRemovedFromTopic(targetLocalTopic.getTopicId(), targetLocalTopic.getGroup());
                                     }
                                 }
                             });
@@ -732,4 +757,6 @@ public class TopicListPresenter implements TopicListContract.Presenter {
             }
         });
     }
+
+
 }

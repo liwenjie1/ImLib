@@ -370,7 +370,7 @@ public class ImTopicListFragment extends FaceShowBaseFragment
      * @param topicId 被移除的topicid 通知MsgListActivity是用来判断是否是正在展示的topic
      */
     @Override
-    public void onRemovedFromTopic(long topicId,String topicName) {
+    public void onRemovedFromTopic(long topicId, String topicName) {
         //取消mqtt 订阅
         mqttConnectPresenter.unsubscribeTopic(topicId);
         /*学员端 刷新界面*/

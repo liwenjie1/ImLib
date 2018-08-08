@@ -57,11 +57,15 @@ public class MqttConnectPresenter implements MqttConnectContract.Presenter {
     }
 
     public void subscribeTopic(long topicId) {
-        binder.subscribeTopic(topicId + "");
+        if (binder != null) {
+            binder.subscribeTopic(topicId + "");
+        }
     }
 
     public void unsubscribeTopic(long topicId) {
-        binder.unsubscribeTopic(topicId + "");
+        if (binder != null) {
+            binder.unsubscribeTopic(topicId + "");
+        }
     }
 
     /**
@@ -181,7 +185,7 @@ public class MqttConnectPresenter implements MqttConnectContract.Presenter {
 
         @Override
         public void onServiceDisconnected(ComponentName componentName) {
-            binder=null;
+            binder = null;
             if (reconnectTimer != null) {
                 reconnectTimer.cancel();
                 reconnectTimer.purge();
@@ -196,17 +200,15 @@ public class MqttConnectPresenter implements MqttConnectContract.Presenter {
             //异常
             return;
         }
-        if (binder != null) {
-            //binder ！=null 说明 已经进行过绑定
-            binder.disconnect();
-        }
         getImHostRequest(new GetImHostCallBack() {
             @Override
             public void onSuccess(String host) {
-                // TODO: 2018/5/23  出现一次 crash  
-                Intent intent = new Intent(activity, MqttService.class);
-                intent.putExtra("host", host);
-                activity.bindService(intent, mqttServiceConnection, BIND_AUTO_CREATE);
+                // TODO: 2018/5/23  出现一次 crash
+                if (binder == null) {
+                    Intent intent = new Intent(activity, MqttService.class);
+                    intent.putExtra("host", host);
+                    activity.bindService(intent, mqttServiceConnection, BIND_AUTO_CREATE);
+                }
             }
         });
     }
@@ -219,12 +221,17 @@ public class MqttConnectPresenter implements MqttConnectContract.Presenter {
             if (binder != null) {
                 //保险起见  try catch 一下
                 try {
+                    binder = null;
+                    if (reconnectTimer != null) {
+                        reconnectTimer.cancel();
+                        reconnectTimer.purge();
+                        reconnectTimer = null;
+                    }
                     activity.unbindService(mqttServiceConnection);
                 } catch (Exception e) {
                     YXLogger.e("MQTT", e.getMessage());
                 }
             }
         }
-
     }
 }
