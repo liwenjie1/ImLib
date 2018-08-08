@@ -60,6 +60,7 @@ public final class ImTopicListRecyclerViewAdapter<E extends TopicItemBean> exten
     }
 
     public List<E> getDataList() {
+        //test
         return SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST);
     }
 
