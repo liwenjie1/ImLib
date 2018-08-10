@@ -8,7 +8,6 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.test.yanxiu.common_base.utils.EscapeCharacterUtils;
 import com.yanxiu.im.R;
 import com.yanxiu.im.bean.ContactsGroupBean;
 import com.yanxiu.im.business.interfaces.RecyclerViewItemOnClickListener;
@@ -51,7 +50,7 @@ public class ContactsGroupAdapter extends RecyclerView.Adapter<ContactsGroupAdap
     public void onBindViewHolder(final ContactsGroupViewHolder holder, final int position) {
         ContactsGroupBean bean = mDatas.get(position);
         //转义字符处理
-        holder.tv_class_name.setText(EscapeCharacterUtils.unescape(bean.getGroupName()));
+        holder.tv_class_name.setText(bean.getGroupName());
         if (position == mCurrentSelectedPosition) {
             holder.tv_class_name.setTextColor(ContextCompat.getColor(holder.itemView.getContext(), R.color.color_1da1f2));
             holder.iv_selected.setVisibility(View.VISIBLE);

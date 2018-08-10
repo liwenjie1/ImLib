@@ -19,7 +19,6 @@ import android.widget.TextView;
 import com.test.yanxiu.common_base.ui.ImBaseActivity;
 import com.test.yanxiu.common_base.ui.InputMethodUtil;
 import com.test.yanxiu.common_base.ui.PublicLoadLayout;
-import com.test.yanxiu.common_base.utils.EscapeCharacterUtils;
 import com.test.yanxiu.common_base.utils.talkingdata.EventUpdate;
 import com.yanxiu.im.Constants;
 import com.yanxiu.im.R;
@@ -227,7 +226,7 @@ public class ContactsActivity extends ImBaseActivity implements ContactsContract
 
     @Override
     public void showCurrentContactsGroupName(String groupName) {
-        tv_current_group_name.setText(EscapeCharacterUtils.unescape(groupName));
+        tv_current_group_name.setText(groupName);
     }
 
     @Override

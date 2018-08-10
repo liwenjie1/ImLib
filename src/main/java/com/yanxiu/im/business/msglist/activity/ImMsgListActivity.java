@@ -33,7 +33,6 @@ import com.lzy.imagepicker.ui.ImageGridActivity;
 import com.test.yanxiu.common_base.imagePicker.GlideImageLoader;
 import com.test.yanxiu.common_base.ui.ImBaseActivity;
 import com.test.yanxiu.common_base.ui.KeyboardChangeListener;
-import com.test.yanxiu.common_base.utils.EscapeCharacterUtils;
 import com.test.yanxiu.common_base.utils.SrtLogger;
 import com.test.yanxiu.common_base.utils.permission.OnPermissionCallback;
 import com.test.yanxiu.common_base.utils.talkingdata.EventUpdate;
@@ -719,7 +718,7 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
 
 
         //需要对转义字符处理
-        imTitleLayout.setTitle(EscapeCharacterUtils.unescape(titleStringBuilder.toString()));
+        imTitleLayout.setTitle(titleStringBuilder.toString());
     }
 
     /**
@@ -730,7 +729,7 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
      */
     @Override
     public void onTempUiTopicOpen(String topicName) {
-        imTitleLayout.setTitle(EscapeCharacterUtils.unescape(topicName));
+        imTitleLayout.setTitle(topicName);
     }
 
     @Override

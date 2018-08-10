@@ -11,7 +11,6 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
-import com.test.yanxiu.common_base.utils.EscapeCharacterUtils;
 import com.yanxiu.im.R;
 import com.yanxiu.im.bean.ContactsMemberBean;
 import com.yanxiu.im.business.interfaces.RecyclerViewItemOnClickListener;
@@ -60,7 +59,7 @@ public class ContactsMemberAdapter extends RecyclerView.Adapter<ContactsMemberAd
     public void onBindViewHolder(final ContactsMemberViewHolder holder, int position) {
         ContactsMemberBean bean = mFilterDatas.get(position);
         //转义字符处理
-        holder.tv_name.setText(EscapeCharacterUtils.unescape(bean.getMemberInfo().memberName));
+        holder.tv_name.setText(bean.getMemberInfo().memberName);
         Glide.with(holder.itemView.getContext()).load(bean.getMemberInfo().avatar)
                 .placeholder(R.drawable.im_chat_default)
                 .into(holder.iv_avatar);

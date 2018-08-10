@@ -1,5 +1,6 @@
 package com.yanxiu.im.net;
 
+import com.test.yanxiu.common_base.net.FaceShowAppBaseRequest;
 import com.test.yanxiu.common_base.utils.SrtLogger;
 import com.test.yanxiu.common_base.utils.UrlRepository;
 import com.yanxiu.lib.yx_basic_library.network.IYXHttpCallback;
@@ -13,7 +14,7 @@ import okhttp3.Request;
  * im的request基类
  * Created by cailei on 02/03/2018.
  */
-public class ImRequestBase_new extends YXRequestBase {
+public class ImRequestBase_new extends FaceShowAppBaseRequest {
     public String bizSource;  // 来源，移动端用1
     public String bizId;      // 业务id，研修宝用1
     public String bizToken;         // App用的Token

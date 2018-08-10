@@ -8,7 +8,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.test.yanxiu.common_base.ui.ImBaseActivity;
-import com.test.yanxiu.common_base.utils.EscapeCharacterUtils;
 import com.yanxiu.im.Constants;
 import com.yanxiu.im.R;
 import com.yanxiu.im.bean.TopicItemBean;
@@ -116,7 +115,7 @@ public class ImSetingActivity extends ImBaseActivity implements ImTitleLayout.Ti
 
     @Override
     public void onTopicFound(TopicItemBean topicBean) {
-        im_setting_activity_classname_tv.setText(EscapeCharacterUtils.unescape(topicBean.getGroup()));
+        im_setting_activity_classname_tv.setText(topicBean.getGroup());
 
         mImNoticeSettingItem.setSwitchBtnChecked(mImSettingPresenter.getNoticeSetting());
         mImTalkSettingItem.setSwitchBtnChecked(mImSettingPresenter.getSilentSetting());

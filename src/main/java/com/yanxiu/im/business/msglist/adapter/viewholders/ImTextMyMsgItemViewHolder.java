@@ -5,7 +5,6 @@ import android.view.View;
 import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
-import com.test.yanxiu.common_base.utils.EscapeCharacterUtils;
 import com.yanxiu.im.Constants;
 import com.yanxiu.im.R;
 import com.yanxiu.im.bean.MsgItemBean;
@@ -75,7 +74,7 @@ public class ImTextMyMsgItemViewHolder extends ImBaseMyMsgItemViewHolder {
         }
         currentMsgBean = msgData;
         loadAvaral(Constants.imAvatar);
-        mMsgTextView.setText(EscapeCharacterUtils.unescape(msgData.getMsg()));
+        mMsgTextView.setText(msgData.getMsg());
         if (msgData.getISender() != null) {
             msgData.getISender().addSenderListener(mSenderListener);
         }

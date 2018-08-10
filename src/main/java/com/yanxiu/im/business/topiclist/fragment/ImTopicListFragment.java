@@ -16,7 +16,6 @@ import com.bumptech.glide.GlideBuilder;
 import com.bumptech.glide.load.engine.cache.DiskLruCacheFactory;
 import com.test.yanxiu.common_base.ui.FaceShowBaseFragment;
 import com.test.yanxiu.common_base.ui.PublicLoadLayout;
-import com.test.yanxiu.common_base.utils.EscapeCharacterUtils;
 import com.test.yanxiu.common_base.utils.SharedSingleton;
 import com.test.yanxiu.common_base.utils.talkingdata.EventUpdate;
 import com.yanxiu.ImConfig;
@@ -384,7 +383,7 @@ public class ImTopicListFragment extends FaceShowBaseFragment
                 mRecyclerAdapter.notifyDataSetChanged();
             }
             final TopicItemBean topic = TopicInMemoryUtils.findTopicByTopicId(topicId, mRecyclerAdapter.getDataList());
-            Toast.makeText(getActivity(), "【已被移出" + EscapeCharacterUtils.unescape(topicName) + "】", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getActivity(), "【已被移出" + topicName + "】", Toast.LENGTH_SHORT).show();
 
 
         }

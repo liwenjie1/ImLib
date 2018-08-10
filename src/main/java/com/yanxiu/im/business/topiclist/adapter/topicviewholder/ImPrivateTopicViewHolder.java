@@ -50,7 +50,7 @@ public class ImPrivateTopicViewHolder<E extends TopicItemBean> extends ImTopicBa
         //设置icon
         topicImage.setImageResource(R.drawable.im_icon_chat_class);
         //设置topic name
-        String groupName = EscapeCharacterUtils.unescape(groupData.getGroup());
+        String groupName =groupData.getGroup();
         topicNameTv.setText("班级群聊(" + groupName + ")");
     }
     @Override
@@ -67,7 +67,7 @@ public class ImPrivateTopicViewHolder<E extends TopicItemBean> extends ImTopicBa
         if (member != null) {
             loadTopicAvaral(topicImage, member.getAvatar());
             //对转义字符进行处理
-            topicNameTv.setText(EscapeCharacterUtils.unescape(member.getName()));
+            topicNameTv.setText(member.getName());
         } else {
             YXLogger.e(getClass().getSimpleName(), "topic的member信息为空");
             loadTopicAvaral(topicImage, "");
@@ -90,7 +90,7 @@ public class ImPrivateTopicViewHolder<E extends TopicItemBean> extends ImTopicBa
         //有发送者信息 并且 不是自己发送的消息  需要添加 发送者名称
         if (sender != null) {
             if (showSenderName) {
-                msgContent.append(EscapeCharacterUtils.unescape(sender.getName()));
+                msgContent.append(sender.getName());
                 msgContent.append(":");
             }
 
@@ -99,7 +99,7 @@ public class ImPrivateTopicViewHolder<E extends TopicItemBean> extends ImTopicBa
             msgContent.append("  :");
         }
         boolean isImage = latestMsg.getContentType() == 20;
-        msgContent.append(isImage ? "[图片]" : EscapeCharacterUtils.unescape(latestMsg.getMsg()));
+        msgContent.append(isImage ? "[图片]" : latestMsg.getMsg());
         latestMsgContent.setText(msgContent.toString());
     }
 

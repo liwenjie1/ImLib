@@ -5,7 +5,6 @@ import android.view.View;
 import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
-import com.test.yanxiu.common_base.utils.EscapeCharacterUtils;
 import com.yanxiu.im.R;
 import com.yanxiu.im.bean.MsgItemBean;
 import com.yanxiu.im.business.msglist.adapter.viewholders.base.ImBaseMsgItemViewHolder;
@@ -61,7 +60,7 @@ public class ImTextMsgItemViewHolder extends ImBaseMsgItemViewHolder {
             senderName.setText("");
         }
 
-        msgTextView.setText(EscapeCharacterUtils.unescape(msgData.getMsg()));
+        msgTextView.setText(msgData.getMsg());
         dateTime.setText(ImDateFormateUtils.timeStrWithTime(msgData.getSendTime()));
         dateTime.setVisibility(msgData.isShowDate() ? VISIBLE : GONE);
     }
