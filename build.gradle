@@ -26,7 +26,7 @@ android {
     //sourceSet 配置 资源 0代表 使用管理端资源  1代表使用 学员端资源
     sourceSets {
         main {
-            if(rootProject.ext.imlibForAdminRes==0){
+            if(rootProject.ext.imlibResId==0){
                 res.srcDirs = ['src/main/res-admin']
             }else {
                 res.srcDirs = ['src/main/res']
