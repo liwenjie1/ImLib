@@ -31,11 +31,6 @@ android {
             }else {
                 res.srcDirs = ['src/main/res']
             }
-//            if (imlibForAdmin.toInteger() == 0) {
-//                res.srcDirs = ['src/main/res-admin']
-//            } else {
-//                res.srcDirs = ['src/main/res']
-//            }
         }
     }
 
