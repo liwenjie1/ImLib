@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <declare-styleable name="ImTitleLayout">
+        <attr name="im_title_left_img" format="reference"/>
+        <attr name="im_title_right_img" format="reference"/>
+
+        <attr name="im_left_margin" format="dimension|reference"/>
+        <attr name="im_right_margin" format="dimension|reference"/>
+
+        <attr name="im_title_bottom_line_color" format="color|reference"/>
+        <attr name="im_title_bottom_line_height" format="dimension"/>
+
+
+    </declare-styleable>
+
+    <declare-styleable name="RoundCornerImageView_new">
+        <attr name="radius" format="dimension"/>
+        <attr name="over_color" format="color"/>
+    </declare-styleable>
+    <declare-styleable name="RoundCornerMaskView_new" tools:ignore="ResourceName">
+        <attr name="mask_color" format="color" tools:ignore="ResourceName"/>
+        <attr name="corner_radius" format="dimension" tools:ignore="ResourceName"/>
+    </declare-styleable>
+
+    <declare-styleable name="CircleView" tools:ignore="ResourceName">
+        <attr name="circle_color" format="color" tools:ignore="ResourceName"/>
+    </declare-styleable>
+
+
+
+    <declare-styleable name="ImSettingItemView">
+        <attr name="setting_name" format="string|reference"/>
+        <attr name="setting_summery" format="string|reference"/>
+    </declare-styleable>
+</resources>

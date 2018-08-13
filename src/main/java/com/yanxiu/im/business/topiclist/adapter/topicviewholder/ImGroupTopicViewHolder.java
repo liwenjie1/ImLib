@@ -5,7 +5,6 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.test.yanxiu.common_base.utils.EscapeCharacterUtils;
 import com.yanxiu.im.Constants;
 import com.yanxiu.im.R;
 import com.yanxiu.im.bean.MsgItemBean;

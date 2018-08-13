@@ -23,6 +23,21 @@ android {
 //        }
     }
 
+    //sourceSet 配置 资源 0代表 使用管理端资源  1代表使用 学员端资源
+    sourceSets {
+        main {
+            if (imlibForAdmin.toInteger() == 0) {
+                res.srcDirs = ['src/main/res-admin']
+            } else {
+                res.srcDirs = ['src/main/res']
+            }
+        }
+    }
+
+
+
+
+
 }
 dependencies {
     api imLibDependencies.values()

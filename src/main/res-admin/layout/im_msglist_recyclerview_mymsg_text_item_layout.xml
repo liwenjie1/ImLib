@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@null"
+    xmlns:tools="http://schemas.android.com/tools"
+    xmlns:im="http://schemas.android.com/apk/res-auto">
+
+
+    <TextView
+        android:id="@+id/date"
+        android:layout_marginTop="@dimen/im_msglist_item_topmergin"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:textColor="@color/im_msglist_date_textColor"
+        android:paddingLeft="@dimen/im_msglist_date_leftpadding"
+        android:paddingRight="@dimen/im_msglist_date_rightpadding"
+        android:background="@drawable/im_msglist_date_bg"
+        android:gravity="center"
+        android:visibility="visible"
+        android:text="星期八" />
+    <RelativeLayout
+        android:id="@+id/msg_contain"
+        android:background="@null"
+        android:layout_marginTop="15dp"
+        android:layout_below="@+id/date"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <ImageView
+            android:id="@+id/sender_avaral"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_alignParentRight="true"
+            android:scaleType="fitXY"
+            tools:src="@drawable/im_chat_default" />
+
+        <com.yanxiu.im.business.view.RoundCornerMaskView_new
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_alignParentRight="true"
+            im:corner_radius="5dp"
+            im:mask_color="#dfe3e5" />
+
+        <RelativeLayout
+            android:id="@+id/rl_msg"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignTop="@id/sender_avaral"
+            android:layout_marginLeft="64dp"
+            android:layout_marginRight="10dp"
+            android:layout_toLeftOf="@id/sender_avaral">
+
+            <TextView
+                android:id="@+id/msg_textview"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_msg_blue"
+                android:gravity="center_vertical"
+                android:lineSpacingExtra="4dp"
+                android:minHeight="40dp"
+                android:paddingBottom="10dp"
+                android:paddingLeft="11dp"
+                android:paddingRight="16dp"
+                android:paddingTop="10dp"
+                android:textColor="#ffffff"
+                android:textSize="16dp"
+                android:textIsSelectable="true"
+                tools:text="这就是个测试行高 测试测试测试测试测试测试测绘测试" />
+
+        </RelativeLayout>
+
+        <ProgressBar
+            android:id="@+id/state_sending_progressbar"
+            style="@android:style/Widget.ProgressBar.Small"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_alignLeft="@id/rl_msg"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="-34dp"
+            android:layout_marginTop="15dp" />
+
+        <ImageView
+            android:id="@+id/state_fail_imageview"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_alignLeft="@id/rl_msg"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="-34dp"
+            android:layout_marginTop="15dp"
+            android:src="@drawable/icon_send_state_failed" />
+
+
+    </RelativeLayout>
+
+    <View
+        android:layout_below="@+id/msg_contain"
+        android:id="@+id/bottom_padding_view"
+        android:layout_width="match_parent"
+        android:visibility="gone"
+        android:layout_height="10dp"/>
+
+</RelativeLayout>
