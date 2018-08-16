@@ -174,7 +174,7 @@ public class TopicListPresenter implements TopicListContract.Presenter {
                         mHandler.post(new Runnable() {
                             @Override
                             public void run() {
-                                view.onTopicListUpdate();
+                                view.onTopicListUpdate(null);
                             }
                         });
                     }
@@ -339,7 +339,7 @@ public class TopicListPresenter implements TopicListContract.Presenter {
                             mHandler.post(new Runnable() {
                                 @Override
                                 public void run() {
-                                    view.onTopicListUpdate();
+                                    view.onTopicListUpdate(null);
                                 }
                             });
                         }

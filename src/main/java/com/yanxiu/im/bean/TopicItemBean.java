@@ -165,4 +165,6 @@ public class TopicItemBean extends YXBaseBean {
     public void setMsgList(List<MsgItemBean> msgList) {
         this.msgList = msgList;
     }
+
+
 }

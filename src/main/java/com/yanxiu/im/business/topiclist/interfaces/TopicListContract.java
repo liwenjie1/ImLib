@@ -12,7 +12,7 @@ import java.util.List;
 public interface TopicListContract {
     interface View<E>{
         void onGetDbTopicList(List<E> dbTopicList);
-        void onTopicListUpdate();
+        void onTopicListUpdate(List<E> topicList);
         void onTopicUpdate(long topicId);
         void onNewMsgReceived(long topicId);
 

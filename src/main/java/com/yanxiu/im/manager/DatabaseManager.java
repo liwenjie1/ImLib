@@ -22,6 +22,7 @@ import com.yanxiu.im.event.MigrateMockTopicEvent;
 import org.greenrobot.eventbus.EventBus;
 import org.litepal.LitePal;
 import org.litepal.LitePalDB;
+import org.litepal.crud.ClusterQuery;
 import org.litepal.crud.DataSupport;
 
 import java.util.ArrayList;
@@ -38,7 +39,7 @@ import java.util.List;
 // 2, ClusterQuery中每种类型的只能有一次，连续.where两次，则覆盖
 public class DatabaseManager {
     public final static int pagesize = 20;
-    public final static int minMsgId=-100;
+    public final static int minMsgId = -100;
 
     /**
      * 初始化db。
@@ -427,6 +428,79 @@ public class DatabaseManager {
 
         return topicItemBeans;
     }
+
+    /**
+     * 批量保存 topic 数据
+     * 数据库新建
+     */
+    public static ArrayList<TopicItemBean> saveTopics(ArrayList<ImTopic_new> imTopics) {
+        //创建 dbTopic 列表
+        ArrayList<TopicItemBean> result = new ArrayList<>();
+        ArrayList<DbTopic> dbTopics = new ArrayList<>();
+
+        for (ImTopic_new imTopic : imTopics) {
+            DbTopic dbTopic = new DbTopic();
+            dbTopic.setName(imTopic.topicName);
+            dbTopic.setTopicId(imTopic.topicId);
+            dbTopic.setChange(imTopic.topicChange);
+            dbTopic.setLatestMsgId(imTopic.latestMsgId);
+            dbTopic.setLatestMsgTime(imTopic.latestMsgTime);
+            dbTopic.setType(imTopic.topicType);
+            dbTopic.setShowDot(false);
+            TopicItemBean topicItemBean = DatabaseManager.changeDbTopicToTopicItemBean(dbTopic);
+            dbTopics.add(dbTopic);
+            result.add(topicItemBean);
+        }
+        if (dbTopics != null && dbTopics.size() != 0) {
+            DataSupport.saveAll(dbTopics);
+        }
+        return result;
+    }
+
+    /**
+     * 更新所有 有更新的 topicitembean
+     */
+    public static void updateTopics(ArrayList<TopicItemBean> topics) {
+        //首先查找到所有 数据库中的 topic
+        if (topics == null || topics.size() == 0) {
+            return;
+        }
+
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append("(");
+        for (TopicItemBean topic : topics) {
+            stringBuilder.append(topic.getTopicId());
+            stringBuilder.append(",");
+        }
+        stringBuilder.setLength(stringBuilder.length() - 1);
+        stringBuilder.append(")");
+
+        ClusterQuery query = DataSupport.where("topicId in " + stringBuilder.toString());
+        List<DbTopic> dbTopics = null;
+        if (query != null) {
+            dbTopics = query.find(DbTopic.class);
+        }
+        if (dbTopics != null) {
+            for (DbTopic dbTopic : dbTopics) {
+                for (TopicItemBean update : topics) {
+                    if (dbTopic.getTopicId() == update.getTopicId()) {
+                        dbTopic.latestMsgId = update.getLatestMsgId();
+                        dbTopic.latestMsgTime = update.getLatestMsgTime();
+                        dbTopic.setGroup(update.getGroup());
+                        dbTopic.setChange(update.getChange());
+                        dbTopic.setShowDot(update.isShowDot());
+                        dbTopic.setType(update.getType());
+                        dbTopic.setFromTopic(update.getFromTopic());
+                        dbTopic.setName(update.getName());
+                        break;
+                    }
+                }
+            }
+        }
+        //批量更新
+        DataSupport.saveAll(dbTopics);
+    }
+
 
     /**
      * 更新topic数据库（不更新msglist）
@@ -826,10 +900,30 @@ public class DatabaseManager {
      * 根据给定的topic id 删除数据库信息
      */
     public static void deleteTopicById(long topicId) {
-        Log.i("mockTopic", "deleteTopicById: "+topicId);
+        Log.i("mockTopic", "deleteTopicById: " + topicId);
         DataSupport.deleteAll(DbTopic.class,
                 "topicId = ? ", String.valueOf(topicId));
 
+    }
+
+    /**
+     * 批量删除 topic
+     */
+    public static void deleteTopicList(ArrayList<TopicItemBean> topics) {
+        if (topics == null || topics.size() == 0) {
+            return;
+        }
+
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append("(");
+        for (TopicItemBean topic : topics) {
+            stringBuilder.append(topic.getTopicId());
+            stringBuilder.append(",");
+        }
+        stringBuilder.setLength(stringBuilder.length() - 1);
+        stringBuilder.append(")");
+
+        DataSupport.deleteAll(DbTopic.class, "topicId in " + stringBuilder.toString());
     }
 
 
@@ -913,7 +1007,7 @@ public class DatabaseManager {
             List<DbTopic> allPrivateRealTopicList = DataSupport
                     .where("topicid >= ? and type = ?", "0", "1")
                     .order("topicid asc")
-                    .find(DbTopic.class,true);
+                    .find(DbTopic.class, true);
 
             if (allPrivateRealTopicList == null || allPrivateRealTopicList.isEmpty()) {
                 return;
@@ -921,26 +1015,26 @@ public class DatabaseManager {
             for (int i = 0; i < mockTopicList.size(); i++) { //获取每一个mockTopic
 
                 DbTopic mockTopic = mockTopicList.get(i);
-                if (mockTopic.getMembers() == null || mockTopic.getMembers().size()<2)
+                if (mockTopic.getMembers() == null || mockTopic.getMembers().size() < 2)
                     continue;
                 //因为是私聊，所以只能有两个member
                 DbMember mockMember1 = mockTopic.getMembers().get(0);
                 DbMember mockMember2 = mockTopic.getMembers().get(1);
 
-                long mockMemberId1=mockMember1.getImId();
-                long mockMemberId2=mockMember2.getImId();
+                long mockMemberId1 = mockMember1.getImId();
+                long mockMemberId2 = mockMember2.getImId();
 
 
                 for (int j = 0; j < allPrivateRealTopicList.size(); j++) { //遍历私聊的realTopic
 
                     DbTopic privateRealTopic = allPrivateRealTopicList.get(j);
-                    if (privateRealTopic.getMembers() == null || privateRealTopic.getMembers().size()<2)
+                    if (privateRealTopic.getMembers() == null || privateRealTopic.getMembers().size() < 2)
                         continue;
                     //因为是私聊，所以只能有两个member
                     DbMember realMember1 = privateRealTopic.getMembers().get(0);
                     DbMember realMember2 = privateRealTopic.getMembers().get(1);
-                    long realMemberId1=realMember1.getImId();
-                    long realMemberId2=realMember2.getImId();
+                    long realMemberId1 = realMember1.getImId();
+                    long realMemberId2 = realMember2.getImId();
                     if ((mockMemberId1 == realMemberId1 && mockMemberId2 == realMemberId2) || (mockMemberId1 == realMemberId2 && mockMemberId2 == realMemberId1)) {
                         //只要私聊人员相同，那么就是同一个私聊topic
                         migrateMockTopicToRealTopic(mockTopic, privateRealTopic);
@@ -990,8 +1084,8 @@ public class DatabaseManager {
         //5.把realTopic中的msg合并到mockTopicItemBean中。
         //注释：mockTopic里的msg的msgid应该全部都是-1。因为msg为倒序，且realTopic里的msgid都大于0，
         // 所以需要把realTopic里的msg添加到内存的mockTopic里msglist的头部
-       List<MsgItemBean> realMsgs= getTopicMsgs(realTopic.getTopicId(),-100,pagesize);
-        if (realMsgs!= null && !realMsgs.isEmpty()) {
+        List<MsgItemBean> realMsgs = getTopicMsgs(realTopic.getTopicId(), -100, pagesize);
+        if (realMsgs != null && !realMsgs.isEmpty()) {
             mockTopicItemBean.getMsgList().clear();
             mockTopicItemBean.getMsgList().addAll(realMsgs);
         }
@@ -1148,6 +1242,75 @@ public class DatabaseManager {
             }
         }
     }
+
+    /**
+     * 批量保存 或 更新 member 信息
+     * 将获取的 member 信息进行 保存
+     * 应存在的进行数据库更新操作
+     * 不存在的执行插入操作
+     */
+    public static ArrayList<DbMember> updateOrSaveMembers(List<ImTopic_new.Member> imMembers) {
+        //首先查找到所有 数据库中的 topic
+        ArrayList<DbMember> result=new ArrayList<>();
+        if (imMembers == null || imMembers.size() == 0) {
+            return result;
+        }
+
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append("(");
+        for (ImTopic_new.Member imMember : imMembers) {
+            stringBuilder.append(imMember.memberInfo.imId);
+            stringBuilder.append(",");
+        }
+        stringBuilder.setLength(stringBuilder.length() - 1);
+        stringBuilder.append(")");
+
+        ClusterQuery query = DataSupport.where("imId in " + stringBuilder.toString());
+        //找到所有已经存在的 member 进行更新操作
+        ArrayList<ImTopic_new.Member> newMembers = new ArrayList<>();
+
+        final List<DbMember> dbMembers = query.find(DbMember.class);
+
+        for (ImTopic_new.Member imMember : imMembers) {
+            boolean has = false;
+            for (DbMember dbMember : dbMembers) {
+                if (dbMember.getImId() == imMember.memberInfo.imId) {
+                    has = true;
+                    dbMember.setName(imMember.memberInfo.memberName);
+                    dbMember.setAvatar(imMember.memberInfo.avatar);
+                    break;
+                }
+            }
+            if (!has) {
+                newMembers.add(imMember);
+            }
+        }
+        final ArrayList<DbMember> dbNewMember = saveMembers(newMembers);
+        if (dbNewMember.size()!=0) {
+            result.addAll(dbNewMember);
+        }
+        //将已有的数据添加到结果集合中
+        result.addAll(dbMembers);
+
+        return result;
+    }
+    /**
+     * 批量添加 member 到数据库中并返回 dbmember 集合
+     * */
+    private static ArrayList<DbMember> saveMembers(List<ImTopic_new.Member> imMembers) {
+        //生成 dbmember 列表
+        ArrayList<DbMember> dbMembers=new ArrayList<>();
+        for (ImTopic_new.Member imMember : imMembers) {
+            DbMember dbMember=new DbMember();
+            dbMember.setAvatar(imMember.memberInfo.avatar);
+            dbMember.setImId(imMember.memberInfo.imId);
+            dbMember.setName(imMember.memberInfo.memberName);
+            dbMembers.add(dbMember);
+        }
+        DataSupport.saveAll(dbMembers);
+        return dbMembers;
+    }
+
 
     //mockTpoic end
 

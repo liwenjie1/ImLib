@@ -29,12 +29,12 @@ import com.yanxiu.im.business.interfaces.ImUserRemoveFromTopicListener;
 import com.yanxiu.im.business.interfaces.RecyclerViewItemOnClickListener;
 import com.yanxiu.im.business.interfaces.TitlebarActionListener;
 import com.yanxiu.im.business.msglist.activity.ImMsgListActivity;
-import com.yanxiu.im.business.topiclist.adapter.ImTopicListRecyclerViewAdapter;
 import com.yanxiu.im.business.topiclist.adapter.NpaLinearLayoutManager;
+import com.yanxiu.im.business.topiclist.adapter.TopicDataListAdapter;
 import com.yanxiu.im.business.topiclist.interfaces.MqttConnectContract;
 import com.yanxiu.im.business.topiclist.interfaces.TopicListContract;
 import com.yanxiu.im.business.topiclist.interfaces.impls.MqttConnectPresenter;
-import com.yanxiu.im.business.topiclist.interfaces.impls.TopicListPresenter;
+import com.yanxiu.im.business.topiclist.interfaces.impls.TopicDataPresenter;
 import com.yanxiu.im.business.utils.TopicInMemoryUtils;
 import com.yanxiu.im.business.view.ImTitleLayout;
 import com.yanxiu.im.db.DbMember;
@@ -71,10 +71,12 @@ public class ImTopicListFragment extends FaceShowBaseFragment
     private ImTitleLayout mImTitleLayout;
 
     private RecyclerView im_topiclist_fragment_recyclerview;
-    private ImTopicListRecyclerViewAdapter<TopicItemBean> mRecyclerAdapter;
+//    private ImTopicListRecyclerViewAdapter<TopicItemBean> mRecyclerAdapter;
+    private TopicDataListAdapter<TopicItemBean> mRecyclerAdapter;
     private View root;
 
-    private TopicListPresenter topicListPresenter;
+//    private TopicListPresenter topicListPresenter;
+    private TopicDataPresenter topicListPresenter;
     private MqttConnectPresenter mqttConnectPresenter;
 
     /**
@@ -119,9 +121,12 @@ public class ImTopicListFragment extends FaceShowBaseFragment
         layoutManager.setStackFromEnd(false);
         im_topiclist_fragment_recyclerview.setLayoutManager(layoutManager);
 
-        topicListPresenter = new TopicListPresenter(this, getActivity());
+//        topicListPresenter = new TopicListPresenter(this, getActivity());
+        topicListPresenter = new TopicDataPresenter(this);
+
         mqttConnectPresenter = new MqttConnectPresenter(this);
-        mRecyclerAdapter = new ImTopicListRecyclerViewAdapter<TopicItemBean>(getActivity());
+//        mRecyclerAdapter = new ImTopicListRecyclerViewAdapter<TopicItemBean>(getActivity());
+        mRecyclerAdapter = new TopicDataListAdapter<>(getActivity());
     }
 
     private void listenerInit() {
@@ -260,7 +265,6 @@ public class ImTopicListFragment extends FaceShowBaseFragment
     /**
      * mqtt 部分的连接回调 连接成功后 被调用
      * 当mqtt连接成功后 发起一次http请求来刷新topic 数据
-     * 每一条topic更新完成后 会回调 {@link ImTopicListFragment#onTopicListUpdate()}方法
      */
     @Override
     public void onMqttConnected() {
@@ -353,7 +357,7 @@ public class ImTopicListFragment extends FaceShowBaseFragment
             topicListPresenter.doAddedToTopic(event.topicId, true);
         } else if (event.type == MqttProtobufManager.TopicChange.RemoveFrom) { //topic删除某个成员
             //检查 是否是自己被移除  两种结果  1、自己被移除 2、其他成员被移除 通过不同的方法回调
-            topicListPresenter.checkUserRemove(event.topicId, mRecyclerAdapter.getDataList());
+//            topicListPresenter.checkUserRemove(event.topicId, mRecyclerAdapter.getDataList());
         }
     }
 
@@ -438,7 +442,9 @@ public class ImTopicListFragment extends FaceShowBaseFragment
      * 获取更新了topiclist中topic的信息后的回调
      */
     @Override
-    public void onTopicListUpdate() {
+    public void onTopicListUpdate(List<TopicItemBean> datas) {
+        mRecyclerAdapter.setDataList(datas);
+        mRecyclerAdapter.notifyDataSetChanged();
         if (SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST) == null) {
             return;
         }
@@ -447,7 +453,7 @@ public class ImTopicListFragment extends FaceShowBaseFragment
             mRecyclerAdapter.notifyDataSetChanged();
         }
         //检查红点状态
-        topicListPresenter.doCheckRedDot(mRecyclerAdapter.getDataList());
+//        topicListPresenter.doCheckRedDot(mRecyclerAdapter.getDataList());
 
     }
     //endregion
