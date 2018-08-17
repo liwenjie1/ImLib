@@ -2,6 +2,7 @@ package com.yanxiu.im.manager;
 
 import android.content.ContentValues;
 import android.support.annotation.NonNull;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.orhanobut.logger.Logger;
@@ -1251,7 +1252,7 @@ public class DatabaseManager {
      */
     public static ArrayList<DbMember> updateOrSaveMembers(List<ImTopic_new.Member> imMembers) {
         //首先查找到所有 数据库中的 topic
-        ArrayList<DbMember> result=new ArrayList<>();
+        ArrayList<DbMember> result = new ArrayList<>();
         if (imMembers == null || imMembers.size() == 0) {
             return result;
         }
@@ -1286,7 +1287,7 @@ public class DatabaseManager {
             }
         }
         final ArrayList<DbMember> dbNewMember = saveMembers(newMembers);
-        if (dbNewMember.size()!=0) {
+        if (dbNewMember.size() != 0) {
             result.addAll(dbNewMember);
         }
         //将已有的数据添加到结果集合中
@@ -1294,14 +1295,15 @@ public class DatabaseManager {
 
         return result;
     }
+
     /**
      * 批量添加 member 到数据库中并返回 dbmember 集合
-     * */
+     */
     private static ArrayList<DbMember> saveMembers(List<ImTopic_new.Member> imMembers) {
         //生成 dbmember 列表
-        ArrayList<DbMember> dbMembers=new ArrayList<>();
+        ArrayList<DbMember> dbMembers = new ArrayList<>();
         for (ImTopic_new.Member imMember : imMembers) {
-            DbMember dbMember=new DbMember();
+            DbMember dbMember = new DbMember();
             dbMember.setAvatar(imMember.memberInfo.avatar);
             dbMember.setImId(imMember.memberInfo.imId);
             dbMember.setName(imMember.memberInfo.memberName);
@@ -1310,6 +1312,109 @@ public class DatabaseManager {
         DataSupport.saveAll(dbMembers);
         return dbMembers;
     }
+
+    /**
+     * 批量保存 或更新 msg
+     * 目前查找方法有问题
+     *  查找结果为空 -----
+     *
+     *  临时方案为 查找所有 数据 然后去重
+     *
+     *
+     */
+    public static boolean updateOrSaveMsgs(ArrayList<ImMsg_new> imMsgList) {
+        if (imMsgList == null || imMsgList.size() == 0) {
+            return false;
+        }
+        //首先查找到所有 数据库中的 topic msg 分两个表 db msg 与 dbmy msg
+
+        //首先分两个列表  sender id 为我自己的
+        ArrayList<ImMsg_new> myImMsg = new ArrayList<>();
+        ArrayList<ImMsg_new> otherImMsg = new ArrayList<>();
+        for (ImMsg_new msgNew : imMsgList) {
+            if (msgNew.senderId == Constants.imId) {
+                myImMsg.add(msgNew);
+            } else {
+                otherImMsg.add(msgNew);
+            }
+        }
+        /*分别在 不同的表中进行查找*/
+        //找到所有已经存在的 member 进行更新操作
+        final List<DbMsg> dbMsgs = findMsgs(null);
+
+        final List<DbMyMsg> dbMyMsgs = findMyMsgs(null);
+
+        /*去重*/
+        ArrayList<DbMsg> toSaveMsg=new ArrayList<>(); 
+        ArrayList<DbMsg> toSaveMyMsg=new ArrayList<>();
+        for (ImMsg_new msgNew : otherImMsg) {
+            boolean has=false;
+            for (DbMsg dbMsg : dbMsgs) {
+                Log.i("database", "updateOrSaveMsgs: "+ dbMsg.getReqId() +"---- "+msgNew.reqId);
+                if (TextUtils.equals(dbMsg.getReqId(),msgNew.reqId)) {
+                    Log.e("database", "------------------------------------------------");
+                    has=true;
+                    break;
+                }
+            }
+            if (!has) {
+                DbMsg dbMsg=new DbMsg();
+                dbMsg.setReqId(msgNew.reqId);
+                dbMsg.setMsgId(msgNew.msgId);
+                dbMsg.setTopicId(msgNew.topicId);
+                dbMsg.setSenderId(msgNew.senderId);
+                dbMsg.setSendTime(msgNew.sendTime);
+                dbMsg.setContentType(msgNew.contentType);
+                dbMsg.setMsg(msgNew.contentData.msg);
+                dbMsg.setThumbnail(msgNew.contentData.thumbnail);
+                dbMsg.setViewUrl(msgNew.contentData.viewUrl);
+                dbMsg.setWidth(msgNew.contentData.width);
+                dbMsg.setHeight(msgNew.contentData.height);
+                toSaveMsg.add(dbMsg);
+            }
+        }
+
+        for (ImMsg_new msgNew : myImMsg) {
+            boolean has=false;
+            for (DbMyMsg dbMyMsg : dbMyMsgs) {
+                if (TextUtils.equals(dbMyMsg.getReqId(),msgNew.reqId)) {
+                    has=true;
+                    /*更新？ 貌似不需要*/
+                    break;
+                }
+            }
+            if (!has) {
+                DbMyMsg myMsg=new DbMyMsg();
+                myMsg.setReqId(msgNew.reqId);
+                myMsg.setMsgId(msgNew.msgId);
+                myMsg.setTopicId(msgNew.topicId);
+                myMsg.setSenderId(msgNew.senderId);
+
+                myMsg.setContentType(msgNew.contentType);
+                myMsg.setMsg(msgNew.contentData.msg);
+                myMsg.setThumbnail(msgNew.contentData.thumbnail);
+                myMsg.setViewUrl(msgNew.contentData.viewUrl);
+                myMsg.setWidth(msgNew.contentData.width);
+                myMsg.setHeight(msgNew.contentData.height);
+                //我的消息特有
+                myMsg.setState(DbMyMsg.State.Success.ordinal());
+                myMsg.setSendTime(msgNew.sendTime);
+                toSaveMyMsg.add(myMsg);
+            }
+        }
+
+        DataSupport.saveAll(toSaveMsg);
+        DataSupport.saveAll(toSaveMyMsg);
+        return true;
+    }
+
+    private static List<DbMsg> findMsgs(String... reqids){
+        return DataSupport.findAll(DbMsg.class);
+    }
+    private static List<DbMyMsg> findMyMsgs(String... reqids){
+        return DataSupport.findAll(DbMyMsg.class);
+    }
+
 
 
     //mockTpoic end

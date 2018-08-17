@@ -1,6 +1,7 @@
 package com.yanxiu.im.business.topiclist.interfaces.impls;
 
 import android.os.Handler;
+import android.util.Log;
 
 import com.yanxiu.im.Constants;
 import com.yanxiu.im.bean.MsgItemBean;
@@ -16,7 +17,7 @@ import java.util.List;
  */
 public class TopicDataPresenter implements TopicListContract.Presenter {
     private Handler uihandler = new Handler();
-
+    private final String TAG=getClass().getSimpleName();
     private TopicListContract.View<TopicItemBean> mView;
 
     public TopicDataPresenter(TopicListContract.View<TopicItemBean> view) {
@@ -49,21 +50,39 @@ public class TopicDataPresenter implements TopicListContract.Presenter {
         //更新 用户的 topic 列表
         TopicDataReponsitory.getInstance().updateTopicsInfo(Constants.imToken, new TopicDataReponsitory.ActionCallback() {
             @Override
-            public void onUpdate(final ArrayList<TopicItemBean> datalist) {
-                if (mView != null) {
-                    uihandler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            mView.onTopicListUpdate(datalist);
-                        }
-                    });
-                }
-                //更新失败……
+            public void onListUpdated(final ArrayList<TopicItemBean> datas) {
+                /*topic 列表更新 完成*/
+                uihandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        Log.i(TAG, "onListUpdated: ");
+                        mView.onTopicListUpdate(datas);
+                    }
+                });
             }
 
             @Override
-            public void onFinished(boolean success, final String msg) {
+            public void onTopicMemberUpdated(final long topicId) {
+                /*成员更新完成*/
+                uihandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        Log.i(TAG, "onTopicMemberUpdated: ");
+//                        mView.onTopicUpdate(topicId);
+                    }
+                });
+            }
 
+            @Override
+            public void onTopicMsgUpdated(final long topicId) {
+                /*最新消息更新完成*/
+                uihandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        Log.i(TAG, "onTopicMsgUpdated: ");
+                        mView.onTopicUpdate(topicId);
+                    }
+                });
             }
         });
     }

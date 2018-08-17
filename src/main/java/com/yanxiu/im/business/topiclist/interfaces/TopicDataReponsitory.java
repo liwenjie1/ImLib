@@ -1,7 +1,9 @@
 package com.yanxiu.im.business.topiclist.interfaces;
 
 import com.yanxiu.im.Constants;
+import com.yanxiu.im.bean.MsgItemBean;
 import com.yanxiu.im.bean.TopicItemBean;
+import com.yanxiu.im.bean.net_bean.ImMsg_new;
 import com.yanxiu.im.bean.net_bean.ImTopic_new;
 import com.yanxiu.im.business.topiclist.serverApi.TopicApiImpl;
 import com.yanxiu.im.db.DbMember;
@@ -85,12 +87,12 @@ public class TopicDataReponsitory {
      * 更新 topic 数据
      * 直接向服务器请求最新的 topiclist
      */
-    public void updateTopicsInfo(String token, final ActionCallback callback) {
+    public void updateTopicsInfo(final String token, final ActionCallback callback) {
         TopicApiImpl.requestUserTopicList(token, new TopicApiImpl.TopicListCallback<ImTopic_new>() {
             @Override
             public void onGetTopicList(ArrayList<ImTopic_new> topicList) {
-                if (topicList==null) {
-                    callback.onFinished(false,"返回空");
+                if (topicList == null) {
+                    callback.onListUpdated(null);
                     return;
                 }
                 //获取了最新的列表信息
@@ -103,10 +105,10 @@ public class TopicDataReponsitory {
                 ArrayList<TopicItemBean> needMsgUpdate = new ArrayList<>();
                 /*只处理删除*/
                 for (TopicItemBean local : dataInMemory) {
-                    boolean remain=false;
+                    boolean remain = false;
                     for (ImTopic_new server : topicList) {
-                        if (local.getTopicId()==server.topicId) {
-                            remain=true;
+                        if (local.getTopicId() == server.topicId) {
+                            remain = true;
                             break;
                         }
                     }
@@ -116,10 +118,10 @@ public class TopicDataReponsitory {
                 }
                 /*处理 member msg 更新 分类*/
                 for (ImTopic_new imTopic : topicList) {
-                    boolean hasThis=false;
+                    boolean hasThis = false;
                     for (TopicItemBean local : dataInMemory) {
-                        if (local.getTopicId()==imTopic.topicId) {
-                            hasThis=true;
+                        if (local.getTopicId() == imTopic.topicId) {
+                            hasThis = true;
                             int localChange = Integer.valueOf(local.getChange());
                             int serverChange = Integer.valueOf(imTopic.topicChange);
                             long localLatestId = Long.valueOf(local.getLatestMsgId());
@@ -156,13 +158,24 @@ public class TopicDataReponsitory {
                 dataInMemory.addAll(newBeans);
                 //列表更新完成 
                 if (callback != null) {
-                    callback.onUpdate(dataInMemory);
-                    callback.onFinished(true,"完成列表更新");
+                    callback.onListUpdated(dataInMemory);
                 }
-                //执行下一步 网络请求 对需要更新 member的 topic 进行 member 更新请求
-                // TODO: 2018/8/16  需要进行 队列处理
+
+                /*请求的实现层自带队列处理  网络请求的实现类 内部实现了请求的队列控制*/
+
+                /*新加入的 topic 优先级最高 更新 member 与 msg */
+                for (TopicItemBean topicItemBean : newBeans) {
+                    //按照 member + msg 的穿插顺序请求每个 topic 的信息
+                    updateTopicMembersInfo(topicItemBean, callback);
+                    updateLatestPageMsg(topicItemBean, callback);
+                }
+                /*接下来是仅需要更新 msg 的 topic*/
+                for (TopicItemBean topicItemBean : needMsgUpdate) {
+                    updateLatestPageMsg(topicItemBean, callback);
+                }
+                /*最后为 只需要更新 member 的 topic*/
                 for (TopicItemBean topicItemBean : needUpdateMember) {
-                    updateTopicMembersInfo(topicItemBean);
+                    updateTopicMembersInfo(topicItemBean,callback);
                 }
             }
         });
@@ -173,11 +186,11 @@ public class TopicDataReponsitory {
      * 更新数据库中对应的 memerb 数据
      * 以及 内存中对应 topic 中的 member 信息
      */
-    public void updateTopicMembersInfo(final TopicItemBean itemBean) {
+    public void updateTopicMembersInfo(final TopicItemBean itemBean, final ActionCallback callback) {
         TopicApiImpl.requestTopicInfo(Constants.imToken, String.valueOf(itemBean.getTopicId()), new TopicApiImpl.TopicListCallback<ImTopic_new>() {
             @Override
             public void onGetTopicList(ArrayList<ImTopic_new> topicList) {
-                if (topicList==null) {
+                if (topicList == null) {
                     return;
                 }
                 //成功获取了 topic 的 member 信息
@@ -186,18 +199,30 @@ public class TopicDataReponsitory {
                 final List<ImTopic_new.Member> imMembers = topicList.get(0).members;
                 final ArrayList<DbMember> members = DatabaseManager.updateOrSaveMembers(imMembers);
                 itemBean.setMembers(members);
+                callback.onTopicMemberUpdated(itemBean.getTopicId());
             }
         });
     }
 
 
-
     /**
-     * 更新 topic 下的 msg 信息
-     * 可能会用到 比如 更新 mymsg 的数据
+     * 更新 topic 下的 最新一页的信息
      */
-    public void loadTopicMsgPage(TopicItemBean itemBean) {
-
+    public void updateLatestPageMsg(final TopicItemBean itemBean, final ActionCallback callback) {
+        TopicApiImpl.requestLatestTopicMsgs(Constants.imToken, String.valueOf(itemBean.getTopicId()), new TopicApiImpl.MsgListCallback<ImMsg_new>() {
+            @Override
+            public void onGetMsgList(ArrayList<ImMsg_new> dataList) {
+                if (dataList == null) {
+                    return;
+                }
+                //成功获取了最新一页的 msg 消息 首先执行数据库的保存 可能会有大量的 重复数据 在数据库的是县城进行处理
+                DatabaseManager.updateOrSaveMsgs(dataList);
+                //从数据库读取 一页 整合过的 msglist
+                final ArrayList<MsgItemBean> topicMsgs = DatabaseManager.getTopicMsgs(itemBean.getTopicId(), DatabaseManager.minMsgId, DatabaseManager.pagesize);
+                itemBean.setMsgList(topicMsgs);
+                callback.onTopicMsgUpdated(itemBean.getTopicId());
+            }
+        });
     }
 
 
@@ -208,20 +233,11 @@ public class TopicDataReponsitory {
         if (dbTopics != null) {
             dataInMemory.addAll(dbTopics);
         }
-        //唯一一次外部获取 引用 此后 数据层只通知 事件状态 不在返回数据
         callback.onGetTopicList(dataInMemory);
     }
 
     public interface GetTopicListCallback {
         void onGetTopicList(ArrayList<TopicItemBean> topicItemBeans);
-    }
-
-    public void getTopicMembers(String topicId) {
-
-    }
-
-    public void getTopicMsgs(int limit, int offset) {
-
     }
 
     /**
@@ -230,7 +246,7 @@ public class TopicDataReponsitory {
      * 然后数据库读取
      * 最后网络请求获取
      */
-    public void getTopicInfo(final String topicId, final ActionCallback callback) {
+    public void getTopicInfo(final String topicId, final DataPickupCallback callback) {
         long id = -1;
         try {
             id = Long.valueOf(topicId);
@@ -246,7 +262,7 @@ public class TopicDataReponsitory {
             if (topicItemBean.getTopicId() == id) {
                 //内存中找到
                 result.add(topicItemBean);
-                callback.onFinished(true, "result");
+//                callback.onFinished(true, "result");
                 break;
             }
         }
@@ -279,9 +295,24 @@ public class TopicDataReponsitory {
         }
     }
 
+    /**
+     * 指定某信息获取的回调
+     * 主要用于 消息列表
+     */
+    public interface DataPickupCallback {
+
+    }
+
+    /**
+     * 更新动作的回调
+     * 主要用于列表更新
+     */
     public interface ActionCallback {
-        void onUpdate(ArrayList<TopicItemBean> datalist);
-        void onFinished(boolean success, String msg);
+        void onListUpdated(ArrayList<TopicItemBean> datas);
+
+        void onTopicMemberUpdated(long topicId);
+
+        void onTopicMsgUpdated(long topicId);
     }
 
 }
