@@ -203,17 +203,17 @@ public class TopicListPresenter implements TopicListContract.Presenter {
         //用http返回的topic去遍历本地的topic，所有不在DB中的，以及所有在DB中但change不等于topicChange的topics，都需要更新
         for (com.yanxiu.im.bean.net_bean.ImTopic_new imTopic : ret.data.topic) {
             boolean needUpdateMembers = true;
-            for (TopicItemBean dbTopic : topicList) {
-                if (dbTopic.getTopicId() == imTopic.topicId) { //已经存在的topic
-                    dbTopic.setLatestMsgId(imTopic.latestMsgId);
-                    dbTopic.setLatestMsgTime(imTopic.latestMsgTime);
-                    if (dbTopic.getChange().equals(imTopic.topicChange)) { //已经存在的topic，且topicchange无变化的，不需更新
-                        needUpdateMembers = false;
-                        maybeNeedUpdateMsgTopicList.add(dbTopic);
-                    }
-                    break;
-                }
-            }
+//            for (TopicItemBean dbTopic : topicList) {
+//                if (dbTopic.getTopicId() == imTopic.topicId) { //已经存在的topic
+//                    dbTopic.setLatestMsgId(imTopic.latestMsgId);
+//                    dbTopic.setLatestMsgTime(imTopic.latestMsgTime);
+//                    if (dbTopic.getChange().equals(imTopic.topicChange)) { //已经存在的topic，且topicchange无变化的，不需更新
+//                        needUpdateMembers = false;
+//                        maybeNeedUpdateMsgTopicList.add(dbTopic);
+//                    }
+//                    break;
+//                }
+//            }
             if (needUpdateMembers) { //需要更新的topic
                 idTopicsNeedUpdateMember.add(Long.toString(imTopic.topicId));
             }
