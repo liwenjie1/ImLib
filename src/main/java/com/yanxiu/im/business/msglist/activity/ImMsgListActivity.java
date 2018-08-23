@@ -184,7 +184,7 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
         //更新member信息
         msgListPresenter.updateTopicInfo(currentTopic);
 
-//        imTitleLayout.setTitleRightText("设置");
+        imTitleLayout.setTitleRightText("设置");
     }
 
 
