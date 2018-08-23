@@ -44,7 +44,7 @@
         android:layout_marginBottom="48dp"
         android:layout_marginRight="15dp"
         android:layout_marginLeft="15dp"
-        android:layout_below="@+id/im_title_layout"
+        android:layout_below="@+id/im_msglist_title_layout"
         android:id="@+id/im_msglist_recyclerview"
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>
