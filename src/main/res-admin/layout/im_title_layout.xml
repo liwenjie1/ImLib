@@ -60,7 +60,7 @@
         android:visibility="gone"
         tools:visibility="visible"
         tools:text="通信录"
-        android:textColor="@drawable/im_selector_1da1f2_1884c7"
+        android:textColor="@color/im_title_text_select_color"
         android:textSize="15dp"
         android:gravity="center"
         android:layout_centerVertical="true"

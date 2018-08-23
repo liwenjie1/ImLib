@@ -57,12 +57,31 @@ public class ImConfig {
     public static void setClientType(ClientType type) {
         switch (type) {
             case AdminClient:
-                Constants.APP_TYPE=Constants.APP_TYPE_ADMIN;
+                Constants.APP_TYPE = Constants.APP_TYPE_ADMIN;
                 break;
             case StudentClient:
-                Constants.APP_TYPE=Constants.APP_TYPE_STUDENT;
+                Constants.APP_TYPE = Constants.APP_TYPE_STUDENT;
                 break;
         }
+    }
+
+    /**
+     * 是否开启 im 通讯录功能
+     * */
+    public static void enableImContact(boolean enable) {
+        Constants.showContacts = enable;
+    }
+    /**
+     * 是否开启 im topic 的设置功能
+     * */
+    public static void enableImSetting(boolean enable) {
+        Constants.showTopicSetting = enable;
+    }
+    /**
+     * 是否开启 im topic 设置中的 消息免打扰
+     * */
+    public static void enableImSilence(boolean enable) {
+        Constants.showTopicSilent = enable;
     }
 
 

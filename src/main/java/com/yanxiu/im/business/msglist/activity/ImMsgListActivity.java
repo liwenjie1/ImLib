@@ -168,6 +168,8 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
         cameraView = findViewById(R.id.takepic_imageview);
         imTitleLayout = findViewById(R.id.im_title_layout);
 
+
+
     }
 
     private void initData() {
@@ -183,8 +185,9 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
         im_msglist_recyclerview.scrollToPosition(0);
         //更新member信息
         msgListPresenter.updateTopicInfo(currentTopic);
-
-        imTitleLayout.setTitleRightText("设置");
+        if (Constants.showTopicSetting) {
+            imTitleLayout.setTitleRightText("设置");
+        }
     }
 
 
@@ -772,8 +775,10 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
     @Override
     public void onRightComponpentClicked() {
         // TODO mockTopic 与 空 topic 的处理
-        //跳转到设置界面
-        ImSetingActivity.invoke(ImMsgListActivity.this,currentTopic.getTopicId());
+        if (currentTopic!=null&&TextUtils.equals("2",currentTopic.getType())) {
+            //跳转到设置界面
+            ImSetingActivity.invoke(ImMsgListActivity.this,currentTopic.getTopicId());
+        }
     }
 
     /**

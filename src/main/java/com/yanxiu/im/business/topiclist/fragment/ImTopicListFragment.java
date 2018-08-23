@@ -136,9 +136,6 @@ public class ImTopicListFragment extends FaceShowBaseFragment
             @Override
             public void onRightComponpentClicked() {
                 //学员端才有 通讯录功能
-                if (Constants.APP_TYPE != Constants.APP_TYPE_STUDENT) {
-                    return;
-                }
                 //事件统计 点击通讯录
                 EventUpdate.onClickContactEvent(getActivity());
 

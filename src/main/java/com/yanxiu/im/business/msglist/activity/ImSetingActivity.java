@@ -62,12 +62,9 @@ public class ImSetingActivity extends ImBaseActivity implements ImTitleLayout.Ti
         mImTitleLayout.setTitle("聊聊设置");
         long topicId=getIntent().getLongExtra("topicId",-1);
         mImSettingPresenter.doGetTopicInfo(topicId);
-        //学员端隐藏 禁言功能
-        if (Constants.APP_TYPE==Constants.APP_TYPE_STUDENT) {
-
+        if (!Constants.showTopicSilent) {
             mImTalkSettingItem.setVisibility(View.GONE);
-        }else if (Constants.APP_TYPE==Constants.APP_TYPE_ADMIN){
-            //管理端登录 需要判断当前用户在当前topic中的角色 如果是班主任才开启显示 禁言功能
+        }else {
             boolean isManagerMember= mImSettingPresenter.checkCurrentUserRole(topicId);
             mImTalkSettingItem.setVisibility(isManagerMember?View.VISIBLE:View.GONE);
         }
