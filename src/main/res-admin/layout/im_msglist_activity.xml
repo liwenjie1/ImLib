@@ -8,25 +8,37 @@
     android:background="#dfe3e5"
     tools:context=".business.msglist.activity.ImMsgListActivity">
 
-    <com.yanxiu.im.business.view.ImTitleLayout
-        titlelayout:im_left_margin="5dp"
-        titlelayout:im_right_margin="15dp"
-        titlelayout:im_title_bottom_line_color="@color/color_white"
-        titlelayout:im_title_bottom_line_height="0dp"
-        titlelayout:im_title_left_img="@drawable/im_selector_back"
-        android:id="@+id/im_title_layout"
+    <LinearLayout
+        android:id="@+id/im_msglist_title_layout"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:orientation="vertical">
 
-    <android.support.v7.widget.RecyclerView
-        android:focusable="true"
-        android:layout_marginBottom="48dp"
-        android:layout_marginRight="15dp"
-        android:layout_marginLeft="15dp"
-        android:layout_below="@+id/im_title_layout"
-        android:id="@+id/im_msglist_recyclerview"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
+        <com.yanxiu.im.business.view.ImTitleLayout
+            android:id="@+id/im_title_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            titlelayout:im_left_margin="5dp"
+            titlelayout:im_right_margin="15dp"
+            titlelayout:im_title_bottom_line_color="@color/color_white"
+            titlelayout:im_title_bottom_line_height="0dp"
+            titlelayout:im_title_left_img="@drawable/im_selector_back" />
+
+        <TextView
+            android:textColor="@color/color_white"
+            android:layout_margin="5dp"
+            android:id="@+id/im_msglist_topic_silence"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/im_title_layout"
+            android:layout_centerHorizontal="true"
+            android:background="@drawable/im_msglist_date_bg"
+            android:padding="5dp"
+            android:visibility="gone"
+            android:text="当前为学员禁言状态" />
+
+    </LinearLayout>
 
     <View
         android:layout_above="@+id/im_msglist_bottom_input_layout"

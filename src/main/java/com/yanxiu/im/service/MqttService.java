@@ -180,12 +180,12 @@ public class MqttService extends Service {
                 mClient.subscribe("im/v1.0/topic/" + topicId, 1, null, new IMqttActionListener() {
                     @Override
                     public void onSuccess(IMqttToken asyncActionToken) {
-                        SrtLogger.log("immqtt", "mqtt subscribe topic successfully");
+//                        SrtLogger.log("immqtt", "mqtt subscribe topic successfully");
                     }
 
                     @Override
                     public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-                        SrtLogger.log("immqtt", "mqtt subscribe topic failed");
+//                        SrtLogger.log("immqtt", "mqtt subscribe topic failed");
                     }
                 });
             } catch (MqttException e) {

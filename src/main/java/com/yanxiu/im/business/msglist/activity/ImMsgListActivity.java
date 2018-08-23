@@ -133,15 +133,22 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
         initListener();
         initImagePicker();
         EventBus.getDefault().register(this);
+
+        showSlientNotice(true);
+    }
+
+
+    private void showSlientNotice(boolean show) {
+        findViewById(R.id.im_msglist_topic_silence).setVisibility(show ? View.VISIBLE : View.GONE);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         //页面统计
-        if (currentTopic==null||TextUtils.equals(currentTopic.getType(),"1")) {
+        if (currentTopic == null || TextUtils.equals(currentTopic.getType(), "1")) {
             EventUpdate.onPrivatePageStart(this);
-        }else {
+        } else {
             EventUpdate.onGroupPageStart(this);
         }
     }
@@ -150,9 +157,9 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
     protected void onPause() {
         super.onPause();
         //页面统计
-        if (currentTopic==null||TextUtils.equals(currentTopic.getType(),"1")) {
+        if (currentTopic == null || TextUtils.equals(currentTopic.getType(), "1")) {
             EventUpdate.onPrivatePageEnd(this);
-        }else {
+        } else {
             EventUpdate.onGroupPageEnd(this);
         }
     }
@@ -167,7 +174,6 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
         mMsgEditText = findViewById(R.id.msg_edittext);
         cameraView = findViewById(R.id.takepic_imageview);
         imTitleLayout = findViewById(R.id.im_title_layout);
-
 
 
     }
@@ -323,8 +329,8 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
                     return;
                 }
 
-                if (editable.length()>2000) {
-                    editable.delete(2000,editable.length());
+                if (editable.length() > 2000) {
+                    editable.delete(2000, editable.length());
                 }
 
             }
@@ -546,7 +552,7 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
             if (msgListPresenter.checkNullTopicCanbeMerged(event.topicId, memberId)) {
                 Log.i(TAG, "topic opened : ");
                 onTopicOpened(msgListPresenter.getTargetTopic(event.topicId));
-                msgListPresenter.resetTopicRedDot(currentTopic.getTopicId(),currentTopic);
+                msgListPresenter.resetTopicRedDot(currentTopic.getTopicId(), currentTopic);
                 msgRecyclerAdapter.setDataList(currentTopic.getMsgList());
                 msgRecyclerAdapter.notifyDataSetChanged();
             }
@@ -557,7 +563,7 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
         if (currentTopic.getTopicId() != event.topicId) {
             return;
         }
-        msgListPresenter.resetTopicRedDot(event.topicId,currentTopic);
+        msgListPresenter.resetTopicRedDot(event.topicId, currentTopic);
 
         msgRecyclerAdapter.notifyDataSetChanged();
         im_msglist_recyclerview.scrollToPosition(0);
@@ -570,7 +576,7 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
             return;
         }
         //关闭当前界面 学员端
-        if (Constants.APP_TYPE==Constants.APP_TYPE_STUDENT) {
+        if (Constants.APP_TYPE == Constants.APP_TYPE_STUDENT) {
             finish();
         }
         //管理端 不处理
@@ -586,7 +592,7 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
             return;
         }
         onTopicOpened(currentTopic);
-        msgListPresenter.resetTopicRedDot(event.topicId,currentTopic);
+        msgListPresenter.resetTopicRedDot(event.topicId, currentTopic);
     }
 
     //endregion
@@ -714,7 +720,7 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
             titleStringBuilder.append(topic.getGroup());
             if (topic.getMembers() != null) {
                 //群聊人数
-                titleStringBuilder.append("("+topic.getMembers().size()+")");
+                titleStringBuilder.append("(" + topic.getMembers().size() + ")");
             }
 
         }
@@ -775,9 +781,9 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
     @Override
     public void onRightComponpentClicked() {
         // TODO mockTopic 与 空 topic 的处理
-        if (currentTopic!=null&&TextUtils.equals("2",currentTopic.getType())) {
+        if (currentTopic != null && TextUtils.equals("2", currentTopic.getType())) {
             //跳转到设置界面
-            ImSetingActivity.invoke(ImMsgListActivity.this,currentTopic.getTopicId());
+            ImSetingActivity.invoke(ImMsgListActivity.this, currentTopic.getTopicId());
         }
     }
 
@@ -818,21 +824,21 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
         //检查 点击的用户是否可以打开私聊
         MsgItemBean msgItemBean = msgRecyclerAdapter.getDataList().get(p);
         //检查自己是否被删除
-        if (!msgListPresenter.checkUserExsist(Constants.imId,currentTopic)) {
-            Toast.makeText(ImMsgListActivity.this,"【您已被移除此班级】",Toast.LENGTH_SHORT).show();
+        if (!msgListPresenter.checkUserExsist(Constants.imId, currentTopic)) {
+            Toast.makeText(ImMsgListActivity.this, "【您已被移除此班级】", Toast.LENGTH_SHORT).show();
             return;
         }
         //检查用户存在性
-        if (msgListPresenter.checkUserExsist(msgItemBean.getSenderId(),currentTopic)) {
+        if (msgListPresenter.checkUserExsist(msgItemBean.getSenderId(), currentTopic)) {
             if (msgListPresenter.doCheckMemberChat(msgItemBean.getSenderId(), currentTopic)) {
                 //事件统计 群聊点击 用户头像
                 EventUpdate.onClickGroupAvatarEvent(ImMsgListActivity.this);
                 shouldScrollToBottom = false;
                 ImMsgListActivity.invoke(ImMsgListActivity.this, msgItemBean.getSenderId(), currentTopic.getTopicId(), REQUEST_CODE_OPEN_PRIVATE_TOPIC);
             }
-        }else{
+        } else {
             //用户不存在 给出提示
-            Toast.makeText(ImMsgListActivity.this,"【用户已被删除】",Toast.LENGTH_SHORT).show();
+            Toast.makeText(ImMsgListActivity.this, "【用户已被删除】", Toast.LENGTH_SHORT).show();
         }
 
     }
