@@ -781,7 +781,7 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
     @Override
     public void onRightComponpentClicked() {
         // TODO mockTopic 与 空 topic 的处理
-        if (currentTopic != null && TextUtils.equals("2", currentTopic.getType())) {
+        if (currentTopic != null ) {
             //跳转到设置界面
             ImSetingActivity.invoke(ImMsgListActivity.this, currentTopic.getTopicId());
         }
