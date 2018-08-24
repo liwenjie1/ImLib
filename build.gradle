@@ -27,9 +27,9 @@ android {
     sourceSets {
         main {
             if(rootProject.ext.imlibResId==0){
-                res.srcDirs = ['src/main/res-admin']
+                res.srcDirs = ['src/main/res-admin','src/main/pub-res']
             }else {
-                res.srcDirs = ['src/main/res']
+                res.srcDirs = ['src/main/res','src/main/pub-res']
             }
         }
     }
