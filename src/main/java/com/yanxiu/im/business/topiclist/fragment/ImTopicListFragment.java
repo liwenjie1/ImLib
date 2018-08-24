@@ -191,8 +191,9 @@ public class ImTopicListFragment extends FaceShowBaseFragment
         if (Constants.APP_TYPE == Constants.APP_TYPE_UNDEFINE) {
             throw new IllegalStateException("没有设置im模块 调用者的 客户端type （学员端还是管理端）");
         }
-
-        mImTitleLayout.setTitleRightText("通讯录");
+        if (Constants.showContacts) {
+            mImTitleLayout.setTitleRightText("通讯录");
+        }
         //检查 im 部分的 info 情况
         if (ImConfig.isHasInitialazed()) {
             //获取topiclist 在onGetDbTopicList 中回调
