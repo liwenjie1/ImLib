@@ -7,6 +7,7 @@ import android.text.TextUtils;
 
 import com.test.yanxiu.common_base.utils.SharedSingleton;
 import com.yanxiu.im.Constants;
+import com.yanxiu.im.TopicsReponsery;
 import com.yanxiu.im.bean.MsgItemBean;
 import com.yanxiu.im.bean.TopicItemBean;
 import com.yanxiu.im.bean.net_bean.ImMsg_new;
@@ -91,6 +92,7 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
             return false;
         }
     }
+
 
     /**
      * 消息发送 senderManager初始化
@@ -261,7 +263,7 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
 
     private void sortInsertTopics(long topicId) {
         List<TopicItemBean> topics = SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST);
-        if (topics==null) {
+        if (topics == null) {
             return;
         }
         ImTopicSorter.insertTopicToTop(topicId, topics);
@@ -597,162 +599,90 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
         }
     }
 
-
+    /**
+     * 请求更新 topicinfo
+     */
     public void updateTopicInfo(final TopicItemBean currentTopic) {
-        if (currentTopic == null) {
-            return;
-        }
-        if (DatabaseManager.isMockTopic(currentTopic)) {
-            return;
-        }
-
-        com.yanxiu.im.net.TopicGetTopicsRequest_new getTopicsRequest = new com.yanxiu.im.net.TopicGetTopicsRequest_new();
-        getTopicsRequest.imToken = Constants.imToken;
-        getTopicsRequest.topicIds = String.valueOf(currentTopic.getTopicId());
-        getTopicsRequest.startRequest(com.yanxiu.im.net.TopicGetTopicsResponse_new.class, new IYXHttpCallback<com.yanxiu.im.net.TopicGetTopicsResponse_new>() {
-            /**
-             * startRequest()中生成get url，post body以后，调用OkHttp Request之前调用此回调
-             *
-             * @param request OkHttp Request
-             */
+        TopicsReponsery.getInstance().updateTopicInfo(currentTopic, new TopicsReponsery.GetTopicItemBeanCallback() {
             @Override
-            public void onRequestCreated(Request request) {
-
-            }
-
-            @Override
-            public void onSuccess(YXRequestBase request, com.yanxiu.im.net.TopicGetTopicsResponse_new ret) {
-                if (ret == null || ret.code != 0) {
-                    return;
+            public void onGetTopicItemBean(TopicItemBean bean) {
+                if (bean != null) {
+                    view.onTopicInfoUpdate();
                 }
-
-                if (ret.data == null || ret.data.topic == null || ret.data.topic.size() == 0) {
-                    return;
-                }
-
-                ImTopic_new imTopic = ret.data.topic.get(0);
-                if (imTopic == null) {
-                    return;
-                }
-
-                TopicItemBean dbTopic = DatabaseManager.updateDbTopicWithImTopic(imTopic);
-                if (currentTopic.getTopicId() == imTopic.topicId) {
-                    currentTopic.setTopicId(imTopic.topicId);
-                    currentTopic.setName(imTopic.topicName);
-                    currentTopic.setType(imTopic.topicType);
-                    currentTopic.setChange(imTopic.topicChange);
-                    currentTopic.setGroup(imTopic.topicGroup);
-                    currentTopic.setMembers(dbTopic.getMembers());
-                }
-                //更新内存中所有 topic 的 member 信息 以及 用户自己的 im 信息
-                ArrayList<TopicItemBean> topics = SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST);
-                if (topics == null) {
-                    return;
-                }
-                if (dbTopic.getMembers() != null) {
-                    for (DbMember dbMember : dbTopic.getMembers()) {
-                        //更新所有相同 member 的信息
-                        TopicInMemoryUtils.updateMemberInfoInTopic(dbMember, currentTopic);
-                        if (dbMember.getImId() == Constants.imId) {
-                            Constants.imAvatar = dbMember.getAvatar();
-                        }
-                        //更新内存中所有 msg的 sender 信息
-                        TopicInMemoryUtils.updateMsgSenderInfo(dbMember, topics);
-                    }
-                }
-                // 更新数据库
-                if (view != null) {
-                    mHandler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            view.onTopicInfoUpdate();
-                        }
-                    });
-                }
-            }
-
-            @Override
-            public void onFail(YXRequestBase request, Error error) {
-                // TODO: 2018/5/21 获取member
             }
         });
-
     }
 
-
+    /**
+     * 点击用户头像 打开一个私聊
+     * 1、私聊已经存在  2、私聊不存在
+     * */
     @Override
     public void openPrivateTopicByMember(long memberId, long fromTopicId) {
-        List<TopicItemBean> topics = SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST);
-        if (topics == null) {
-            return;
-        }
-        final TopicItemBean targetPrivateTopic = TopicInMemoryUtils.findPrivateTopicByMemberId(memberId, topics);
-        if (targetPrivateTopic == null) {
-            //如果没有找到私聊 创建mocktopic
-            final DbMember otherMember = TopicInMemoryUtils.findMemberById(memberId, topics);
-            if (view != null) {
-                if (otherMember != null) {
-//                    一般 能点击 证明已经有了member数据
-                    view.onTempUiTopicOpen(otherMember.getName());
-                }
+        TopicsReponsery.getInstance().getPrivateTopicByMemberid(memberId, fromTopicId, new TopicsReponsery.GetPrivateTopicCallback<TopicItemBean>() {
+            @Override
+            public void onFindRealPrivateTopic(TopicItemBean bean) {
+                //本地有 这个私聊 直接显示
+                view.onRealTopicOpened(bean);
             }
-        } else {
-            ArrayList<MsgItemBean> msgsFromDb =
-                    DatabaseManager.getTopicMsgs(targetPrivateTopic.getTopicId(), DatabaseManager.minMsgId, DatabaseManager.pagesize);
-            //处理日期
-            TopicInMemoryUtils.processMsgListDateInfo(msgsFromDb);
 
-            targetPrivateTopic.getMsgList().clear();
-            targetPrivateTopic.getMsgList().addAll(msgsFromDb);
-
-            targetPrivateTopic.setShowDot(false);
-            DatabaseManager.updateTopicWithTopicItemBean(targetPrivateTopic);
-            ImTopicSorter.sortByLatestTime(topics);
-            if (view != null) {
-                view.onTopicOpened(targetPrivateTopic);
+            @Override
+            public void onNoTargetTopic(String memberName) {
+                //本地没有这个私聊  进行 title 设置  等待下一步操作
+                view.onNewPrivateTopicOpened(memberName);
             }
-        }
-
+        });
     }
 
     /**
      * 当用户 由topic列表点击topic 进入时 调用
-     *
+     *  此时的 topic 一定存在 所以 只查找本地数据即可
      * @param topicId 查找目标的id
      */
     @Override
     public void openTopicByTopicId(long topicId) {
-        List<TopicItemBean> topics = SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST);
-        //查找目标topic
-        if (topics == null) {
-            return;
-        }
-        final TopicItemBean targetTopic = TopicInMemoryUtils.findTopicByTopicId(topicId, topics);
-        //数据库获取最新一页 msg
-        ArrayList<MsgItemBean> msgsFromDb =
-                DatabaseManager.getTopicMsgs(targetTopic.getTopicId(), DatabaseManager.minMsgId, DatabaseManager.pagesize);
-        targetTopic.getMsgList().clear();
-        targetTopic.getMsgList().addAll(msgsFromDb);
-        //处理
-        TopicInMemoryUtils.processMsgListDateInfo(msgsFromDb);
-        targetTopic.setName(targetTopic.getGroup());
-        targetTopic.setShowDot(false);
-        DatabaseManager.updateTopicWithTopicItemBean(targetTopic);
-        if (view != null) {
-            view.onTopicOpened(targetTopic);
-        }
+        TopicsReponsery.getInstance().getLocalTopic(topicId, new TopicsReponsery.GetTopicItemBeanCallback() {
+            @Override
+            public void onGetTopicItemBean(TopicItemBean targetTopic) {
+                //数据库获取最新一页 msg
+                ArrayList<MsgItemBean> msgsFromDb =
+                        DatabaseManager.getTopicMsgs(targetTopic.getTopicId(), DatabaseManager.minMsgId, DatabaseManager.pagesize);
+                targetTopic.getMsgList().clear();
+                targetTopic.getMsgList().addAll(msgsFromDb);
+                //处理
+                TopicInMemoryUtils.processMsgListDateInfo(msgsFromDb);
+                targetTopic.setName(targetTopic.getGroup());
+                targetTopic.setShowDot(false);
+                DatabaseManager.updateTopicWithTopicItemBean(targetTopic);
+                if (view != null) {
+                    view.onRealTopicOpened(targetTopic);
+                }
+            }
+        });
     }
-
-    public String getTopicNameById(long topicId) {
-        List<TopicItemBean> topics = SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST);
-        //查找目标topic
-        TopicItemBean targetTopic = TopicInMemoryUtils.findTopicByTopicId(topicId, topics);
-        if (targetTopic == null) {
-            return "0";
-        }
-        return targetTopic.getGroup();
+    /**
+     * 有 push 推送过来  打开的对话
+     * 1、本地有目标 topic
+     * 2、本地没有目标 topic 需要创建一个临时的 TempTopic 来显示界面 并等待服务器请求目标 topic 的详细信息回来更新
+     * */
+    @Override
+    public void openPushTopic(final long topicId) {
+        //首先从本地获取
+        TopicsReponsery.getInstance().getLocalTopic(topicId, new TopicsReponsery.GetTopicItemBeanCallback() {
+            @Override
+            public void onGetTopicItemBean(TopicItemBean bean) {
+                //判断是否获取到
+                if (bean == null) {
+                    //创建一个temp 并请求服务器进行 数据更新
+                    bean = TopicsReponsery.getInstance().createTempTopicBean(topicId, "pushTopic");
+                }
+                //将临时 topic 回调 给 UI
+                view.onPushTopicOpend(bean);
+                //请求服务器获取 push topic 的详细信息
+                updateTopicInfo(bean);
+            }
+        });
     }
-
 
     /**
      * 创建一个 mocktopic
@@ -762,7 +692,7 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
     public TopicItemBean createMockTopicForMsg(long memberId, long fromTopic) {
         List<TopicItemBean> topics = SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST);
         TopicItemBean mockTopic = DatabaseManager.createMockTopic(memberId, fromTopic);
-        if (topics!=null) {
+        if (topics != null) {
             topics.add(mockTopic);
             ImTopicSorter.sortByLatestTime(topics);
         }
@@ -774,7 +704,7 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
      */
     public boolean checkNullTopicCanbeMerged(long topicId, long memberId) {
         List<TopicItemBean> topics = SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST);
-        if (topics==null) {
+        if (topics == null) {
             return false;
         }
         TopicItemBean targetTopic = TopicInMemoryUtils.findTopicByTopicId(topicId, topics);

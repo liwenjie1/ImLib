@@ -23,7 +23,6 @@ import com.yanxiu.im.Constants;
 import com.yanxiu.im.R;
 import com.yanxiu.im.bean.MsgItemBean;
 import com.yanxiu.im.bean.TopicItemBean;
-import com.yanxiu.im.business.contacts.activity.ContactsActivity;
 import com.yanxiu.im.business.interfaces.ImUnreadMsgListener;
 import com.yanxiu.im.business.interfaces.ImUserRemoveFromTopicListener;
 import com.yanxiu.im.business.interfaces.RecyclerViewItemOnClickListener;
@@ -138,8 +137,8 @@ public class ImTopicListFragment extends FaceShowBaseFragment
                 //学员端才有 通讯录功能
                 //事件统计 点击通讯录
                 EventUpdate.onClickContactEvent(getActivity());
-
-                ContactsActivity.invoke(ImTopicListFragment.this);
+                ImMsgListActivity.invokeByPush(getActivity(),100,ImMsgListActivity.REQUEST_CODE_PUSH);
+//                ContactsActivity.invoke(ImTopicListFragment.this);
                 if (titlebarActionListener != null) {
                     titlebarActionListener.onRightComponpentClicked();
                 }
@@ -157,7 +156,7 @@ public class ImTopicListFragment extends FaceShowBaseFragment
                     EventUpdate.onClickGroupTopicEvent(getActivity());
                 }
 
-                ImMsgListActivity.invoke(ImTopicListFragment.this, currentTopic.getTopicId(), 10);
+                ImMsgListActivity.invoke(ImTopicListFragment.this, currentTopic.getTopicId(), ImMsgListActivity.REQUEST_CODE_TOPICID);
             }
         });
         EventBus.getDefault().register(this);
