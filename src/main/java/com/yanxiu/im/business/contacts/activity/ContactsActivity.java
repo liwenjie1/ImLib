@@ -169,7 +169,7 @@ public class ContactsActivity extends ImBaseActivity implements ContactsContract
                     return;
                 }
                 ImMsgListActivity.invoke(ContactsActivity.this,
-                        mMemberAdapter.getDatas().get(position).getMemberInfo().imId, -1, 0);
+                        mMemberAdapter.getDatas().get(position).getMemberInfo().imId, -1, ImMsgListActivity.REQUEST_CODE_MEMBERID);
             }
         });
     }

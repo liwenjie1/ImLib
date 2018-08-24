@@ -65,6 +65,11 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
     private final String TAG = getClass().getSimpleName();
 
 
+    /*MsgListActivity 三种不同的开启方式*/
+    public final static int REQUEST_CODE_PUSH = 0X11;
+    public final static int REQUEST_CODE_MEMBERID = 0X12;
+    public final static int REQUEST_CODE_TOPICID = 0X13;
+
     /**
      * 这个方法一般为 由通讯录、群聊进入私聊界面
      * <p>
@@ -79,6 +84,7 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
     public static void invoke(Activity activity, long memberId, int requestCode) {
         Intent intent = new Intent(activity, ImMsgListActivity.class);
         intent.putExtra("memberId", memberId);
+        intent.putExtra("requestCode", requestCode);
         activity.startActivityForResult(intent, requestCode);
     }
 
@@ -97,6 +103,7 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
         Intent intent = new Intent(activity, ImMsgListActivity.class);
         intent.putExtra("memberId", memberId);
         intent.putExtra("fromTopicId", fromTopicId);
+        intent.putExtra("requestCode", requestCode);
         activity.startActivityForResult(intent, requestCode);
     }
 
@@ -110,7 +117,18 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
     public static void invoke(Fragment fragment, long topicId, int requestCode) {
         Intent intent = new Intent(fragment.getContext(), ImMsgListActivity.class);
         intent.putExtra("topicId", topicId + "");
+        intent.putExtra("requestCode", requestCode);
         fragment.startActivityForResult(intent, requestCode);
+    }
+
+    /**
+     * 由推送进入 聊天界面
+     */
+    public static void invokeByPush(Activity activity, long topicId, int requestCode) {
+        Intent intent = new Intent(activity, ImMsgListActivity.class);
+        intent.putExtra("topicId", topicId + "");
+        intent.putExtra("requestCode", requestCode);
+        activity.startActivityForResult(intent, requestCode);
     }
 
 
@@ -174,12 +192,9 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
         mMsgEditText = findViewById(R.id.msg_edittext);
         cameraView = findViewById(R.id.takepic_imageview);
         imTitleLayout = findViewById(R.id.im_title_layout);
-
-
     }
 
     private void initData() {
-
         msgListPresenter = new MsgListPresenter(this, ImMsgListActivity.this);
         //获取 需要展示的topic 如果没有 则currentTopic 为空
         getTargetTopic();
@@ -202,24 +217,35 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
      * <p>
      * 由通讯录 或 群聊点击用户头像进入此页时 intent包含memberId信息 topic不一定存在(CurrentTopic 可能为空)
      * <p>
-     * presenter处理后 找到对应topic在{@link ImMsgListActivity#onTopicOpened(TopicItemBean)} 中回调
-     * <p>
-     * 没有对应topic 时 在{@link ImMsgListActivity#onTempUiTopicOpen(String)} 中回调
      * <p>
      * 由topic列表进入时 intent包含topicId信息 并且topic一定存在 （包括mocktopic情况）
      */
     private void getTargetTopic() {
-        String topicId = getIntent().getStringExtra("topicId");
-        long memberId = getIntent().getLongExtra("memberId", -1);
-        long fromTopicId = getIntent().getLongExtra("fromTopicId", -1);
-        if (memberId > 0) {
-            msgListPresenter.openPrivateTopicByMember(memberId, fromTopicId);
-        } else {
-            if (!TextUtils.isEmpty(topicId)) {
+        final int requestCode = getIntent().getIntExtra("requestCode", REQUEST_CODE_TOPICID);
+        switch (requestCode) {
+            case REQUEST_CODE_MEMBERID: {
+                //通过点击 member 头像 开启的 msglist 界面 需要判断是否存在私聊 不存在需要创建一个临时的 topicbean
+                long memberId = getIntent().getLongExtra("memberId", -1);
+                long fromTopicId = getIntent().getLongExtra("fromTopicId", -1);
+                msgListPresenter.openPrivateTopicByMember(memberId, fromTopicId);
+            }
+            break;
+            case REQUEST_CODE_PUSH: {
+                //通过推送 开启的 msglist 界面 可能是群聊也可能是私聊  但是在服务器上一定存在 所以本地先查找 ，没有直接在服务器上获取
+                //如果 本地没有 在 异步执行 服务器获取的之间，创建本地 tempTopicBean 来容纳消息列表
+                String topicId = getIntent().getStringExtra("topicId");
+                msgListPresenter.openPushTopic(Long.valueOf(topicId));
+            }
+            break;
+            case REQUEST_CODE_TOPICID: {
+                //通过 topiclist 界面点击 topic 开启 msglist 界面 topic 一定存在 只需要在内存查找 获取
+                String topicId = getIntent().getStringExtra("topicId");
                 msgListPresenter.openTopicByTopicId(Long.valueOf(topicId));
             }
+            break;
         }
     }
+
 
     private void initImagePicker() {
         GlideImageLoader glideImageLoader = new GlideImageLoader();
@@ -459,7 +485,6 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
     private static final int IMAGE_PICKER = 0x03;
     private static final int REQUEST_CODE_SELECT = 0x04;
     private static final int REQUEST_CODE_LOAD_BIG_IMG = 0x05;
-    private static final int REQUEST_CODE_OPEN_PRIVATE_TOPIC = 0x06;
     private boolean shouldScrollToBottom = true;
 
     @Override
@@ -467,7 +492,7 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
         super.onActivityResult(requestCode, resultCode, data);
         Log.i(TAG, "onActivityResult: ");
         switch (requestCode) {
-            case REQUEST_CODE_OPEN_PRIVATE_TOPIC:
+            case REQUEST_CODE_MEMBERID:
                 msgRecyclerAdapter.notifyDataSetChanged();
             case REQUEST_CODE_LOAD_BIG_IMG:
                 shouldScrollToBottom = true;
@@ -551,15 +576,13 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
             long memberId = getIntent().getLongExtra("memberId", -1);
             if (msgListPresenter.checkNullTopicCanbeMerged(event.topicId, memberId)) {
                 Log.i(TAG, "topic opened : ");
-                onTopicOpened(msgListPresenter.getTargetTopic(event.topicId));
+                onRealTopicOpened(msgListPresenter.getTargetTopic(event.topicId));
                 msgListPresenter.resetTopicRedDot(currentTopic.getTopicId(), currentTopic);
                 msgRecyclerAdapter.setDataList(currentTopic.getMsgList());
                 msgRecyclerAdapter.notifyDataSetChanged();
             }
             return;
         }
-
-
         if (currentTopic.getTopicId() != event.topicId) {
             return;
         }
@@ -591,7 +614,7 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
         if (currentTopic != null && event.topicId != currentTopic.getTopicId()) {
             return;
         }
-        onTopicOpened(currentTopic);
+        onRealTopicOpened(currentTopic);
         msgListPresenter.resetTopicRedDot(event.topicId, currentTopic);
     }
 
@@ -628,8 +651,14 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
     @Override
     public void onTopicInfoUpdate() {
         //更新名字
-        setTitlemsg(currentTopic);
-        msgRecyclerAdapter.notifyDataSetChanged();
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                setTitlemsg(currentTopic);
+                msgRecyclerAdapter.notifyDataSetChanged();
+            }
+        });
+
     }
 
     /**
@@ -689,17 +718,40 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
         im_msglist_recyclerview.scrollToPosition(0);
     }
 
+
     /**
-     * 打开当前activity 查找到目标topic后进行的回调
-     * 设置聊天titile
-     *
-     * @param topic 在用户topic列表中找到的对应topic
+     * 开启一个 临时的私聊界面
      */
     @Override
-    public void onTopicOpened(TopicItemBean topic) {
-        //找到要显示的topic 进行数据填充
-        currentTopic = topic;
-        setTitlemsg(topic);
+    public void onNewPrivateTopicOpened(final String memberName) {
+        //设置 对话名称
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                imTitleLayout.setTitle(memberName);
+            }
+        });
+
+    }
+
+    @Override
+    public void onRealTopicOpened(TopicItemBean realBean) {
+        //打开一个 本地存在的 realtopic
+        currentTopic=realBean;
+        setTitlemsg(realBean);
+    }
+
+    @Override
+    public void onPushTopicOpend(final TopicItemBean tempBean) {
+        //打开一个 push 开启的topic
+        currentTopic = tempBean;
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                setTitlemsg(tempBean);
+            }
+        });
+
     }
 
     private void setTitlemsg(TopicItemBean topic) {
@@ -730,16 +782,6 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
         imTitleLayout.setTitle(titleStringBuilder.toString());
     }
 
-    /**
-     * 当用户的topic列表中没有 与目标member的私聊时
-     * currenttopic为空 只对title进行设置
-     *
-     * @param topicName 私聊对象member的name字段 作为title显示
-     */
-    @Override
-    public void onTempUiTopicOpen(String topicName) {
-        imTitleLayout.setTitle(topicName);
-    }
 
     @Override
     public void onCreateTopicFail() {
@@ -781,7 +823,7 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
     @Override
     public void onRightComponpentClicked() {
         // TODO mockTopic 与 空 topic 的处理
-        if (currentTopic != null ) {
+        if (currentTopic != null) {
             //跳转到设置界面
             ImSetingActivity.invoke(ImMsgListActivity.this, currentTopic.getTopicId());
         }
@@ -806,7 +848,7 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
             //获取当前msg的对应位置
             int currentPosition = imgItemBeans.indexOf(currentBean);
             shouldScrollToBottom = false;
-            ImGalleryActivity.invoke(ImMsgListActivity.this, urls, currentPosition, REQUEST_CODE_OPEN_PRIVATE_TOPIC);
+            ImGalleryActivity.invoke(ImMsgListActivity.this, urls, currentPosition, REQUEST_CODE_LOAD_BIG_IMG);
         } else if (contentType == 10) {
             //文字类型消息
         } else {
@@ -834,7 +876,7 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
                 //事件统计 群聊点击 用户头像
                 EventUpdate.onClickGroupAvatarEvent(ImMsgListActivity.this);
                 shouldScrollToBottom = false;
-                ImMsgListActivity.invoke(ImMsgListActivity.this, msgItemBean.getSenderId(), currentTopic.getTopicId(), REQUEST_CODE_OPEN_PRIVATE_TOPIC);
+                ImMsgListActivity.invoke(ImMsgListActivity.this, msgItemBean.getSenderId(), currentTopic.getTopicId(), REQUEST_CODE_MEMBERID);
             }
         } else {
             //用户不存在 给出提示
