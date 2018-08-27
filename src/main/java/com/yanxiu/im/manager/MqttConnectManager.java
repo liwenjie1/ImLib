@@ -195,6 +195,7 @@ public class MqttConnectManager {
     }
 
 
+
     /*订阅与 取消订阅*/
     public void subscribeTopic(long topicId) {
         if (mqttBinder != null) {
