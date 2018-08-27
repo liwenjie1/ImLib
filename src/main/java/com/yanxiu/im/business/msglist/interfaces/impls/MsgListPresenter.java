@@ -4,6 +4,7 @@ import android.content.Context;
 import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.test.yanxiu.common_base.utils.SharedSingleton;
 import com.yanxiu.im.Constants;
@@ -440,6 +441,7 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
 
     @Override
     public void doLoadMore(final TopicItemBean currentTopic) {
+        Log.i(TAG, "doLoadMore: ");
         //最小延迟 500
         handler.postDelayed(new Runnable() {
             @Override
@@ -603,6 +605,7 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
      * 请求更新 topicinfo
      */
     public void updateTopicInfo(final TopicItemBean currentTopic) {
+        Log.i(TAG, "updateTopicInfo: ");
         TopicsReponsery.getInstance().updateTopicInfo(currentTopic, new TopicsReponsery.GetTopicItemBeanCallback() {
             @Override
             public void onGetTopicItemBean(TopicItemBean bean) {
@@ -619,6 +622,7 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
      * */
     @Override
     public void openPrivateTopicByMember(long memberId, long fromTopicId) {
+        Log.i(TAG, "openPrivateTopicByMember: ");
         TopicsReponsery.getInstance().getPrivateTopicByMemberid(memberId, fromTopicId, new TopicsReponsery.GetPrivateTopicCallback<TopicItemBean>() {
             @Override
             public void onFindRealPrivateTopic(TopicItemBean bean) {
@@ -641,6 +645,7 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
      */
     @Override
     public void openTopicByTopicId(long topicId) {
+        Log.i(TAG, "openTopicByTopicId: ");
         TopicsReponsery.getInstance().getLocalTopic(topicId, new TopicsReponsery.GetTopicItemBeanCallback() {
             @Override
             public void onGetTopicItemBean(TopicItemBean targetTopic) {
@@ -667,6 +672,7 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
      * */
     @Override
     public void openPushTopic(final long topicId) {
+        Log.i(TAG, "openPushTopic: ");
         //首先从本地获取
         TopicsReponsery.getInstance().getLocalTopic(topicId, new TopicsReponsery.GetTopicItemBeanCallback() {
             @Override

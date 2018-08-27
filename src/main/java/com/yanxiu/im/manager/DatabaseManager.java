@@ -596,8 +596,8 @@ public class DatabaseManager {
         //更新 member 信息
         long start=System.currentTimeMillis();
         updateMembers(dbTopic,topic.members);
-        Log.i("dbupdate", "更新 member 花费  "+(System.currentTimeMillis()-start));
-//        updateMembersThatNeedUpdate(dbTopic, topic);
+//        Log.i("dbupdate", "更新 member 花费  "+(System.currentTimeMillis()-start));
+        updateMembersThatNeedUpdate(dbTopic, topic);
         dbTopic.save();
         return changeDbTopicToTopicItemBean(dbTopic);
     }
@@ -657,6 +657,7 @@ public class DatabaseManager {
                     dbMember.setRole(imMember.memberInfo.memberType);
                     dbMember.setAvatar(imMember.memberInfo.avatar);
                     dbMember.setName(imMember.memberInfo.memberName);
+                    dbMember.getTopics().add(dbTopic);
                     has=true;
                     break;
                 }
@@ -668,6 +669,7 @@ public class DatabaseManager {
                 dbMember.setRole(imMember.memberInfo.memberType);
                 dbMember.setAvatar(imMember.memberInfo.avatar);
                 dbMember.setName(imMember.memberInfo.memberName);
+                dbMember.getTopics().add(dbTopic);
                 insertMembers.add(dbMember);
             }
         }

@@ -1,5 +1,7 @@
 package com.yanxiu.im;
 
+import android.util.Log;
+
 import com.test.yanxiu.common_base.utils.SharedSingleton;
 import com.yanxiu.im.bean.MsgItemBean;
 import com.yanxiu.im.bean.TopicItemBean;
@@ -11,6 +13,7 @@ import com.yanxiu.im.db.DbTopic;
 import com.yanxiu.im.manager.DatabaseManager;
 import com.yanxiu.im.net.TopicCreateTopicRequest_new;
 import com.yanxiu.im.net.TopicCreateTopicResponse_new;
+import com.yanxiu.im.net.TopicGetMemberTopicsResponse_new;
 import com.yanxiu.im.net.TopicGetTopicsResponse_new;
 import com.yanxiu.lib.yx_basic_library.network.IYXHttpCallback;
 import com.yanxiu.lib.yx_basic_library.network.YXRequestBase;
@@ -26,12 +29,75 @@ import okhttp3.Request;
  * 1、初步为了 整合 msglistactivity 获取 topicitem 对象
  */
 public class TopicsReponsery {
-
+    private final String TAG=getClass().getSimpleName();
     private static TopicsReponsery INSTANCE;
 
     public static TopicsReponsery getInstance() {
         if (INSTANCE == null) INSTANCE = new TopicsReponsery();
         return INSTANCE;
+    }
+
+    public TopicsReponsery() {
+
+
+    }
+
+    public ArrayList<TopicItemBean> getLocalTopicList(long imId) {
+        //异步获取 数据库数据 topic列表
+        DatabaseManager.useDbForUser(Long.toString(imId) + "_db");//todo:应该放在config里面去
+        final List<TopicItemBean> fromDb = (ArrayList<TopicItemBean>) DatabaseManager.topicsFromDb();
+        ArrayList<TopicItemBean> result = new ArrayList<>();
+        if (fromDb != null) {
+            result.addAll(fromDb);
+        }
+        return result;
+    }
+
+    /**
+     * 请求获取服务器最新的 topic list
+     * 新的 topic list 需要的信息 为 最新的 member 信息  + 最新的 msg 信息
+     */
+    public void getServerTopicList(long imId, TopicListUpdateCallback<TopicItemBean> callback) {
+        com.yanxiu.im.net.TopicGetMemberTopicsRequest_new getMemberTopicsRequest = new com.yanxiu.im.net.TopicGetMemberTopicsRequest_new();
+        getMemberTopicsRequest.imToken = Constants.imToken;
+        getMemberTopicsRequest.startRequest(TopicGetMemberTopicsResponse_new.class, new IYXHttpCallback<TopicGetMemberTopicsResponse_new>() {
+            /**
+             * startRequest()中生成get url，post body以后，调用OkHttp Request之前调用此回调
+             *
+             * @param request OkHttp Request
+             */
+            @Override
+            public void onRequestCreated(Request request) {
+
+            }
+
+            @Override
+            public void onSuccess(YXRequestBase request, TopicGetMemberTopicsResponse_new ret) {
+
+            }
+
+            @Override
+            public void onFail(YXRequestBase request, Error error) {
+            }
+        });
+    }
+
+    public interface TopicListUpdateCallback<E> {
+        void onListUpdated(ArrayList<E> dataList);
+    }
+
+    /**
+     * 请求 某个 topic 的 member 信息
+     */
+    public void updateTopicMembers(long topicId) {
+
+    }
+
+    /**
+     * 请求更新某个 topic 的最新 msglist
+     */
+    public void updateTopicMsgList(long topicId) {
+
     }
 
     /**
@@ -100,9 +166,11 @@ public class TopicsReponsery {
         requestTopicInfoFromServer(bean.getTopicId(), new GetTopicItemBeanCallback() {
             @Override
             public void onGetTopicItemBean(TopicItemBean beanCreateFromDB) {
+                Log.i(TAG, "onGetTopicItemBean: ");
                 if (beanCreateFromDB != null) {
                     //更新 target 的 info
                     updateBeanInfo(bean, beanCreateFromDB);
+                    //
                 }
                 callback.onGetTopicItemBean(bean);
             }
@@ -115,9 +183,9 @@ public class TopicsReponsery {
     private void updateBeanInfo(TopicItemBean target, TopicItemBean infoBean) {
         target.setGroup(infoBean.getGroup());
         target.setChange(infoBean.getChange());
-        target.setMembers(infoBean.getMembers());
-        target.setMsgList(infoBean.getMsgList());
         target.setTopicId(infoBean.getTopicId());
+        target.getMembers().clear();
+        target.getMembers().addAll(infoBean.getMembers());
         target.setType(infoBean.getType());
         target.setLatestMsgTime(infoBean.getLatestMsgTime());
         target.setLatestMsgId(infoBean.getLatestMsgId());
@@ -140,12 +208,11 @@ public class TopicsReponsery {
              * @param request OkHttp Request
              */
             @Override
-            public void onRequestCreated(Request request) {
-
-            }
+            public void onRequestCreated(Request request) { }
 
             @Override
             public void onSuccess(YXRequestBase request, com.yanxiu.im.net.TopicGetTopicsResponse_new ret) {
+                Log.i(TAG, "request topic server info onSuccess: ");
                 /*没有 topic 信息*/
                 if (ret == null || ret.code != 0) {
                     callback.onGetTopicItemBean(null);

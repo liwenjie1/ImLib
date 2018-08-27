@@ -6,6 +6,7 @@ import android.text.TextUtils;
 
 import com.test.yanxiu.common_base.utils.SharedSingleton;
 import com.yanxiu.im.Constants;
+import com.yanxiu.im.TopicsReponsery;
 import com.yanxiu.im.bean.MsgItemBean;
 import com.yanxiu.im.bean.TopicItemBean;
 import com.yanxiu.im.bean.net_bean.ImMsg_new;
@@ -62,14 +63,7 @@ public class TopicListPresenter implements TopicListContract.Presenter {
      */
     @Override
     public void doGetDbTopicList(long imId) {
-        //异步获取 数据库数据 topic列表
-        DatabaseManager.useDbForUser(Long.toString(Constants.imId) + "_db");//todo:应该放在config里面去
-        //这个耗时操作 在db数据较多时
-        List<TopicItemBean> dbTopics = DatabaseManager.topicsFromDb();
-        if (dbTopics == null) {
-            dbTopics = new ArrayList<>();
-        }
-
+        final ArrayList<TopicItemBean> dbTopics = TopicsReponsery.getInstance().getLocalTopicList(imId);
         //检查是否有 异常退出造成的sending 状态数据
         for (TopicItemBean dbTopic : dbTopics) {
             for (MsgItemBean msgItemBean : dbTopic.getMsgList()) {
@@ -125,7 +119,7 @@ public class TopicListPresenter implements TopicListContract.Presenter {
 
             @Override
             public void onSuccess(YXRequestBase request, TopicGetMemberTopicsResponse_new ret) {
-                if (topicsFromDb==null) {
+                if (topicsFromDb == null) {
                     return;
                 }
 
@@ -203,17 +197,17 @@ public class TopicListPresenter implements TopicListContract.Presenter {
         //用http返回的topic去遍历本地的topic，所有不在DB中的，以及所有在DB中但change不等于topicChange的topics，都需要更新
         for (com.yanxiu.im.bean.net_bean.ImTopic_new imTopic : ret.data.topic) {
             boolean needUpdateMembers = true;
-//            for (TopicItemBean dbTopic : topicList) {
-//                if (dbTopic.getTopicId() == imTopic.topicId) { //已经存在的topic
-//                    dbTopic.setLatestMsgId(imTopic.latestMsgId);
-//                    dbTopic.setLatestMsgTime(imTopic.latestMsgTime);
-//                    if (dbTopic.getChange().equals(imTopic.topicChange)) { //已经存在的topic，且topicchange无变化的，不需更新
-//                        needUpdateMembers = false;
-//                        maybeNeedUpdateMsgTopicList.add(dbTopic);
-//                    }
-//                    break;
-//                }
-//            }
+            for (TopicItemBean dbTopic : topicList) {
+                if (dbTopic.getTopicId() == imTopic.topicId) { //已经存在的topic
+                    dbTopic.setLatestMsgId(imTopic.latestMsgId);
+                    dbTopic.setLatestMsgTime(imTopic.latestMsgTime);
+                    if (dbTopic.getChange().equals(imTopic.topicChange)) { //已经存在的topic，且topicchange无变化的，不需更新
+                        needUpdateMembers = false;
+                        maybeNeedUpdateMsgTopicList.add(dbTopic);
+                    }
+                    break;
+                }
+            }
             if (needUpdateMembers) { //需要更新的topic
                 idTopicsNeedUpdateMember.add(Long.toString(imTopic.topicId));
             }
@@ -256,7 +250,7 @@ public class TopicListPresenter implements TopicListContract.Presenter {
 
             @Override
             public void onSuccess(YXRequestBase request, com.yanxiu.im.net.TopicGetTopicsResponse_new ret) {
-                if (topicList==null) {
+                if (topicList == null) {
                     return;
                 }
 
@@ -385,7 +379,7 @@ public class TopicListPresenter implements TopicListContract.Presenter {
     @Override
     public void doReceiveNewMsg(MsgItemBean msg) {
         List<TopicItemBean> topics = SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST);
-        if (topics==null) {
+        if (topics == null) {
             return;
         }
 
@@ -424,7 +418,7 @@ public class TopicListPresenter implements TopicListContract.Presenter {
     @Override
     public void doRemoveFromTopic(long topicId) {
         List<TopicItemBean> topics = SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST);
-        if (topics==null) {
+        if (topics == null) {
             return;
         }
         TopicItemBean removedTopic = null;
@@ -451,7 +445,7 @@ public class TopicListPresenter implements TopicListContract.Presenter {
     @Override
     public void doAddedToTopic(long topicId, boolean mqtt) {
         List<TopicItemBean> topics = SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST);
-        if (topics==null) {
+        if (topics == null) {
             return;
         }
         //在网络请求结果中回调给UI
@@ -494,7 +488,7 @@ public class TopicListPresenter implements TopicListContract.Presenter {
      */
     private void updateEachTopicMsgs(List<TopicItemBean> topics) {
         totalRetryTimes = 10;
-        if (topics==null) {
+        if (topics == null) {
             return;
         }
         for (TopicItemBean topic : topics) {
@@ -679,7 +673,7 @@ public class TopicListPresenter implements TopicListContract.Presenter {
 
             @Override
             public void onSuccess(YXRequestBase request, com.yanxiu.im.net.TopicGetTopicsResponse_new ret) {
-                if (topics==null) {
+                if (topics == null) {
                     return;
                 }
                 // 更新数据库
