@@ -9,6 +9,7 @@ import android.util.Log;
 
 import com.test.yanxiu.common_base.utils.SrtLogger;
 import com.yanxiu.im.manager.MqttProtobufManager;
+import com.yanxiu.lib.yx_basic_library.util.logger.YXLogger;
 
 import org.eclipse.paho.android.service.MqttAndroidClient;
 import org.eclipse.paho.client.mqttv3.IMqttActionListener;
@@ -47,10 +48,16 @@ public class MqttService extends Service {
 
         // host为null时，采用默认
         public void init(String host, String user, String pwd) {
+            YXLogger.d("mqtt","init host:  "+host +"user :"+user +" pwd : "+pwd);
             MqttService.this.host = host;
             MqttService.this.userName = user;
             MqttService.this.passWord = pwd;
             doInit();
+        }
+
+        public void init(String host){
+            host=MqttService.this.host+host;
+            init(host,MqttService.this.userName,MqttService.this.passWord);
         }
 
         public void connect() {
@@ -241,7 +248,7 @@ public class MqttService extends Service {
     @Override
     public IBinder onBind(Intent intent) {
         SrtLogger.log("im service", "bind");
-        host = host + intent.getStringExtra("host");
+//        host = host + intent.getStringExtra("host");
         return new MqttBinder();
     }
 
