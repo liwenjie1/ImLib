@@ -64,6 +64,8 @@ public class MqttService extends Service {
             doConnect();
         }
 
+
+
         public void disconnect() {
             doDisconnect();
         }
@@ -80,7 +82,8 @@ public class MqttService extends Service {
             doSubscribeMember(memberId);
         }
 
-        public void unsubscribeMember() {
+        public void unsubscribeMember(long memberId) {
+            doUnsubscribeMember(memberId);
         }
 
         public MqttService getService() {

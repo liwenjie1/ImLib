@@ -217,10 +217,17 @@ public class ImTopicListFragment extends FaceShowBaseFragment
         mRecyclerAdapter.setDataList(dbTopicList);
         mRecyclerAdapter.notifyDataSetChanged();
         topicListPresenter.doCheckRedDot(dbTopicList);
-        //订阅 topic
-        mqttConnectPresenter.subscribeTopics(dbTopicList);
-        //更新 topic 列表
-        topicListPresenter.doTopicListUpdate(dbTopicList);
+        //检查 mqtt 情况
+        if (mqttConnectPresenter.checkMqttState()) {
+            //如果已经正常连接了 mqtt 服务器
+            mqttConnectPresenter.subscribeTopics(dbTopicList);
+            //更新 topic 列表
+            topicListPresenter.doTopicListUpdate(dbTopicList);
+        }else {
+             mqttConnectPresenter.
+        }
+
+
     }
 
 

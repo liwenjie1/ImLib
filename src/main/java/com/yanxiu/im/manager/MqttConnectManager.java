@@ -51,13 +51,25 @@ public class MqttConnectManager {
 
     private Context applicationContext;
 
-    public MqttConnectManager(Context applicationContext) {
+    private MqttConnectManager(Context applicationContext) {
         this.applicationContext = applicationContext;
         //重连器    按30秒间隔 无限重试
         mReconnectManager = new MqttReconnectManager(-1, 30);
         subscribedIds = new ArrayList<>();
     }
 
+
+    public boolean isMqttServiceBinded(){
+        //首先判断  mqttservice 是否已经绑定
+        if (mqttBinder==null|| !serviceBindedFlat) {
+            return false;
+        }
+
+
+
+
+        return true;
+    }
 
     //服务绑定标志
     private boolean serviceBindedFlat = false;
@@ -229,6 +241,19 @@ public class MqttConnectManager {
         }
     }
 
+    /*memberinfo 订阅*/
+    public void subscribeMemberInfo(long memberId) {
+        if (mqttBinder != null) {
+            mqttBinder.subscribeMember(memberId);
+        }
+    }
+
+    /*memberinfo 取消订阅*/
+    public void unsubscribeMemberInfo(long memberId) {
+        if (mqttBinder != null) {
+            mqttBinder.unsubscribeMember(memberId);
+        }
+    }
 
     /**
      * 请求 mqtt 连接
@@ -236,7 +261,7 @@ public class MqttConnectManager {
      * 调用了 当前方法 证明 正常获取了用户信息
      * 如果获取失败了 ？
      */
-    public void connectMqttServer() {
+    public void connectMqttServer(final ConnectMqttServerCallback connectMqttServerCallback) {
         //首先请求 mqtthost
         requestMqttHost(new GetImHostCallBack() {
             @Override
@@ -249,10 +274,19 @@ public class MqttConnectManager {
             @Override
             public void onFailure(String msg) {
                 //获取 mqtt host 失败了  进行重试
+                connectMqttServerCallback.onConnectFail();
                 YXLogger.e(TAG, msg + "");
             }
         });
     }
+    /**
+     * mqtt 服务器连接动作的回调
+     * */
+    public interface ConnectMqttServerCallback{
+        void onConnectFail();
+        void onConnectSuccess();
+    }
+
 
     /**
      * 断开与 mqtt 服务器的连接
