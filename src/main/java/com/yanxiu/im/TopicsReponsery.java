@@ -1,5 +1,6 @@
 package com.yanxiu.im;
 
+import android.content.Context;
 import android.util.Log;
 
 import com.test.yanxiu.common_base.utils.SharedSingleton;
@@ -7,10 +8,12 @@ import com.yanxiu.im.bean.MsgItemBean;
 import com.yanxiu.im.bean.TopicItemBean;
 import com.yanxiu.im.bean.net_bean.ImTopic_new;
 import com.yanxiu.im.business.topiclist.sorter.ImTopicSorter;
+import com.yanxiu.im.business.utils.ProcessUtils;
 import com.yanxiu.im.business.utils.TopicInMemoryUtils;
 import com.yanxiu.im.db.DbMember;
 import com.yanxiu.im.db.DbTopic;
 import com.yanxiu.im.manager.DatabaseManager;
+import com.yanxiu.im.manager.MqttConnectManager;
 import com.yanxiu.im.net.TopicCreateTopicRequest_new;
 import com.yanxiu.im.net.TopicCreateTopicResponse_new;
 import com.yanxiu.im.net.TopicGetMemberTopicsResponse_new;
@@ -28,19 +31,49 @@ import okhttp3.Request;
  * 单例仓库 维持 位移数据对象供上层调用
  * 1、初步为了 整合 msglistactivity 获取 topicitem 对象
  */
-public class TopicsReponsery {
-    private final String TAG=getClass().getSimpleName();
+public class TopicsReponsery implements MqttConnectManager.MqttServerConnectListener, MqttConnectManager.MqttLocalServiceConnectListener {
+
+    private final String TAG = getClass().getSimpleName();
     private static TopicsReponsery INSTANCE;
 
     public static TopicsReponsery getInstance() {
         if (INSTANCE == null) INSTANCE = new TopicsReponsery();
+
         return INSTANCE;
     }
 
-    public TopicsReponsery() {
-
-
+    /*mqtt 服务连接状态*/
+    @Override
+    public void onLocalServiceBinded() {
+        Log.i(TAG, "onLocalServiceBinded: ");
     }
+
+    @Override
+    public void onLocalServiceUnbinded() {
+        Log.i(TAG, "onLocalServiceUnbinded: ");
+    }
+
+    @Override
+    public void onMqttServerConnected() {
+        Log.i(TAG, "onMqttServerConnected: ");
+    }
+
+    @Override
+    public void onMqttServerDisconnected() {
+        Log.i(TAG, "onMqttServerDisconnected: ");
+    }
+
+
+    public TopicsReponsery() {
+        final Context context = ImApplication.getContext().getApplicationContext();
+        final String processName = ProcessUtils.getProcessName(context);
+        Log.i("TopicsReponsery", "getInstance: " + processName);
+
+        MqttConnectManager.getInstance().setMqttLocalServiceConnectListener(this);
+        MqttConnectManager.getInstance().setMqttServerConnectListener(this);
+        MqttConnectManager.getInstance().connectMqttServer();
+    }
+
 
     public ArrayList<TopicItemBean> getLocalTopicList(long imId) {
         //异步获取 数据库数据 topic列表
@@ -81,6 +114,7 @@ public class TopicsReponsery {
             }
         });
     }
+
 
     public interface TopicListUpdateCallback<E> {
         void onListUpdated(ArrayList<E> dataList);
@@ -208,7 +242,8 @@ public class TopicsReponsery {
              * @param request OkHttp Request
              */
             @Override
-            public void onRequestCreated(Request request) { }
+            public void onRequestCreated(Request request) {
+            }
 
             @Override
             public void onSuccess(YXRequestBase request, com.yanxiu.im.net.TopicGetTopicsResponse_new ret) {

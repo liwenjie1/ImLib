@@ -21,6 +21,7 @@ public class MqttReconnectManager {
     private boolean runFlag = false;
 
 
+
     public MqttReconnectManager(int reconnectTimes, long reconnectDelay) {
         this.reconnectTimes = reconnectTimes;
         this.reconnectDelay = reconnectDelay;
@@ -28,11 +29,9 @@ public class MqttReconnectManager {
 
 
     public boolean start(AlarmCallback alarmCallback) {
-
         if (runFlag) {
             return false;
         }
-
         setAlarmCallback(alarmCallback);
         mTimer = new Timer("mqtt reconnect");
         alarmTask = new TimerTask() {

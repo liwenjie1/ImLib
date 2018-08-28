@@ -16,6 +16,7 @@ import com.yanxiu.lib.yx_basic_library.network.IYXHttpCallback;
 import com.yanxiu.lib.yx_basic_library.network.YXRequestBase;
 import com.yanxiu.lib.yx_basic_library.util.logger.YXLogger;
 
+import java.util.ArrayList;
 import java.util.UUID;
 
 import okhttp3.Request;
@@ -32,9 +33,10 @@ public class MqttConnectManager {
     }
 
     private final String TAG = getClass().getSimpleName();
-
-
+    private MqttReconnectManager mReconnectManager;
     //
+    private ArrayList<String> subscribedIds;
+
 
     public static void init(Context appContext) {
         if (INSTANCE == null) {
@@ -51,6 +53,9 @@ public class MqttConnectManager {
 
     public MqttConnectManager(Context applicationContext) {
         this.applicationContext = applicationContext;
+        //重连器    按30秒间隔 无限重试
+        mReconnectManager = new MqttReconnectManager(-1, 30);
+        subscribedIds = new ArrayList<>();
     }
 
 
@@ -68,8 +73,8 @@ public class MqttConnectManager {
 
             mqttBinder.getService().setmMqttServiceCallback(mMqttServiceCallback);
 
-            if (mMqttServiceConnectListener != null) {
-                mMqttServiceConnectListener.onLocalServiceBinded();
+            if (mMqttLocalServiceConnectListener != null) {
+                mMqttLocalServiceConnectListener.onLocalServiceBinded();
             }
         }
 
@@ -79,37 +84,38 @@ public class MqttConnectManager {
             serviceBindedFlat = false;
             mqttBinder.disconnect();
             mqttBinder = null;
-            if (mMqttServiceConnectListener != null) {
-                mMqttServiceConnectListener.onLocalServiceUnbinded();
+            if (mMqttLocalServiceConnectListener != null) {
+                mMqttLocalServiceConnectListener.onLocalServiceUnbinded();
             }
         }
     };
 
     /**
-     * mqtt 连接回调
+     * mqtt 服务器 连接回调
      */
     private MqttService.MqttServiceCallback mMqttServiceCallback = new MqttService.MqttServiceCallback() {
         @Override
         public void onDisconnect() {
             YXLogger.d(TAG, "onDisconnect");
-            if (mMqttServiceConnectListener != null) {
-                mMqttServiceConnectListener.onMqttServerDisconnected();
+            if (mMqttServerConnectListener != null) {
+                mMqttServerConnectListener.onMqttServerDisconnected();
             }
+            //重连 开始
         }
 
         @Override
         public void onConnect() {
+            //连接成功 取消重连
             YXLogger.d(TAG, "onConnect");
             //连接 mqtt 服务器成功 订阅 immember 信息
             mqttBinder.subscribeMember(Constants.imId);
-
-            if (mMqttServiceConnectListener != null) {
-                mMqttServiceConnectListener.onMqttServerConnected();
+            if (mMqttServerConnectListener != null) {
+                mMqttServerConnectListener.onMqttServerConnected();
             }
         }
     };
 
-
+    //绑定 本地 service
     public boolean bindMqttService() {
         if (this.applicationContext != null) {
             Intent serviceIntent = new Intent(applicationContext, MqttService.class);
@@ -118,14 +124,16 @@ public class MqttConnectManager {
         return false;
     }
 
+    //解绑本地 service
     public void unbindMqttService() {
+        disconnectMqttService();
         this.applicationContext.unbindService(mServiceConnection);
     }
 
     /**
      * 请求获取 mqtt host
      */
-    public void requestMqttHost(final GetImHostCallBack callBack) {
+    private void requestMqttHost(final GetImHostCallBack callBack) {
         PolicyConfigRequest_new policyConfigRequest = new PolicyConfigRequest_new();
         final UUID hostRequestUUID = policyConfigRequest.startRequest(PolicyConfigResponse_new.class, new IYXHttpCallback<PolicyConfigResponse_new>() {
             /**
@@ -175,25 +183,37 @@ public class MqttConnectManager {
 
     public interface GetImHostCallBack {
         void onSuccess(String host);
+
+        void onFailure(String msg);
     }
 
+    /**
+     * 本地服务状态监听   mqtt 服务器连接状态监听
+     */
+    private MqttLocalServiceConnectListener mMqttLocalServiceConnectListener;
+    private MqttServerConnectListener mMqttServerConnectListener;
 
-    private MqttServiceConnectListener mMqttServiceConnectListener;
-
-    public void setMqttServiceConnectListener(MqttServiceConnectListener mqttServiceConnectListener) {
-        mMqttServiceConnectListener = mqttServiceConnectListener;
+    public void setMqttServerConnectListener(MqttServerConnectListener mqttServerConnectListener) {
+        mMqttServerConnectListener = mqttServerConnectListener;
     }
 
-    public interface MqttServiceConnectListener {
+    public void setMqttLocalServiceConnectListener(MqttLocalServiceConnectListener mqttLocalServiceConnectListener) {
+        mMqttLocalServiceConnectListener = mqttLocalServiceConnectListener;
+    }
+
+    public interface MqttLocalServiceConnectListener {
         void onLocalServiceBinded();
 
         void onLocalServiceUnbinded();
 
+
+    }
+
+    public interface MqttServerConnectListener {
         void onMqttServerConnected();
 
         void onMqttServerDisconnected();
     }
-
 
 
     /*订阅与 取消订阅*/
@@ -212,14 +232,39 @@ public class MqttConnectManager {
 
     /**
      * 请求 mqtt 连接
+     * 在获取用户 imtoken 调用
+     * 调用了 当前方法 证明 正常获取了用户信息
+     * 如果获取失败了 ？
      */
-    public void connectMqttServer(String host) {
-        mqttBinder.init(host);
-        mqttBinder.connect();
+    public void connectMqttServer() {
+        //首先请求 mqtthost
+        requestMqttHost(new GetImHostCallBack() {
+            @Override
+            public void onSuccess(String host) {
+                //成功获取 mqtt host 进行 mqtt 服务器连接
+                mqttBinder.init(host);
+                mqttBinder.connect();
+            }
+
+            @Override
+            public void onFailure(String msg) {
+                //获取 mqtt host 失败了  进行重试
+                YXLogger.e(TAG, msg + "");
+            }
+        });
     }
 
-
+    /**
+     * 断开与 mqtt 服务器的连接
+     * 在更换用户 或是 关闭 app 时调用
+     */
     public void disconnectMqttService() {
+        //取消所有订阅
+        for (String subscribedId : subscribedIds) {
+            mqttBinder.unsubscribeTopic(subscribedId);
+        }
+        //取消 member 消息订阅
+        mqttBinder.subscribeMember(Constants.imId);
         mqttBinder.disconnect();
     }
 

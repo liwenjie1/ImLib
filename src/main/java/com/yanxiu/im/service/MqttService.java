@@ -48,16 +48,16 @@ public class MqttService extends Service {
 
         // host为null时，采用默认
         public void init(String host, String user, String pwd) {
-            YXLogger.d("mqtt","init host:  "+host +"user :"+user +" pwd : "+pwd);
+            YXLogger.d("mqtt", "init host:  " + host + "user :" + user + " pwd : " + pwd);
             MqttService.this.host = host;
             MqttService.this.userName = user;
             MqttService.this.passWord = pwd;
             doInit();
         }
 
-        public void init(String host){
-            host=MqttService.this.host+host;
-            init(host,MqttService.this.userName,MqttService.this.passWord);
+        public void init(String host) {
+            host = MqttService.this.host + host;
+            init(host, MqttService.this.userName, MqttService.this.passWord);
         }
 
         public void connect() {
@@ -72,10 +72,15 @@ public class MqttService extends Service {
             doSubscribeTopic(topicId);
         }
 
-        public void unsubscribeTopic(String topicId){doUnsubscribeTopic(topicId);}
+        public void unsubscribeTopic(String topicId) {
+            doUnsubscribeTopic(topicId);
+        }
 
         public void subscribeMember(long memberId) {
             doSubscribeMember(memberId);
+        }
+
+        public void unsubscribeMember() {
         }
 
         public MqttService getService() {
@@ -244,6 +249,27 @@ public class MqttService extends Service {
             }
         }
     }
+
+    public void doUnsubscribeMember(long memberId) {
+        if ((mClient != null) && mClient.isConnected()) {
+            try {
+                mClient.unsubscribe("im/v1.0/member/" + Long.toString(memberId), MqttService.this, new IMqttActionListener() {
+                    @Override
+                    public void onSuccess(IMqttToken asyncActionToken) {
+                        //SrtLogger.log("immqtt", "mqtt subscribe member successfully");
+                    }
+
+                    @Override
+                    public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
+                        //SrtLogger.log("immqtt", "mqtt subscribe member failed");
+                    }
+                });
+            } catch (MqttException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
 
     @Override
     public IBinder onBind(Intent intent) {

@@ -137,7 +137,7 @@ public class ImTopicListFragment extends FaceShowBaseFragment
                 //学员端才有 通讯录功能
                 //事件统计 点击通讯录
                 EventUpdate.onClickContactEvent(getActivity());
-                ImMsgListActivity.invokeByPush(getActivity(),100,ImMsgListActivity.REQUEST_CODE_PUSH);
+                ImMsgListActivity.invokeByPush(getActivity(), 100, ImMsgListActivity.REQUEST_CODE_PUSH);
 //                ContactsActivity.invoke(ImTopicListFragment.this);
                 if (titlebarActionListener != null) {
                     titlebarActionListener.onRightComponpentClicked();
@@ -166,7 +166,6 @@ public class ImTopicListFragment extends FaceShowBaseFragment
     @Override
     public void onDestroy() {
         EventBus.getDefault().unregister(this);
-        mqttConnectPresenter.doDisConnectMqtt(getActivity());
         super.onDestroy();
     }
 
@@ -218,14 +217,16 @@ public class ImTopicListFragment extends FaceShowBaseFragment
         mRecyclerAdapter.setDataList(dbTopicList);
         mRecyclerAdapter.notifyDataSetChanged();
         topicListPresenter.doCheckRedDot(dbTopicList);
-        //连接ImMqtt 连接成功后 订阅topic
-        mqttConnectPresenter.doConnectMqtt(getActivity());
+        //订阅 topic
+        mqttConnectPresenter.subscribeTopics(dbTopicList);
+        //更新 topic 列表
+        topicListPresenter.doTopicListUpdate(dbTopicList);
     }
 
 
     @Override
     public void onTopicUpdate(long topicId) {
-        mqttConnectPresenter.subscribeTopic(topicId);
+        mqttConnectPresenter.subScribeTopic(topicId);
         if (SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST) == null) {
             return;
         }
@@ -251,25 +252,7 @@ public class ImTopicListFragment extends FaceShowBaseFragment
         }
     }
 
-    /**
-     * mqtt 部分的连接回调 连接成功后 被调用
-     * 当mqtt连接成功后 发起一次http请求来刷新topic 数据
-     * 每一条topic更新完成后 会回调 {@link ImTopicListFragment#onTopicListUpdate()}方法
-     */
-    @Override
-    public void onMqttConnected() {
-        //mqtt 连接成功以后 执行http请求更新topic列表
 
-        //先订阅 db中的数据
-        mqttConnectPresenter.subscribeTopics(mRecyclerAdapter.getDataList());
-        //更新topic列表 请求 http
-        topicListPresenter.doTopicListUpdate(mRecyclerAdapter.getDataList());
-    }
-
-    @Override
-    public void onMqttDisconnected() {
-
-    }
     //endregion
 
     // region  EventBus 通知接收
@@ -289,7 +272,7 @@ public class ImTopicListFragment extends FaceShowBaseFragment
     @Subscribe
     public void migrateMockTopicToRealTopic(MigrateMockTopicEvent event) {
         mRecyclerAdapter.notifyDataSetChanged();
-        mqttConnectPresenter.subscribeTopic(event.topicId);
+        mqttConnectPresenter.subScribeTopic(event.topicId);
         topicListPresenter.doCheckRedDot(mRecyclerAdapter.getDataList());
         // 给MsgListActivity 发通知
         EventBus.getDefault().post(new MsgListMigrateMockTopicEvent(event.topicId));
@@ -365,7 +348,7 @@ public class ImTopicListFragment extends FaceShowBaseFragment
     @Override
     public void onRemovedFromTopic(long topicId, String topicName) {
         //取消mqtt 订阅
-        mqttConnectPresenter.unsubscribeTopic(topicId);
+        mqttConnectPresenter.unsubScribeTopic(topicId);
         /*学员端 刷新界面*/
         if (Constants.APP_TYPE == Constants.APP_TYPE_STUDENT) {
             if (SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST) == null) {
@@ -424,7 +407,7 @@ public class ImTopicListFragment extends FaceShowBaseFragment
     @Override
     public void onAddedToTopic(long topicId) {
         //增加mqtt订阅
-        mqttConnectPresenter.subscribeTopic(topicId);
+        mqttConnectPresenter.subScribeTopic(topicId);
     }
 
     /**
