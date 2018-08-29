@@ -1,11 +1,13 @@
 package com.yanxiu.im;
 
 import android.content.Context;
+import android.support.annotation.UiThread;
 import android.util.Log;
 
 import com.test.yanxiu.common_base.utils.SharedSingleton;
 import com.yanxiu.im.bean.MsgItemBean;
 import com.yanxiu.im.bean.TopicItemBean;
+import com.yanxiu.im.bean.net_bean.ImMsg_new;
 import com.yanxiu.im.bean.net_bean.ImTopic_new;
 import com.yanxiu.im.business.topiclist.sorter.ImTopicSorter;
 import com.yanxiu.im.business.utils.ProcessUtils;
@@ -13,6 +15,9 @@ import com.yanxiu.im.business.utils.TopicInMemoryUtils;
 import com.yanxiu.im.db.DbMember;
 import com.yanxiu.im.db.DbTopic;
 import com.yanxiu.im.manager.DatabaseManager;
+import com.yanxiu.im.manager.RequestQueueManager;
+import com.yanxiu.im.net.GetTopicMsgsRequest_new;
+import com.yanxiu.im.net.GetTopicMsgsResponse_new;
 import com.yanxiu.im.net.TopicCreateTopicRequest_new;
 import com.yanxiu.im.net.TopicCreateTopicResponse_new;
 import com.yanxiu.im.net.TopicGetMemberTopicsResponse_new;
@@ -41,43 +46,84 @@ public class TopicsReponsery {
         return INSTANCE;
     }
 
+
+
     /*mqtt 服务连接状态*/
 
     public TopicsReponsery() {
         final Context context = ImApplication.getContext().getApplicationContext();
         final String processName = ProcessUtils.getProcessName(context);
         Log.i("TopicsReponsery", "getInstance: " + processName);
+        mQueueManager = new RequestQueueManager();
+
+        needUpdateMemberTopics = new ArrayList<>();
+        needUpdateMsgTopics = new ArrayList<>();
 
     }
 
     private ArrayList<TopicItemBean> topicInMemory;
 
+    /**
+     * 优化请求队列
+     */
+    private ArrayList<TopicItemBean> needUpdateMemberTopics;
+    private ArrayList<TopicItemBean> needUpdateMsgTopics;
+
+    private RequestQueueManager mQueueManager;
+
+    private android.os.Handler uiHandler = new android.os.Handler();
 
     /**
      * 将 topiclist 加入内存中
      */
     private void addAllToMemory(ArrayList<TopicItemBean> topicItemBeans) {
-        if (topicInMemory == null) {
-            topicInMemory = new ArrayList<>();
-        }
+        synchronized (this) {
+            if (topicInMemory == null) {
+                topicInMemory = new ArrayList<>();
+            }
 
-        if (topicItemBeans == null || topicItemBeans.size() == 0) {
-            return;
-        }
-        ArrayList<TopicItemBean> toAdd = new ArrayList<>();
-        for (TopicItemBean addBean : topicItemBeans) {
-            boolean has = false;
-            for (TopicItemBean memoryBean : topicInMemory) {
-                if (memoryBean.getTopicId() == addBean.getTopicId()) {
-                    has = true;
-                    break;
+            if (topicItemBeans == null || topicItemBeans.size() == 0) {
+                return;
+            }
+            ArrayList<TopicItemBean> toAdd = new ArrayList<>();
+            for (TopicItemBean addBean : topicItemBeans) {
+                boolean has = false;
+                for (TopicItemBean memoryBean : topicInMemory) {
+                    if (memoryBean.getTopicId() == addBean.getTopicId()) {
+                        has = true;
+                        break;
+                    }
+                }
+                if (!has) {
+                    toAdd.add(addBean);
                 }
             }
-            if (!has) {
-                toAdd.add(addBean);
-            }
+            topicInMemory.addAll(toAdd);
         }
-        topicInMemory.addAll(toAdd);
+    }
+
+    private void addToMemory(TopicItemBean bean) {
+        synchronized (this) {
+            if (topicInMemory == null) {
+                topicInMemory = new ArrayList<>();
+            }
+            topicInMemory.add(bean);
+        }
+    }
+
+    private void deleteFromMemory(TopicItemBean bean) {
+        synchronized (this) {
+            if (topicInMemory == null) {
+                return;
+            }
+            TopicInMemoryUtils.removeTopicFromListById(bean.getTopicId(), topicInMemory);
+        }
+    }
+
+    private void deleteFromMemory(ArrayList<TopicItemBean> beans) {
+        for (TopicItemBean bean : beans) {
+            deleteFromMemory(bean);
+        }
     }
 
     public ArrayList<TopicItemBean> getTopicInMemory() {
@@ -97,9 +143,12 @@ public class TopicsReponsery {
      * 新的 topic list 需要的信息 为 最新的 member 信息  + 最新的 msg 信息
      */
     public void getServerTopicList(final String imToken, final TopicListUpdateCallback<TopicItemBean> callback) {
+        needUpdateMemberTopics.clear();
+        needUpdateMsgTopics.clear();
+
         com.yanxiu.im.net.TopicGetMemberTopicsRequest_new getMemberTopicsRequest = new com.yanxiu.im.net.TopicGetMemberTopicsRequest_new();
         getMemberTopicsRequest.imToken = imToken;
-        getMemberTopicsRequest.startRequest(TopicGetMemberTopicsResponse_new.class, new IYXHttpCallback<TopicGetMemberTopicsResponse_new>() {
+        mQueueManager.addRequest(getMemberTopicsRequest, TopicGetMemberTopicsResponse_new.class, new IYXHttpCallback<TopicGetMemberTopicsResponse_new>() {
             /**
              * startRequest()中生成get url，post body以后，调用OkHttp Request之前调用此回调
              *
@@ -113,9 +162,15 @@ public class TopicsReponsery {
             @Override
             public void onSuccess(YXRequestBase request, TopicGetMemberTopicsResponse_new ret) {
                 if (ret.code != 0 || ret.data == null || ret.data.topic == null) {
-                    callback.onListUpdated(topicInMemory);
+                    uiHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            callback.onListUpdated(topicInMemory);
+                        }
+                    });
                     return;
                 }
+                Log.i(TAG, "onSuccess: 获取服务器最新 topic 列表成功");
                 //获取了服务器上最新的 topic 列表后
                 /*1：对 topic 进行划分 分为  新添加  更新  已删除*/
 
@@ -133,9 +188,12 @@ public class TopicsReponsery {
                     }
                     if (!has) {
                         //添加新增的
-                        topicInMemory.add(savedBean);
+                        addToMemory(savedBean);
+                        needUpdateMsgTopics.add(savedBean);
+                        needUpdateMemberTopics.add(savedBean);
                     }
                 }
+                Log.i(TAG, "onSuccess: 完成列表内新增和更新 ");
                 //查找已经删除的
                 ArrayList<TopicItemBean> toBeDel = new ArrayList<>();
                 for (TopicItemBean localBean : topicInMemory) {
@@ -151,9 +209,15 @@ public class TopicsReponsery {
                         toBeDel.add(localBean);
                     }
                 }
-                topicInMemory.removeAll(toBeDel);
+                deleteFromMemory(toBeDel);
+                Log.i(TAG, "onSuccess: 完成列表内删除 -" + toBeDel.size());
                 /*对列表的长度以及 信息 更新已经完成 可以回调 给 ui 列表更新完毕*/
-                callback.onListUpdated(topicInMemory);
+                uiHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        callback.onListUpdated(topicInMemory);
+                    }
+                });
 
             }
 
@@ -168,19 +232,6 @@ public class TopicsReponsery {
         void onListUpdated(ArrayList<E> dataList);
     }
 
-    /**
-     * 请求 某个 topic 的 member 信息
-     */
-    public void updateTopicMembers(long topicId) {
-
-    }
-
-    /**
-     * 请求更新某个 topic 的最新 msglist
-     */
-    public void updateTopicMsgList(long topicId) {
-
-    }
 
     /**
      * 获取本地 topic by topicid
@@ -237,6 +288,17 @@ public class TopicsReponsery {
 
 
     /**
+     * 更新所有当前 topic 的 member 与 msg
+     */
+    public void updateAllTopicInfo(final GetTopicItemBeanCallback callback) {
+        if (topicInMemory != null && topicInMemory.size() > 0) {
+            for (TopicItemBean bean : topicInMemory) {
+                updateTopicInfo(bean, callback);
+            }
+        }
+    }
+
+    /**
      * 对一个 topicbean 进行数据更新
      */
     public void updateTopicInfo(final TopicItemBean bean, final GetTopicItemBeanCallback callback) {
@@ -245,29 +307,44 @@ public class TopicsReponsery {
             callback.onGetTopicItemBean(null);
             return;
         }
-        requestTopicInfoFromServer(bean.getTopicId(), new GetTopicItemBeanCallback() {
+
+        requestTopicMemberInfoFromServer(bean, new GetTopicItemBeanCallback() {
             @Override
             public void onGetTopicItemBean(TopicItemBean beanCreateFromDB) {
                 Log.i(TAG, "onGetTopicItemBean: ");
                 if (beanCreateFromDB != null) {
                     //更新 target 的 info
-                    updateBeanInfo(bean, beanCreateFromDB);
+                    updateMemberInfo(bean, beanCreateFromDB);
+                    callback.onGetTopicItemBean(bean);
                     //
                 }
-                callback.onGetTopicItemBean(bean);
+                //继续请求 msg 信息 之后回调 ui
+                requestLastestMsgPageFromServer(bean, callback);
             }
         });
     }
 
+
+    private void updateMemberInfo(TopicItemBean target, TopicItemBean infoBean){
+        target.getMembers().clear();
+        target.getMembers().addAll(infoBean.getMembers());
+    }
     /**
      * 用 infoBean 对 target 进行内容的更新
      */
     private void updateBeanInfo(TopicItemBean target, TopicItemBean infoBean) {
+        //红点
+        boolean showUpdateMsg = target.getLatestMsgId() < infoBean.getLatestMsgId();
+        if (showUpdateMsg) needUpdateMsgTopics.add(target);
+        final String localChange = target.getChange();
+        final String serverChange = infoBean.getChange();
+        if (Integer.valueOf(localChange) < Integer.valueOf(serverChange)||target.getMembers()==null||target.getMembers().size()<2) {
+            needUpdateMemberTopics.add(target);
+        }
+        target.setShowDot(showUpdateMsg);
         target.setGroup(infoBean.getGroup());
         target.setChange(infoBean.getChange());
         target.setTopicId(infoBean.getTopicId());
-        target.getMembers().clear();
-        target.getMembers().addAll(infoBean.getMembers());
         target.setType(infoBean.getType());
         target.setLatestMsgTime(infoBean.getLatestMsgTime());
         target.setLatestMsgId(infoBean.getLatestMsgId());
@@ -279,11 +356,13 @@ public class TopicsReponsery {
      * 向服务器请求
      * 如果返回了 topic 数据
      */
-    private void requestTopicInfoFromServer(final long topicId, final GetTopicItemBeanCallback callback) {
+    private void requestTopicMemberInfoFromServer(final TopicItemBean bean, final GetTopicItemBeanCallback callback) {
+        if (checkShouldUpdateMember(bean, callback)) return;
+
         com.yanxiu.im.net.TopicGetTopicsRequest_new getTopicsRequest = new com.yanxiu.im.net.TopicGetTopicsRequest_new();
         getTopicsRequest.imToken = Constants.imToken;
-        getTopicsRequest.topicIds = String.valueOf(topicId);
-        getTopicsRequest.startRequest(com.yanxiu.im.net.TopicGetTopicsResponse_new.class, new IYXHttpCallback<TopicGetTopicsResponse_new>() {
+        getTopicsRequest.topicIds = String.valueOf(bean.getTopicId());
+        mQueueManager.addRequest(getTopicsRequest, com.yanxiu.im.net.TopicGetTopicsResponse_new.class, new IYXHttpCallback<TopicGetTopicsResponse_new>() {
             /**
              * startRequest()中生成get url，post body以后，调用OkHttp Request之前调用此回调
              *
@@ -297,24 +376,25 @@ public class TopicsReponsery {
             public void onSuccess(YXRequestBase request, com.yanxiu.im.net.TopicGetTopicsResponse_new ret) {
                 Log.i(TAG, "request topic server info onSuccess: ");
                 /*没有 topic 信息*/
-                if (ret == null || ret.code != 0) {
-                    callback.onGetTopicItemBean(null);
-                    return;
-                }
-                if (ret.data == null || ret.data.topic == null || ret.data.topic.size() == 0) {
-                    callback.onGetTopicItemBean(null);
+                if (ret.code != 0||ret.data == null || ret.data.topic == null || ret.data.topic.size() == 0) {
+                    uiHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            callback.onGetTopicItemBean(bean);
+                        }
+                    });
                     return;
                 }
                 ImTopic_new imTopic = ret.data.topic.get(0);
-                if (imTopic == null) {
-                    callback.onGetTopicItemBean(null);
-                    return;
-                }
-
                 //将服务器返回的结果保存到数据库 并生成 topicitembean
-                TopicItemBean dbTopic = DatabaseManager.updateDbTopicWithImTopic(imTopic);
-                callback.onGetTopicItemBean(dbTopic);
-                // TODO: 2018/8/23  后期 需要进行内存同步  当前只返回需要的目标 topicitembean
+                final TopicItemBean dbTopic = DatabaseManager.updateDbTopicWithImTopic(imTopic);
+                uiHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        callback.onGetTopicItemBean(dbTopic);
+                    }
+                });
+
             }
 
             @Override
@@ -322,6 +402,87 @@ public class TopicsReponsery {
                 callback.onGetTopicItemBean(null);
             }
         });
+    }
+
+    private boolean checkShouldUpdateMember(TopicItemBean bean, GetTopicItemBeanCallback callback) {
+        //检查是否需要进行 member 更新
+//        final TopicItemBean topicByTopicId = TopicInMemoryUtils.findTopicByTopicId(bean.getTopicId(), needUpdateMemberTopics);
+//        if (topicByTopicId == null) {
+//            //没在更新 member 的列表中 直接返回 bean 不尽兴 网路请求
+//            callback.onGetTopicItemBean(bean);
+//            return true;
+//        }
+        return false;
+    }
+
+    public void requestLastestMsgPageFromServer(final TopicItemBean itemBean, final GetTopicItemBeanCallback callback) {
+        if (checkShouldUpdateMsg(itemBean, callback)) return;
+
+
+        //更新msg
+        GetTopicMsgsRequest_new getTopicMsgsRequest = new GetTopicMsgsRequest_new();
+        getTopicMsgsRequest.imToken = Constants.imToken;
+        getTopicMsgsRequest.topicId = Long.toString(itemBean.getTopicId());
+        //如果是最新加入的topic 没有消息记录 赋予latestmsgid 为long最大值
+        //由于是获取最新消息 所以 请求startid 采用Long.MAXVALUE
+        getTopicMsgsRequest.startId = String.valueOf(Long.MAX_VALUE);
+        getTopicMsgsRequest.order = "desc";
+        mQueueManager.addRequest(getTopicMsgsRequest, GetTopicMsgsResponse_new.class, new IYXHttpCallback<GetTopicMsgsResponse_new>() {
+            @Override
+            public void onRequestCreated(Request request) {
+
+            }
+
+            @Override
+            public void onSuccess(YXRequestBase request, GetTopicMsgsResponse_new ret) {
+                if (ret.code != 0 || ret.data == null || ret.data.topicMsg == null) {
+                    uiHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            callback.onGetTopicItemBean(itemBean);
+                        }
+                    });
+
+                    return;
+                }
+                ArrayList<MsgItemBean> msgPages = new ArrayList<>();
+                for (ImMsg_new imMsgNew : ret.data.topicMsg) {
+                    //获取 msglist 后  首先  保存数据库
+                    final MsgItemBean msgItemBean = DatabaseManager.updateDbMsgWithImMsg(imMsgNew, Constants.imId);
+                    msgPages.add(msgItemBean);
+                }
+
+                List<MsgItemBean> msgList = itemBean.getMsgList();
+                if (msgList == null) {
+                    msgList = new ArrayList<>();
+                    itemBean.setMsgList(msgList);
+                }
+                TopicInMemoryUtils.duplicateRemoval(msgPages, itemBean.getMsgList());
+                itemBean.getMsgList().addAll(msgPages);
+                uiHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        callback.onGetTopicItemBean(itemBean);
+                    }
+                });
+
+            }
+
+            @Override
+            public void onFail(YXRequestBase request, Error error) {
+
+            }
+        });
+    }
+
+    private boolean checkShouldUpdateMsg(TopicItemBean itemBean, GetTopicItemBeanCallback callback) {
+//        //检查是否需要更新 msg
+//        final TopicItemBean topicByTopicId = TopicInMemoryUtils.findTopicByTopicId(itemBean.getTopicId(), needUpdateMsgTopics);
+//        if (topicByTopicId == null) {
+//            callback.onGetTopicItemBean(itemBean);
+//            return true;
+//        }
+        return false;
     }
 
     /**
@@ -435,7 +596,13 @@ public class TopicsReponsery {
                 }
                 DatabaseManager.migrateMockTopicToRealTopic(currentTopic, imTopic);
                 //创建topic 成功 开始发送消息
-                callback.onGetTopicItemBean(currentTopic);
+                uiHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        callback.onGetTopicItemBean(currentTopic);
+                    }
+                });
+
 
             }
 
@@ -448,10 +615,12 @@ public class TopicsReponsery {
 
 
     public interface DeleteTopicCallback {
+        @UiThread
         void onTopicDeleted(boolean success, String msg);
     }
 
     public interface GetTopicItemBeanCallback {
+        @UiThread
         void onGetTopicItemBean(TopicItemBean bean);
     }
 

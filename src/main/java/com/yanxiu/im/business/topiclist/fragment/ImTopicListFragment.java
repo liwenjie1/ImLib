@@ -217,30 +217,26 @@ public class ImTopicListFragment extends FaceShowBaseFragment
         mRecyclerAdapter.setDataList(dbTopicList);
         mRecyclerAdapter.notifyDataSetChanged();
         topicListPresenter.doCheckRedDot(dbTopicList);
-        //检查 mqtt 情况
-        if (mqttConnectPresenter.checkMqttState()) {
-            //如果已经正常连接了 mqtt 服务器
-            mqttConnectPresenter.subscribeTopics(dbTopicList);
-            //更新 topic 列表
-            topicListPresenter.doTopicListUpdate(dbTopicList);
-        }else {
-//             mqttConnectPresenter.
-        }
+        topicListPresenter.doTopicListUpdate(dbTopicList);
+    }
 
+    /**
+     * 执行 {@link TopicListContract.Presenter} doGetTopicList 方法后的结果回调
+     * 获取更新了topiclist中topic的信息后的回调
+     */
+    @Override
+    public void onTopicListUpdate() {
+        mRecyclerAdapter.setDataList(topicListPresenter.getTopicInMemory());
+        mRecyclerAdapter.notifyDataSetChanged();
+        //检查红点状态
+        topicListPresenter.doUpdateTopicInfo();
+        topicListPresenter.doCheckRedDot(mRecyclerAdapter.getDataList());
 
     }
 
-
     @Override
     public void onTopicUpdate(long topicId) {
-        mqttConnectPresenter.subScribeTopic(topicId);
-        if (SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST) == null) {
-            return;
-        }
-        synchronized (SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST)) {
-            mRecyclerAdapter.setDataList((List<TopicItemBean>) SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST));
-            mRecyclerAdapter.notifyDataSetChanged();
-        }
+        mRecyclerAdapter.notifyDataSetChanged();
         //检查红点状态
         topicListPresenter.doCheckRedDot(mRecyclerAdapter.getDataList());
         EventBus.getDefault().post(new MsgListTopicUpdateEvent(topicId));
@@ -417,23 +413,7 @@ public class ImTopicListFragment extends FaceShowBaseFragment
         mqttConnectPresenter.subScribeTopic(topicId);
     }
 
-    /**
-     * 执行 {@link TopicListContract.Presenter} doGetTopicList 方法后的结果回调
-     * 获取更新了topiclist中topic的信息后的回调
-     */
-    @Override
-    public void onTopicListUpdate() {
-        if (SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST) == null) {
-            return;
-        }
-        synchronized (SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST)) {
-            mRecyclerAdapter.setDataList((List<TopicItemBean>) SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST));
-            mRecyclerAdapter.notifyDataSetChanged();
-        }
-        //检查红点状态
-        topicListPresenter.doCheckRedDot(mRecyclerAdapter.getDataList());
 
-    }
     //endregion
 
     private ImUserRemoveFromTopicListener mImUserRemoveFromTopicListener;
@@ -451,13 +431,8 @@ public class ImTopicListFragment extends FaceShowBaseFragment
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         //topic的消息队列有变化，需要对topic的信息（latestMsgId）进行更新设置并重新排序
-        if (SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST) == null) {
-            return;
-        }
-        synchronized (SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST)) {
-            mRecyclerAdapter.setDataList((List<TopicItemBean>) SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST));
-            mRecyclerAdapter.notifyDataSetChanged();
-        }
+        mRecyclerAdapter.setDataList(topicListPresenter.getTopicInMemory());
+        mRecyclerAdapter.notifyDataSetChanged();
         topicListPresenter.doCheckRedDot(mRecyclerAdapter.getDataList());
     }
 

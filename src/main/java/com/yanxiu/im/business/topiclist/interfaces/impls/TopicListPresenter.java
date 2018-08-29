@@ -20,7 +20,6 @@ import com.yanxiu.im.manager.DatabaseManager;
 import com.yanxiu.im.manager.RequestQueueManager;
 import com.yanxiu.im.net.GetTopicMsgsRequest_new;
 import com.yanxiu.im.net.GetTopicMsgsResponse_new;
-import com.yanxiu.im.net.TopicGetMemberTopicsResponse_new;
 import com.yanxiu.lib.yx_basic_library.network.IYXHttpCallback;
 import com.yanxiu.lib.yx_basic_library.network.YXRequestBase;
 
@@ -44,7 +43,6 @@ import okhttp3.Request;
 public class TopicListPresenter implements TopicListContract.Presenter {
     private final String TAG = getClass().getSimpleName();
 
-    private Handler mHandler = new Handler();
 
     private TopicListContract.View view;
     private Context mContext;
@@ -55,6 +53,11 @@ public class TopicListPresenter implements TopicListContract.Presenter {
     public TopicListPresenter(TopicListContract.View view, Context mContext) {
         this.view = view;
         this.mContext = mContext;
+    }
+    private Handler mHandler=new Handler();
+
+    public List<TopicItemBean> getTopicInMemory() {
+        return TopicsReponsery.getInstance().getTopicInMemory();
     }
 
     /**
@@ -82,12 +85,7 @@ public class TopicListPresenter implements TopicListContract.Presenter {
         }
         if (view != null) {
             final List<TopicItemBean> finalDbTopics = dbTopics;
-            mHandler.post(new Runnable() {
-                @Override
-                public void run() {
-                    view.onGetDbTopicList(finalDbTopics);
-                }
-            });
+            view.onGetDbTopicList(finalDbTopics);
         }
     }
 
@@ -103,186 +101,28 @@ public class TopicListPresenter implements TopicListContract.Presenter {
         TopicsReponsery.getInstance().getServerTopicList(Constants.imToken, new TopicsReponsery.TopicListUpdateCallback<TopicItemBean>() {
             @Override
             public void onListUpdated(ArrayList<TopicItemBean> dataList) {
-                mHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-
-                        view.onTopicListUpdate();
-                        //adapter notifyDataSetChanged()
-                    }
-                });
-            }
-        });
-
-    }
-
-    /**
-     * 3.1
-     * 判断topic是否需要更新member
-     * 从Http获取需要更新的topic的信息，完成后写入DB，更新UI
-     * 需要更新的两种情况：
-     * 1.新的topic
-     * 2.topicChange有变化的topic
-     */
-    private void checkTopicNeedUpdateMembers(TopicGetMemberTopicsResponse_new ret, List<TopicItemBean> topicList, List<TopicItemBean> maybeNeedUpdateMsgTopicList) {
-
-        List<String> idTopicsNeedUpdateMember = new ArrayList<>(); // 因为可能有新的，所以只能用topicId
-
-        //用http返回的topic去遍历本地的topic，所有不在DB中的，以及所有在DB中但change不等于topicChange的topics，都需要更新
-        for (com.yanxiu.im.bean.net_bean.ImTopic_new imTopic : ret.data.topic) {
-            boolean needUpdateMembers = true;
-            for (TopicItemBean dbTopic : topicList) {
-                if (dbTopic.getTopicId() == imTopic.topicId) { //已经存在的topic
-                    dbTopic.setLatestMsgId(imTopic.latestMsgId);
-                    dbTopic.setLatestMsgTime(imTopic.latestMsgTime);
-                    if (dbTopic.getChange().equals(imTopic.topicChange)) { //已经存在的topic，且topicchange无变化的，不需更新
-                        needUpdateMembers = false;
-                        maybeNeedUpdateMsgTopicList.add(dbTopic);
-                    }
-                    break;
-                }
-            }
-            if (needUpdateMembers) { //需要更新的topic
-                idTopicsNeedUpdateMember.add(Long.toString(imTopic.topicId));
-            }
-        }
-        //更新memeber 信息
-        if (idTopicsNeedUpdateMember.size() > 0) {
-            for (String topicId : idTopicsNeedUpdateMember) {
-                // 由于server限制，改成一个个取
-                updateTopicsWithMembers(topicList, topicId);
-            }
-        }
-    }
-
-    private void updateTopicsWithMembers(final List<TopicItemBean> topicList, final String topicIds) {
-        updateTopicsWithMembers(topicList, topicIds, false);
-    }
-
-    /**
-     * 3.2
-     * 更新members
-     * http, mqtt 公用
-     * 最后一步影响排序的 http 请求
-     *
-     * @param fromMqtt 区分 是由 http 拉取的新 topiclist 中执行的更新还是 有 mqtt addto 进行的数据请求
-     */
-    private void updateTopicsWithMembers(final List<TopicItemBean> topicList, final String topicIds, final boolean fromMqtt) {
-        com.yanxiu.im.net.TopicGetTopicsRequest_new getTopicsRequest = new com.yanxiu.im.net.TopicGetTopicsRequest_new();
-        getTopicsRequest.imToken = Constants.imToken;
-        getTopicsRequest.topicIds = topicIds;
-        rqManager.addRequest(getTopicsRequest, com.yanxiu.im.net.TopicGetTopicsResponse_new.class, new IYXHttpCallback<com.yanxiu.im.net.TopicGetTopicsResponse_new>() {
-            /**
-             * startRequest()中生成get url，post body以后，调用OkHttp Request之前调用此回调
-             *
-             * @param request OkHttp Request
-             */
-            @Override
-            public void onRequestCreated(Request request) {
-
-            }
-
-            @Override
-            public void onSuccess(YXRequestBase request, com.yanxiu.im.net.TopicGetTopicsResponse_new ret) {
-                if (topicList == null) {
-                    return;
-                }
-
-                // 更新数据库
-                List<TopicItemBean> topicsToUpdateMsgs = new ArrayList<>();
-
-                for (com.yanxiu.im.bean.net_bean.ImTopic_new imTopic : ret.data.topic) {
-                    TopicItemBean tempTopic = null;//需要更新的topic，为保证对象一致，该topic必须是topicList里的对象。
-                    TopicItemBean dbTopic = DatabaseManager.updateDbTopicWithImTopic(imTopic);//更新数据库
-                    //加入到更新msg的topicItembean列表
-                    topicsToUpdateMsgs.add(dbTopic);
-
-                    if (imTopic.latestMsgId >= dbTopic.getLatestMsgId()) {
-                        dbTopic.setLatestMsgTime(imTopic.latestMsgTime);
-                        dbTopic.setLatestMsgId(imTopic.latestMsgId);
-                    }
-                    synchronized (topicList) {
-                        boolean hasThisTopic = false;
-                        // 更新UI使用的topicList内的topic member列表
-                        for (TopicItemBean uiTopic : topicList) {
-                            if (uiTopic.getTopicId() == imTopic.topicId) {
-                                hasThisTopic = true;
-                                uiTopic.setTopicId(imTopic.topicId);
-                                uiTopic.setName(imTopic.topicName);
-                                uiTopic.setType(imTopic.topicType);
-                                uiTopic.setChange(imTopic.topicChange);
-                                uiTopic.setGroup(imTopic.topicGroup);
-                                //latestMsgID latset msgTime
-                                uiTopic.setMembers(dbTopic.getMembers());//TODO：member对象变了
-                                tempTopic = uiTopic;
-                            }
-                        }
-
-                        if (!hasThisTopic) {
-                            //列表中目前不包含 相同topicid 的topic
-                            tempTopic = dbTopic;
-                            tempTopic.setShowDot(true);
-                            //如果没有消息内容  排序需要 latest 时间
-                            if (tempTopic.getLatestMsgId() == 0) {
-                                tempTopic.setLatestMsgTime(System.currentTimeMillis());
-                            }
-
-                            //首先判断 dbtopic 为私聊才判断
-                            if (!TopicInMemoryUtils.isPrivateTopic(dbTopic)) {
-                                topicList.add(dbTopic);
-                            } else {
-                                if (!TopicInMemoryUtils.hasTheSameMockPrivateTopic(dbTopic.getMembers(), topicList)) {
-                                    //检查mocktopic 没有对应的mocktopic 直接加入到topiclist 中 进行列表更新
-                                    topicList.add(dbTopic);
-                                }
-                            }
-                            //新topic 通知订阅
-                            if (view != null) {
-                                //加入了 新topic
-                                final TopicItemBean finalTempTopic = tempTopic;
-                                mHandler.post(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        view.onAddedToTopic(finalTempTopic.getTopicId());
-                                    }
-                                });
-
-                            }
-                            //如果 原有列表中不含有 mqtt 推送的新加入 topic 需要置顶操作
-                            if (fromMqtt) {
-//                        如果是 mqtt 是在线状态加入了新的 topic 执行插入排序
-                                ImTopicSorter.insertTopicToTop(tempTopic.getTopicId(), topicList);
-                            } else {
-                                ImTopicSorter.sortByLatestTime(topicList);
-                            }
-                        } else {
-                            //如果 mqtt 推送的已经在 topic 中 不排序？
-                            //topic list 中的 topic 有更新  增加 或 latestmsgid 更新
-                            if (!fromMqtt) {
-                                ImTopicSorter.sortByLatestTime(topicList);
-                            }
-                        }
-                        if (view != null) {
-                            //通知 UI list 更新 （排序）
-                            mHandler.post(new Runnable() {
-                                @Override
-                                public void run() {
-                                    view.onTopicListUpdate();
-                                }
-                            });
-                        }
-                    }
-                }
-                // 4，对于需要更新members的topic，等待更新完members，再去取msgs
-                updateEachTopicMsgs(topicsToUpdateMsgs);
-            }
-
-            @Override
-            public void onFail(YXRequestBase request, Error error) {
-                // TODO: 2018/5/21 获取member
+                ImTopicSorter.sortByLatestTime(dataList);
+                doCheckRedDot(dataList);
+                view.onTopicListUpdate();
             }
         });
     }
+
+    /**
+     * 更新每一个 topic 的信息
+     * 1、member 2、msglist
+     */
+    public void doUpdateTopicInfo() {
+        TopicsReponsery.getInstance().updateAllTopicInfo(new TopicsReponsery.GetTopicItemBeanCallback() {
+            @Override
+            public void onGetTopicItemBean(TopicItemBean bean) {
+                //会多次回调 知道完全结束
+                view.onTopicUpdate(bean.getTopicId());
+            }
+        });
+    }
+
+
 
 
     @Override
@@ -301,12 +141,7 @@ public class TopicListPresenter implements TopicListContract.Presenter {
         }
         final boolean hasReddot2 = hasReddot;
         if (view != null) {
-            mHandler.post(new Runnable() {
-                @Override
-                public void run() {
-                    view.onRedDotState(hasReddot2);
-                }
-            });
+            view.onRedDotState(hasReddot2);
         }
     }
 
@@ -383,7 +218,6 @@ public class TopicListPresenter implements TopicListContract.Presenter {
             return;
         }
         //在网络请求结果中回调给UI
-        updateTopicsWithMembers(topics, topicId + "", mqtt);
     }
 
 
