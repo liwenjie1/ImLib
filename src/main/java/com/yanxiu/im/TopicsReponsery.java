@@ -30,7 +30,7 @@ import okhttp3.Request;
  * 单例仓库 维持 位移数据对象供上层调用
  * 1、初步为了 整合 msglistactivity 获取 topicitem 对象
  */
-public class TopicsReponsery  {
+public class TopicsReponsery {
 
     private final String TAG = getClass().getSimpleName();
     private static TopicsReponsery INSTANCE;
@@ -50,25 +50,55 @@ public class TopicsReponsery  {
 
     }
 
+    private ArrayList<TopicItemBean> topicInMemory;
+
+
+    /**
+     * 将 topiclist 加入内存中
+     */
+    private void addAllToMemory(ArrayList<TopicItemBean> topicItemBeans) {
+        if (topicInMemory == null) {
+            topicInMemory = new ArrayList<>();
+        }
+
+        if (topicItemBeans == null || topicItemBeans.size() == 0) {
+            return;
+        }
+        ArrayList<TopicItemBean> toAdd = new ArrayList<>();
+        for (TopicItemBean addBean : topicItemBeans) {
+            boolean has = false;
+            for (TopicItemBean memoryBean : topicInMemory) {
+                if (memoryBean.getTopicId() == addBean.getTopicId()) {
+                    has = true;
+                    break;
+                }
+            }
+            if (!has) {
+                toAdd.add(addBean);
+            }
+        }
+        topicInMemory.addAll(toAdd);
+    }
+
+    public ArrayList<TopicItemBean> getTopicInMemory() {
+        return topicInMemory;
+    }
 
     public ArrayList<TopicItemBean> getLocalTopicList(long imId) {
         //异步获取 数据库数据 topic列表
         DatabaseManager.useDbForUser(Long.toString(imId) + "_db");//todo:应该放在config里面去
         final List<TopicItemBean> fromDb = (ArrayList<TopicItemBean>) DatabaseManager.topicsFromDb();
-        ArrayList<TopicItemBean> result = new ArrayList<>();
-        if (fromDb != null) {
-            result.addAll(fromDb);
-        }
-        return result;
+        addAllToMemory((ArrayList<TopicItemBean>) fromDb);
+        return topicInMemory;
     }
 
     /**
      * 请求获取服务器最新的 topic list
      * 新的 topic list 需要的信息 为 最新的 member 信息  + 最新的 msg 信息
      */
-    public void getServerTopicList(long imId, TopicListUpdateCallback<TopicItemBean> callback) {
+    public void getServerTopicList(final String imToken, final TopicListUpdateCallback<TopicItemBean> callback) {
         com.yanxiu.im.net.TopicGetMemberTopicsRequest_new getMemberTopicsRequest = new com.yanxiu.im.net.TopicGetMemberTopicsRequest_new();
-        getMemberTopicsRequest.imToken = Constants.imToken;
+        getMemberTopicsRequest.imToken = imToken;
         getMemberTopicsRequest.startRequest(TopicGetMemberTopicsResponse_new.class, new IYXHttpCallback<TopicGetMemberTopicsResponse_new>() {
             /**
              * startRequest()中生成get url，post body以后，调用OkHttp Request之前调用此回调
@@ -82,6 +112,48 @@ public class TopicsReponsery  {
 
             @Override
             public void onSuccess(YXRequestBase request, TopicGetMemberTopicsResponse_new ret) {
+                if (ret.code != 0 || ret.data == null || ret.data.topic == null) {
+                    callback.onListUpdated(topicInMemory);
+                    return;
+                }
+                //获取了服务器上最新的 topic 列表后
+                /*1：对 topic 进行划分 分为  新添加  更新  已删除*/
+
+                //查找新的 和需要更新的
+                for (ImTopic_new imTopicNew : ret.data.topic) {
+                    final TopicItemBean savedBean = DatabaseManager.updateDbTopicWithImTopic(imTopicNew);
+                    boolean has = false;
+                    for (TopicItemBean localTopic : topicInMemory) {
+                        if (localTopic.getTopicId() == imTopicNew.topicId) {
+                            has = true;
+                            //更新已有的
+                            updateBeanInfo(localTopic, savedBean);
+                            break;
+                        }
+                    }
+                    if (!has) {
+                        //添加新增的
+                        topicInMemory.add(savedBean);
+                    }
+                }
+                //查找已经删除的
+                ArrayList<TopicItemBean> toBeDel = new ArrayList<>();
+                for (TopicItemBean localBean : topicInMemory) {
+                    boolean has = false;
+                    for (ImTopic_new imTopicNew : ret.data.topic) {
+                        if (imTopicNew.topicId == localBean.getTopicId()) {
+                            has = true;
+                            break;
+                        }
+                    }
+                    if (!has) {
+                        DatabaseManager.deleteTopicById(localBean.getTopicId());
+                        toBeDel.add(localBean);
+                    }
+                }
+                topicInMemory.removeAll(toBeDel);
+                /*对列表的长度以及 信息 更新已经完成 可以回调 给 ui 列表更新完毕*/
+                callback.onListUpdated(topicInMemory);
 
             }
 

@@ -140,6 +140,7 @@ public class TopicInMemoryUtils {
         }
     }
 
+
     /**
      * 加载一页msg到topic.msgList中
      *
@@ -420,5 +421,6 @@ public class TopicInMemoryUtils {
             }
         }
     }
+
 
 }

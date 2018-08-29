@@ -548,7 +548,6 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
             }
             return;
         }
-
         //去重
         TopicInMemoryUtils.duplicateRemoval(msgPage, currentMsgList);
         //加入消息列表
@@ -558,8 +557,6 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
             currentTopic.setRequestMsgId(msgPage.get(msgPage.size() - 1).getRealMsgId());
 
         }
-
-
         TopicInMemoryUtils.processMsgListDateInfo(currentMsgList);
         if (view != null) {
             view.onLoadMoreFromDb(msgPage.size());

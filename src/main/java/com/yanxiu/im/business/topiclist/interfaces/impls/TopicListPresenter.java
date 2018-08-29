@@ -74,15 +74,12 @@ public class TopicListPresenter implements TopicListContract.Presenter {
             }
         } //第一次的排序 按照 最后操作时间排序
         ImTopicSorter.sortByLatestTime(dbTopics);
-        //保存单例
-        SharedSingleton.getInstance().set(SharedSingleton.KEY_TOPIC_LIST, dbTopics);
         //初始化日期选项
         for (TopicItemBean dbTopic : dbTopics) {
             if (dbTopic.getMsgList() != null) {
                 TopicInMemoryUtils.processMsgListDateInfo(dbTopic.getMsgList());
             }
         }
-
         if (view != null) {
             final List<TopicItemBean> finalDbTopics = dbTopics;
             mHandler.post(new Runnable() {
@@ -91,7 +88,6 @@ public class TopicListPresenter implements TopicListContract.Presenter {
                     view.onGetDbTopicList(finalDbTopics);
                 }
             });
-
         }
     }
 
@@ -104,82 +100,20 @@ public class TopicListPresenter implements TopicListContract.Presenter {
      */
     @Override
     public void doTopicListUpdate(final List<TopicItemBean> topicsFromDb) {
-        com.yanxiu.im.net.TopicGetMemberTopicsRequest_new getMemberTopicsRequest = new com.yanxiu.im.net.TopicGetMemberTopicsRequest_new();
-        getMemberTopicsRequest.imToken = Constants.imToken;
-        getMemberTopicsRequest.startRequest(TopicGetMemberTopicsResponse_new.class, new IYXHttpCallback<TopicGetMemberTopicsResponse_new>() {
-            /**
-             * startRequest()中生成get url，post body以后，调用OkHttp Request之前调用此回调
-             *
-             * @param request OkHttp Request
-             */
+        TopicsReponsery.getInstance().getServerTopicList(Constants.imToken, new TopicsReponsery.TopicListUpdateCallback<TopicItemBean>() {
             @Override
-            public void onRequestCreated(Request request) {
+            public void onListUpdated(ArrayList<TopicItemBean> dataList) {
+                mHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
 
-            }
-
-            @Override
-            public void onSuccess(YXRequestBase request, TopicGetMemberTopicsResponse_new ret) {
-                if (topicsFromDb == null) {
-                    return;
-                }
-
-
-                List<TopicItemBean> maybeNeedUpdateMsgTopicList = new ArrayList<>();
-                // 3
-                //获取用户服务器上所有的topic
-                /*由于删除需求的限制 管理端用户被某个 topic 删除后不能立即 将数据库删除  （需求 被删除依然可以看见历史消息 ）所以这里每次在获取用户最新的 topic 列表时进行一次统一的删除操作
-                 * 删除那些 本地有 服务器上没有的 topic（群聊）
-                 * */
-                ArrayList<TopicItemBean> deteletedTopic = new ArrayList<>();
-                if (ret.data.topic == null) {
-                    ret.data.topic = new ArrayList<>();
-                }
-
-                for (TopicItemBean dbtopic : topicsFromDb) {
-                    if (TextUtils.equals(dbtopic.getType(), "2")) {
-                        boolean remain = false;
-                        for (ImTopic_new remainTopic : ret.data.topic) {
-                            if (dbtopic.getTopicId() == remainTopic.topicId) {
-                                remain = true;
-                                break;
-                            }
-                        }
-                        //如果已经不在了 。。。 加入到待删除列表中
-                        if (!remain) {
-                            deteletedTopic.add(dbtopic);
-                        }
+                        view.onTopicListUpdate();
+                        //adapter notifyDataSetChanged()
                     }
-                }
-                //删除 topic 数据库
-                for (TopicItemBean deleteTopic : deteletedTopic) {
-                    DatabaseManager.deleteTopicById(deleteTopic.getTopicId());
-                }
-                //内存中删除 已经失效的 topic
-                topicsFromDb.removeAll(deteletedTopic);
-
-                //检查是否需要更新member 不需要更新member的topic 加入到mayBeNeedUpdateMsgTopicList
-                checkTopicNeedUpdateMembers(ret, topicsFromDb, maybeNeedUpdateMsgTopicList);
-                //已经分完组
-                //除了新topic和有topicchagne的topic，也需要请求msg
-                if (maybeNeedUpdateMsgTopicList != null && !maybeNeedUpdateMsgTopicList.isEmpty()) {
-                    updateEachTopicMsgs(maybeNeedUpdateMsgTopicList);
-                } else {
-                    if (view != null) {
-                        mHandler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                view.onTopicListUpdate();
-                            }
-                        });
-                    }
-                }
-            }
-
-            @Override
-            public void onFail(YXRequestBase request, Error error) {
-                // TODO: 2018/5/21  更新topic列表失败
+                });
             }
         });
+
     }
 
     /**
