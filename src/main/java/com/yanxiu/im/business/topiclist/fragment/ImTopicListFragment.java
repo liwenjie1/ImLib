@@ -224,7 +224,7 @@ public class ImTopicListFragment extends FaceShowBaseFragment
             //更新 topic 列表
             topicListPresenter.doTopicListUpdate(dbTopicList);
         }else {
-             mqttConnectPresenter.
+//             mqttConnectPresenter.
         }
 
 
@@ -461,4 +461,13 @@ public class ImTopicListFragment extends FaceShowBaseFragment
         topicListPresenter.doCheckRedDot(mRecyclerAdapter.getDataList());
     }
 
+    @Override
+    public void onConnected() {
+
+    }
+
+    @Override
+    public void onDisconnected() {
+
+    }
 }

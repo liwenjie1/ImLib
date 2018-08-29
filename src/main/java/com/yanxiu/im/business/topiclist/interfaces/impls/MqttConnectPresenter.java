@@ -24,7 +24,7 @@ public class MqttConnectPresenter implements MqttConnectContract.Presenter {
 
     /*检查 mqtt 的连接情况*/
     public boolean checkMqttState() {
-        return (MqttConnectManager.getInstance().isMqttServiceBinded());
+        return false;
     }
 
     public void subscribeTopics(List<TopicItemBean> topics) {
@@ -38,17 +38,27 @@ public class MqttConnectPresenter implements MqttConnectContract.Presenter {
         }
     }
 
-    public void connectMqttServer(){
-        MqttConnectManager.getInstance().connectMqttServer();
+    public void connectMqttServer() {
+        //request  mqtt host
+        String host = "";
+        MqttConnectManager.getInstance().connectMqttServer(host, new MqttConnectManager.MqttServerConnectCallback() {
+            @Override
+            public void onSuccess() {
+                view.onConnected();
+            }
+
+            @Override
+            public void onFailure() {
+                view.onDisconnected();
+            }
+        });
     }
 
     @Override
     public void subScribeTopic(long topicId) {
-        MqttConnectManager.getInstance().subscribeTopic(topicId);
     }
 
     @Override
     public void unsubScribeTopic(long topicId) {
-        MqttConnectManager.getInstance().unsubscribeTopic(topicId);
     }
 }

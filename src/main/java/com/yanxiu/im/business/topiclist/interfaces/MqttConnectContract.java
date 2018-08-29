@@ -7,6 +7,8 @@ package com.yanxiu.im.business.topiclist.interfaces;
 public interface MqttConnectContract {
 
     interface View {
+        void onConnected();
+        void onDisconnected();
     }
 
     interface Presenter {
