@@ -10,6 +10,7 @@ import com.yanxiu.im.bean.TopicItemBean;
 import com.yanxiu.im.bean.net_bean.ImMsg_new;
 import com.yanxiu.im.bean.net_bean.ImTopic_new;
 import com.yanxiu.im.business.topiclist.sorter.ImTopicSorter;
+import com.yanxiu.im.business.utils.ImServerDataChecker;
 import com.yanxiu.im.business.utils.ProcessUtils;
 import com.yanxiu.im.business.utils.TopicInMemoryUtils;
 import com.yanxiu.im.db.DbMember;
@@ -325,10 +326,11 @@ public class TopicsReponsery {
     }
 
 
-    private void updateMemberInfo(TopicItemBean target, TopicItemBean infoBean){
+    private void updateMemberInfo(TopicItemBean target, TopicItemBean infoBean) {
         target.getMembers().clear();
         target.getMembers().addAll(infoBean.getMembers());
     }
+
     /**
      * 用 infoBean 对 target 进行内容的更新
      */
@@ -338,7 +340,7 @@ public class TopicsReponsery {
         if (showUpdateMsg) needUpdateMsgTopics.add(target);
         final String localChange = target.getChange();
         final String serverChange = infoBean.getChange();
-        if (Integer.valueOf(localChange) < Integer.valueOf(serverChange)||target.getMembers()==null||target.getMembers().size()<2) {
+        if (Integer.valueOf(localChange) < Integer.valueOf(serverChange) || target.getMembers() == null || target.getMembers().size() < 2) {
             needUpdateMemberTopics.add(target);
         }
         target.setShowDot(showUpdateMsg);
@@ -376,7 +378,7 @@ public class TopicsReponsery {
             public void onSuccess(YXRequestBase request, com.yanxiu.im.net.TopicGetTopicsResponse_new ret) {
                 Log.i(TAG, "request topic server info onSuccess: ");
                 /*没有 topic 信息*/
-                if (ret.code != 0||ret.data == null || ret.data.topic == null || ret.data.topic.size() == 0) {
+                if (ret.code != 0 || ret.data == null || ret.data.topic == null || ret.data.topic.size() == 0) {
                     uiHandler.post(new Runnable() {
                         @Override
                         public void run() {
@@ -623,5 +625,79 @@ public class TopicsReponsery {
         @UiThread
         void onGetTopicItemBean(TopicItemBean bean);
     }
+
+    /**
+     * 加载一页
+     */
+    public void loadPageMsg(TopicItemBean targetTopic, GetMsgPageCallback callback) {
+        //首先有网络获取
+        requestMsgListFromServer(targetTopic, callback);
+    }
+
+
+    private void requestMsgListFromServer(final TopicItemBean targetTopic, final GetMsgPageCallback callback) {
+        GetTopicMsgsRequest_new getMsgsRequest = new GetTopicMsgsRequest_new();
+        getMsgsRequest.imToken = Constants.imToken;
+        final long startId = TopicInMemoryUtils.getMinMsgBeanRealIdInList(targetTopic.getMsgList());
+        getMsgsRequest.startId = String.valueOf(startId);
+        getMsgsRequest.topicId = targetTopic.getTopicId() + "";
+
+        getMsgsRequest.startRequest(GetTopicMsgsResponse_new.class, new IYXHttpCallback<GetTopicMsgsResponse_new>() {
+            @Override
+            public void onRequestCreated(Request request) {
+            }
+
+            @Override
+            public void onSuccess(YXRequestBase request, GetTopicMsgsResponse_new ret) {
+                //请求异常
+                if (ret == null || ret.code != 0 || ret.data == null || ret.data.topicMsg == null) {
+                    final ArrayList<MsgItemBean> topicMsgs = DatabaseManager.getTopicMsgs(targetTopic.getTopicId(), startId, DatabaseManager.pagesize);
+                    TopicInMemoryUtils.duplicateRemoval(topicMsgs,targetTopic.getMsgList());
+                    targetTopic.getMsgList().addAll(topicMsgs);
+                    uiHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            callback.onGetPage(topicMsgs);
+                        }
+                    });
+                    return;
+                }
+                //保存入数据库
+                for (ImMsg_new msgNew : ret.data.topicMsg) {
+                    /*检查 有服务器返回的msg 数据格式 防止空指针*/
+                    if (ImServerDataChecker.imMsgCheck(msgNew)) {
+                        DatabaseManager.updateDbMsgWithImMsg(msgNew, Constants.imId);
+                    }
+                }
+                final ArrayList<MsgItemBean> topicMsgs = DatabaseManager.getTopicMsgs(targetTopic.getTopicId(), startId, DatabaseManager.pagesize);
+                TopicInMemoryUtils.duplicateRemoval(topicMsgs,targetTopic.getMsgList());
+                targetTopic.getMsgList().addAll(topicMsgs);
+                uiHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        callback.onGetPage(topicMsgs);
+                    }
+                });
+            }
+
+            @Override
+            public void onFail(YXRequestBase request, Error error) {
+                final ArrayList<MsgItemBean> topicMsgs = DatabaseManager.getTopicMsgs(targetTopic.getTopicId(), startId, DatabaseManager.pagesize);
+                TopicInMemoryUtils.duplicateRemoval(topicMsgs,targetTopic.getMsgList());
+                targetTopic.getMsgList().addAll(topicMsgs);
+                uiHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        callback.onGetPage(topicMsgs);
+                    }
+                });
+            }
+        });
+    }
+
+    public interface GetMsgPageCallback {
+        void onGetPage(ArrayList<MsgItemBean> msgs);
+    }
+
 
 }

@@ -57,7 +57,10 @@ public final class ImTopicListRecyclerViewAdapter<E extends TopicItemBean> exten
 
     public void setDataList(List<E> dataList) {
         this.dataList.clear();
-        this.dataList.addAll(dataList);
+        if (dataList != null) {
+
+            this.dataList.addAll(dataList);
+        }
     }
 
     public List<E> getDataList() {

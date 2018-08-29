@@ -11,18 +11,14 @@ import com.yanxiu.im.Constants;
 import com.yanxiu.im.TopicsReponsery;
 import com.yanxiu.im.bean.MsgItemBean;
 import com.yanxiu.im.bean.TopicItemBean;
-import com.yanxiu.im.bean.net_bean.ImMsg_new;
 import com.yanxiu.im.bean.net_bean.ImTopic_new;
 import com.yanxiu.im.business.msglist.interfaces.MsgListContract;
 import com.yanxiu.im.business.topiclist.sorter.ImTopicSorter;
-import com.yanxiu.im.business.utils.ImServerDataChecker;
 import com.yanxiu.im.business.utils.ImageFileUtils;
 import com.yanxiu.im.business.utils.TopicInMemoryUtils;
 import com.yanxiu.im.db.DbMember;
 import com.yanxiu.im.db.DbMyMsg;
 import com.yanxiu.im.manager.DatabaseManager;
-import com.yanxiu.im.net.GetTopicMsgsRequest_new;
-import com.yanxiu.im.net.GetTopicMsgsResponse_new;
 import com.yanxiu.im.net.TopicCreateTopicRequest_new;
 import com.yanxiu.im.net.TopicCreateTopicResponse_new;
 import com.yanxiu.im.sender.ISender;
@@ -437,130 +433,15 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
         }
     }
 
-    private Handler handler = new Handler();
 
     @Override
     public void doLoadMore(final TopicItemBean currentTopic) {
-        Log.i(TAG, "doLoadMore: ");
-        //最小延迟 500
-        handler.postDelayed(new Runnable() {
+        TopicsReponsery.getInstance().loadPageMsg(currentTopic, new TopicsReponsery.GetMsgPageCallback() {
             @Override
-            public void run() {
-                GetTopicMsgsRequest_new getMsgsRequest = new GetTopicMsgsRequest_new();
-                getMsgsRequest.imToken = Constants.imToken;
-                //临时topic 在未发送消息之前currentTopic为空
-                if (currentTopic == null || DatabaseManager.isMockTopic(currentTopic)) {
-                    if (view != null) {
-                        mHandler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                view.onLoadMoreFromHttp(0);
-                            }
-                        });
-
-                    }
-                    return;
-                }
-
-
-                //获取startId
-                //首先如果 msglist为空 说明 登录时以及db中都没有msglist 以Long.MAXVALUE 请求开始请求
-                long startId = Long.MAX_VALUE;
-                if (currentTopic.getMsgList() == null) {
-                    currentTopic.setMsgList(new ArrayList<MsgItemBean>());
-                } else {
-                    //如果msglist不为空 采用最旧的msg进行请求 realMsgId 为服务器上的msgId 用于http请求
-                    startId = TopicInMemoryUtils.getMinMsgBeanRealIdInList(currentTopic.getMsgList());
-                }
-
-                getMsgsRequest.startId = String.valueOf(startId);
-                getMsgsRequest.topicId = currentTopic.getTopicId() + "";
-
-                getMsgsRequest.startRequest(GetTopicMsgsResponse_new.class, new IYXHttpCallback<GetTopicMsgsResponse_new>() {
-                    @Override
-                    public void onRequestCreated(Request request) {
-                    }
-
-                    @Override
-                    public void onSuccess(YXRequestBase request, GetTopicMsgsResponse_new ret) {
-                        //请求异常
-                        if (ret == null || ret.code != 0) {
-                            if (view != null) {
-                                mHandler.post(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        view.onLoadMoreFromHttp(0);
-                                    }
-                                });
-                            }
-                            return;
-                        }
-                        //返回数据异常 或 没有数据
-                        if (ret.data == null || ret.data.topicMsg == null) {
-                            if (view != null) {
-                                mHandler.post(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        view.onLoadMoreFromHttp(0);
-                                    }
-                                });
-                            }
-                            return;
-                        }
-
-                        //保存入数据库
-                        for (ImMsg_new msgNew : ret.data.topicMsg) {
-                            /*检查 有服务器返回的msg 数据格式 防止空指针*/
-                            if (ImServerDataChecker.imMsgCheck(msgNew)) {
-                                DatabaseManager.updateDbMsgWithImMsg(msgNew, Constants.imId);
-                            }
-                        }
-                        mHandler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                loadMsgFromDb(currentTopic);
-                            }
-                        });
-                    }
-
-                    @Override
-                    public void onFail(YXRequestBase request, Error error) {
-                        loadMsgFromDb(currentTopic);
-                    }
-                });
+            public void onGetPage(ArrayList<MsgItemBean> msgs) {
+                view.onLoadMoreFromDb(msgs.size());
             }
-        }, 500);
-    }
-
-
-    /**
-     * 从数据库读取一页 msg
-     */
-    private void loadMsgFromDb(TopicItemBean currentTopic) {
-        List<MsgItemBean> currentMsgList = currentTopic.getMsgList();
-        //从数据库读 加载的一页
-        long dbStartId = TopicInMemoryUtils.getMinImMsgIdInList(currentMsgList);
-        final List<MsgItemBean> msgPage = DatabaseManager.getTopicMsgs(currentTopic.getTopicId(), dbStartId, DatabaseManager.pagesize);
-        if (msgPage == null || msgPage.size() == 0) {
-            //获取的列表为空？
-            if (view != null) {
-                view.onLoadMoreFromHttp(0);
-            }
-            return;
-        }
-        //去重
-        TopicInMemoryUtils.duplicateRemoval(msgPage, currentMsgList);
-        //加入消息列表
-        if (msgPage.size() > 0) {
-            currentMsgList.addAll(msgPage);
-            //更新 requestMsgId
-            currentTopic.setRequestMsgId(msgPage.get(msgPage.size() - 1).getRealMsgId());
-
-        }
-        TopicInMemoryUtils.processMsgListDateInfo(currentMsgList);
-        if (view != null) {
-            view.onLoadMoreFromDb(msgPage.size());
-        }
+        });
     }
 
 
