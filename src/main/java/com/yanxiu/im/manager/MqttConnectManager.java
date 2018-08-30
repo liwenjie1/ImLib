@@ -2,11 +2,17 @@ package com.yanxiu.im.manager;
 
 import android.content.Context;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.text.TextUtils;
 import android.util.Log;
 
 import com.yanxiu.im.db.ImSpManager;
+import com.yanxiu.im.event.MqttConnectedEvent;
+import com.yanxiu.im.net.PolicyConfigRequest_new;
+import com.yanxiu.im.net.PolicyConfigResponse_new;
 import com.yanxiu.lib.yx_basic_library.YXApplication;
+import com.yanxiu.lib.yx_basic_library.network.IYXHttpCallback;
+import com.yanxiu.lib.yx_basic_library.network.YXRequestBase;
 import com.yanxiu.lib.yx_basic_library.util.logger.YXLogger;
 
 import org.eclipse.paho.android.service.MqttAndroidClient;
@@ -20,6 +26,10 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 
 import java.util.HashMap;
+import java.util.UUID;
+
+import de.greenrobot.event.EventBus;
+import okhttp3.Request;
 
 /**
  * create by 朱晓龙 2018/8/27 上午10:22
@@ -82,27 +92,81 @@ public class MqttConnectManager {
 //        return "android" + uuid++ + UUID.randomUUID().toString();
     }
 
+    private void requestMqttHost(final GetMqttHostCallback callback) {
+        PolicyConfigRequest_new policyConfigRequest = new PolicyConfigRequest_new();
+        final UUID hostRequestUUID = policyConfigRequest.startRequest(PolicyConfigResponse_new.class, new IYXHttpCallback<PolicyConfigResponse_new>() {
+            /**
+             * startRequest()中生成get url，post body以后，调用OkHttp Request之前调用此回调
+             *
+             * @param request OkHttp Request
+             */
+            @Override
+            public void onRequestCreated(Request request) {
+
+            }
+
+            @Override
+            public void onSuccess(YXRequestBase request, PolicyConfigResponse_new ret) {
+                YXLogger.d(TAG, "requestMqtt host onSuccess ");
+                String host = null;
+                if (ret.code == 0 && ret.data != null) {
+                    ImSpManager.getInstance().setImHost(ret.data.getMqttServer());
+                }
+                host = ImSpManager.getInstance().getImHost();
+                if (!TextUtils.isEmpty(host)) {
+                    callback.onGetHost(host);
+                } else {
+                    callback.onFailure();
+                }
+            }
+
+            @Override
+            public void onFail(YXRequestBase request, Error error) {
+                YXLogger.d(TAG, "requestMqtt host fail ");
+                String oldHost = ImSpManager.getInstance().getImHost();
+                if (!TextUtils.isEmpty(oldHost)) {
+                    callback.onGetHost(oldHost);
+                } else {
+                    callback.onFailure();
+                }
+            }
+        });
+    }
+
+    public interface GetMqttHostCallback {
+        void onGetHost(String host);
+
+        void onFailure();
+    }
+
+    public boolean isConnected() {
+        if (mMqttClient == null) {
+            return false;
+        }
+        return mMqttClient.isConnected();
+    }
+
     /**
      * 订阅 topic  当前项目为订阅  imtopic
-     * */
+     */
     public void subscribeTopics(long... topicId) {
-        String[] topics=new String[topicId.length];
-        int[] qoss=new int[topicId.length];
+        String[] topics = new String[topicId.length];
+        int[] qoss = new int[topicId.length];
         for (int i = 0; i < topics.length; i++) {
-            topics[i]=constructTopicStr(topicId[i]);
-            qoss[i]= 1;
+            topics[i] = constructTopicStr(topicId[i]);
+            qoss[i] = 1;
         }
         try {
-            mMqttClient.subscribe(topics,qoss);
+            mMqttClient.subscribe(topics, qoss);
         } catch (MqttException e) {
             e.printStackTrace();
         }
     }
 
     public void unsubscribeTopics(long... topicId) {
-        String[] topics=new String[topicId.length];
+        String[] topics = new String[topicId.length];
         for (int i = 0; i < topics.length; i++) {
-            topics[i]=constructTopicStr(topicId[i]);
+            topics[i] = constructTopicStr(topicId[i]);
         }
         try {
             mMqttClient.unsubscribe(topics);
@@ -113,7 +177,7 @@ public class MqttConnectManager {
 
     public void subscribeMember(long imId) {
         try {
-            mMqttClient.subscribe(constructMemberStr(imId),1);
+            mMqttClient.subscribe(constructMemberStr(imId), 1);
         } catch (MqttException e) {
             e.printStackTrace();
         }
@@ -143,28 +207,48 @@ public class MqttConnectManager {
                 mMqttClient.disconnect();
             } catch (MqttException e) {
                 e.printStackTrace();
+            } catch (NullPointerException e) {
+                YXLogger.e(TAG, e.getMessage());
             }
+            mMqttClient = null;
         }
     }
 
     /**
      * 连接上一次连接的 mqtt 服务器 如果没有  直接回调失败
      */
-    public void connectMqttServer(MqttServerConnectCallback connectCallback) {
-        final String imHost = ImSpManager.getInstance().getImHost();
-        if (!TextUtils.isEmpty(imHost)) {
-            this.host += imHost;
-            connectMqttServer(host, connectCallback);
-        } else {
-            connectCallback.onFailure();
-        }
+    public void connectMqttServer(@Nullable final MqttServerConnectCallback connectCallback) {
+        //获取 host
+        requestMqttHost(new GetMqttHostCallback() {
+            @Override
+            public void onGetHost(String host) {
+                ImSpManager.getInstance().setImHost(host);
+                final String imHost = ImSpManager.getInstance().getImHost();
+                if (!TextUtils.isEmpty(imHost)) {
+                    connectMqttServer(host, connectCallback);
+                } else {
+                    if (connectCallback != null) {
+                        connectCallback.onFailure();
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure() {
+                if (connectCallback != null) {
+                    connectCallback.onFailure();
+                }
+            }
+        });
+
+
     }
 
     /**
      * 连接到 目标mqtt服务器
      * 哪里需要 mqtt 哪里调用  基本为  ImTopicListFragment 与  MsgListActivity 部分会使用
      */
-    public void connectMqttServer(String host, final MqttServerConnectCallback connectCallback) {
+    public void connectMqttServer(@NonNull String host, final MqttServerConnectCallback connectCallback) {
         if (TextUtils.isEmpty(host)) {
             if (connectCallback != null) {
                 connectCallback.onFailure();
@@ -191,6 +275,7 @@ public class MqttConnectManager {
             public void messageArrived(String topic, MqttMessage message) throws Exception {
                 //收到新消息
                 Log.i(TAG, "messageArrived: ");
+                MqttProtobufManager.dealWithData(message.getPayload());
             }
 
             @Override
@@ -209,6 +294,8 @@ public class MqttConnectManager {
                     //连接成功
                     if (connectCallback != null) {
                         connectCallback.onSuccess();
+                        //发送 eventbus 通知 mqtt 连接成功
+                        EventBus.getDefault().post(new MqttConnectedEvent());
                     }
                 }
 
@@ -228,6 +315,10 @@ public class MqttConnectManager {
      * 断开所有存在的连接
      */
     private void disconnectClientOnExsist() {
+        if (mqttConnections == null) {
+            mqttConnections = new HashMap<>();
+            return;
+        }
         for (String host : mqttConnections.keySet()) {
             MqttAndroidClient client = mqttConnections.get(host);
             if (client.isConnected()) {

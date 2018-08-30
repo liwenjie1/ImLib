@@ -21,6 +21,7 @@ import com.test.yanxiu.common_base.utils.talkingdata.EventUpdate;
 import com.yanxiu.ImConfig;
 import com.yanxiu.im.Constants;
 import com.yanxiu.im.R;
+import com.yanxiu.im.TopicsReponsery;
 import com.yanxiu.im.bean.MsgItemBean;
 import com.yanxiu.im.bean.TopicItemBean;
 import com.yanxiu.im.business.contacts.activity.ContactsActivity;
@@ -38,6 +39,7 @@ import com.yanxiu.im.business.utils.TopicInMemoryUtils;
 import com.yanxiu.im.business.view.ImTitleLayout;
 import com.yanxiu.im.db.DbMember;
 import com.yanxiu.im.event.MigrateMockTopicEvent;
+import com.yanxiu.im.event.MqttConnectedEvent;
 import com.yanxiu.im.event.MsgListMigrateMockTopicEvent;
 import com.yanxiu.im.event.MsgListNewMsgEvent;
 import com.yanxiu.im.event.MsgListTopicRemovedEvent;
@@ -146,7 +148,7 @@ public class ImTopicListFragment extends FaceShowBaseFragment
         //点击topic 进入聊天界面
         mRecyclerAdapter.setTopicRecyclerViewClickListener(new ImTopicListRecyclerViewAdapter.TopicRecyclerViewClickListener() {
             @Override
-            public void onTopicItemClicked(int position,TopicItemBean bean) {
+            public void onTopicItemClicked(int position, TopicItemBean bean) {
                 mRecyclerAdapter.notifyItemChanged(position);
                 mRecyclerAdapter.notifyDataSetChanged();
                 //事件统计 点击群聊 topic
@@ -163,6 +165,7 @@ public class ImTopicListFragment extends FaceShowBaseFragment
 
     @Override
     public void onDestroy() {
+        TopicsReponsery.getInstance().releaseResource();
         EventBus.getDefault().unregister(this);
         super.onDestroy();
     }
@@ -291,6 +294,13 @@ public class ImTopicListFragment extends FaceShowBaseFragment
         MsgItemBean newMsg = event.msg;
         topicListPresenter.doReceiveNewMsg(newMsg);
     }
+
+    @Subscribe
+    public void onMqttConnected(MqttConnectedEvent event) {
+        //mqtt 服务器连接通知 通知后 刷新数据列表
+        topicListPresenter.doTopicListUpdate();
+    }
+
 
     /**
      * 新消息 获取后 列表处理完成的回调

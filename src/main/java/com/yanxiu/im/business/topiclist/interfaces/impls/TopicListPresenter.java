@@ -107,6 +107,16 @@ public class TopicListPresenter implements TopicListContract.Presenter {
             }
         });
     }
+    public void doTopicListUpdate(){
+        TopicsReponsery.getInstance().getServerTopicList(Constants.imToken, new TopicsReponsery.TopicListUpdateCallback<TopicItemBean>() {
+            @Override
+            public void onListUpdated(ArrayList<TopicItemBean> dataList) {
+                ImTopicSorter.sortByLatestTime(dataList);
+                doCheckRedDot(dataList);
+                view.onTopicListUpdate();
+            }
+        });
+    }
 
     /**
      * 更新每一个 topic 的信息

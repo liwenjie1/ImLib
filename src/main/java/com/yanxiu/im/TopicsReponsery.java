@@ -16,6 +16,7 @@ import com.yanxiu.im.business.utils.TopicInMemoryUtils;
 import com.yanxiu.im.db.DbMember;
 import com.yanxiu.im.db.DbTopic;
 import com.yanxiu.im.manager.DatabaseManager;
+import com.yanxiu.im.manager.MqttConnectManager;
 import com.yanxiu.im.manager.RequestQueueManager;
 import com.yanxiu.im.net.GetTopicMsgsRequest_new;
 import com.yanxiu.im.net.GetTopicMsgsResponse_new;
@@ -51,7 +52,7 @@ public class TopicsReponsery {
 
     /*mqtt 服务连接状态*/
 
-    public TopicsReponsery() {
+    private TopicsReponsery() {
         final Context context = ImApplication.getContext().getApplicationContext();
         final String processName = ProcessUtils.getProcessName(context);
         Log.i("TopicsReponsery", "getInstance: " + processName);
@@ -59,8 +60,14 @@ public class TopicsReponsery {
 
         needUpdateMemberTopics = new ArrayList<>();
         needUpdateMsgTopics = new ArrayList<>();
-
     }
+
+    public void releaseResource() {
+        MqttConnectManager.getInstance().disconnectMqttServer();
+        topicInMemory.clear();
+        INSTANCE = null;
+    }
+
 
     private ArrayList<TopicItemBean> topicInMemory;
 
@@ -679,13 +686,6 @@ public class TopicsReponsery {
     /**
      * 创建一个 mocktopic
      */
-    public void createMockTopic(long fromId, long memberId, CreateTopicCallback callback) {
-        final TopicItemBean mockTopic = DatabaseManager.createMockTopic(memberId, fromId);
-        addToMemory(mockTopic);
-        ImTopicSorter.sortByLatestTime(topicInMemory);
-        callback.onTopicCreatedSuccess(mockTopic);
-    }
-
     public TopicItemBean createMockTopic(long fromId, long memberId) {
         final TopicItemBean mockTopic = DatabaseManager.createMockTopic(memberId, fromId);
         addToMemory(mockTopic);
@@ -704,6 +704,7 @@ public class TopicsReponsery {
      * 向服务器请求创建一个新的聊天 topic
      */
     public void createNewTopic(final TopicItemBean mockTopic, String fromTopicId, final CreateTopicCallback callback) {
+        //获取 member 信息
         long memberId = -1;
         for (DbMember memberNew : mockTopic.getMembers()) {
             if (memberNew.getImId() != Constants.imId) {

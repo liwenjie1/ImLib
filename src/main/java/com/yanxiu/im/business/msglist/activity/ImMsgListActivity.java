@@ -38,6 +38,7 @@ import com.test.yanxiu.common_base.utils.permission.OnPermissionCallback;
 import com.test.yanxiu.common_base.utils.talkingdata.EventUpdate;
 import com.yanxiu.im.Constants;
 import com.yanxiu.im.R;
+import com.yanxiu.im.TopicsReponsery;
 import com.yanxiu.im.bean.MsgItemBean;
 import com.yanxiu.im.bean.TopicItemBean;
 import com.yanxiu.im.business.msglist.ImMsgListFoucsLinearLayoutManager;
@@ -48,6 +49,7 @@ import com.yanxiu.im.business.photoview.activity.ImGalleryActivity;
 import com.yanxiu.im.business.view.ChoosePicsDialog;
 import com.yanxiu.im.business.view.ImTitleLayout;
 import com.yanxiu.im.db.DbMember;
+import com.yanxiu.im.event.MqttConnectedEvent;
 import com.yanxiu.im.event.MsgListMigrateMockTopicEvent;
 import com.yanxiu.im.event.MsgListNewMsgEvent;
 import com.yanxiu.im.event.MsgListTopicChangeEvent;
@@ -618,6 +620,12 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
         msgListPresenter.resetTopicRedDot(event.topicId, currentTopic);
     }
 
+    @Subscribe
+    public void onMqttConnected(MqttConnectedEvent event) {
+        //mqtt 服务器连接通知 通知后 刷新数据列表
+        msgListPresenter.updateTopicInfo(currentTopic);
+    }
+
     //endregion
 
 
@@ -794,6 +802,7 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
     protected void onDestroy() {
         EventBus.getDefault().unregister(this);
         im_msglist_recyclerview.setAdapter(null);
+        TopicsReponsery.getInstance().releaseResource();
         super.onDestroy();
     }
 
