@@ -78,10 +78,6 @@ public class MqttConnectManager {
     private String passWord = "79A6g3pHb4tz2Bs8";
     private String clientId = "android01";
 
-
-    private int uuid = 0;
-    private String host = "tcp://";
-
     private MqttConnectManager(Context applicationContext) {
         this.applicationContext = applicationContext;
     }
@@ -259,8 +255,7 @@ public class MqttConnectManager {
         MqttConnectOptions options = getMqttConnectOptions();
         //检查 是否有其他 mqtt 连接在运行 如果有  断开连接
         disconnectClientOnExsist();
-
-        mMqttClient = new MqttAndroidClient(applicationContext, host, createClientId());
+        mMqttClient = new MqttAndroidClient(applicationContext, "tcp://" + host, createClientId());
         //保存....
         mqttConnections.put(host, mMqttClient);
         //设置 mqtt 的监听
