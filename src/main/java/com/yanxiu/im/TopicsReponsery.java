@@ -518,29 +518,6 @@ public class TopicsReponsery {
 
 
     /**
-     * 创建 mockTopic
-     */
-    private TopicItemBean createMockTopicForMsg(long memberId, long fromTopic) {
-        List<TopicItemBean> topics = SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST);
-        TopicItemBean mockTopic = DatabaseManager.createMockTopic(memberId, fromTopic);
-        if (topics != null) {
-            topics.add(mockTopic);
-            ImTopicSorter.sortByLatestTime(topics);
-        }
-        return mockTopic;
-    }
-
-    /**
-     * 执行创建 topic
-     */
-    public void createPrivateTopic(long memberId, long fromTopic, GetTopicItemBeanCallback callback) {
-        //创建 topic  1、 创建本地 mocktopic 2、网络请求服务器创建 topic 3、服务器创建成功返回 realtopic  后续会发送 mqtt 通知
-        TopicItemBean resultBean = null;
-        final TopicItemBean mockTopic = createMockTopicForMsg(memberId, fromTopic);
-        resultBean = mockTopic;
-    }
-
-    /**
      * 执行删除 topic 操作
      */
     public void deleteTopicHistory(final long topicId, final DeleteTopicCallback callback) {
@@ -652,7 +629,7 @@ public class TopicsReponsery {
                 //请求异常
                 if (ret == null || ret.code != 0 || ret.data == null || ret.data.topicMsg == null) {
                     final ArrayList<MsgItemBean> topicMsgs = DatabaseManager.getTopicMsgs(targetTopic.getTopicId(), startId, DatabaseManager.pagesize);
-                    TopicInMemoryUtils.duplicateRemoval(topicMsgs,targetTopic.getMsgList());
+                    TopicInMemoryUtils.duplicateRemoval(topicMsgs, targetTopic.getMsgList());
                     targetTopic.getMsgList().addAll(topicMsgs);
                     uiHandler.post(new Runnable() {
                         @Override
@@ -670,7 +647,7 @@ public class TopicsReponsery {
                     }
                 }
                 final ArrayList<MsgItemBean> topicMsgs = DatabaseManager.getTopicMsgs(targetTopic.getTopicId(), startId, DatabaseManager.pagesize);
-                TopicInMemoryUtils.duplicateRemoval(topicMsgs,targetTopic.getMsgList());
+                TopicInMemoryUtils.duplicateRemoval(topicMsgs, targetTopic.getMsgList());
                 targetTopic.getMsgList().addAll(topicMsgs);
                 uiHandler.post(new Runnable() {
                     @Override
@@ -683,7 +660,7 @@ public class TopicsReponsery {
             @Override
             public void onFail(YXRequestBase request, Error error) {
                 final ArrayList<MsgItemBean> topicMsgs = DatabaseManager.getTopicMsgs(targetTopic.getTopicId(), startId, DatabaseManager.pagesize);
-                TopicInMemoryUtils.duplicateRemoval(topicMsgs,targetTopic.getMsgList());
+                TopicInMemoryUtils.duplicateRemoval(topicMsgs, targetTopic.getMsgList());
                 targetTopic.getMsgList().addAll(topicMsgs);
                 uiHandler.post(new Runnable() {
                     @Override
@@ -697,6 +674,107 @@ public class TopicsReponsery {
 
     public interface GetMsgPageCallback {
         void onGetPage(ArrayList<MsgItemBean> msgs);
+    }
+
+    /**
+     * 创建一个 mocktopic
+     */
+    public void createMockTopic(long fromId, long memberId, CreateTopicCallback callback) {
+        final TopicItemBean mockTopic = DatabaseManager.createMockTopic(memberId, fromId);
+        addToMemory(mockTopic);
+        ImTopicSorter.sortByLatestTime(topicInMemory);
+        callback.onTopicCreatedSuccess(mockTopic);
+    }
+
+    public TopicItemBean createMockTopic(long fromId, long memberId) {
+        final TopicItemBean mockTopic = DatabaseManager.createMockTopic(memberId, fromId);
+        addToMemory(mockTopic);
+        ImTopicSorter.sortByLatestTime(topicInMemory);
+        return mockTopic;
+    }
+
+    public interface CreateTopicCallback {
+        void onTopicCreatedSuccess(TopicItemBean topicItemBean);
+
+        void onTopicCreateFailed();
+    }
+
+
+    /**
+     * 向服务器请求创建一个新的聊天 topic
+     */
+    public void createNewTopic(final TopicItemBean mockTopic, String fromTopicId, final CreateTopicCallback callback) {
+        long memberId = -1;
+        for (DbMember memberNew : mockTopic.getMembers()) {
+            if (memberNew.getImId() != Constants.imId) {
+                memberId = memberNew.getImId();
+                break;
+            }
+        }
+        requestCreateTopic(mockTopic, fromTopicId, memberId, callback);
+    }
+
+    private void requestCreateTopic(final TopicItemBean mockTopic, String fromTopicId, long memberId, final CreateTopicCallback callback) {
+        TopicCreateTopicRequest_new createTopicRequest = new TopicCreateTopicRequest_new();
+        createTopicRequest.imToken = Constants.imToken;
+        createTopicRequest.topicType = "1"; // 私聊
+        createTopicRequest.imMemberIds = Long.toString(Constants.imId) + "," + Long.toString(memberId);
+        createTopicRequest.fromGroupTopicId = fromTopicId;
+        createTopicRequest.startRequest(TopicCreateTopicResponse_new.class, new IYXHttpCallback<TopicCreateTopicResponse_new>() {
+            @Override
+            public void onRequestCreated(Request request) {
+            }
+
+            @Override
+            public void onSuccess(YXRequestBase request, final TopicCreateTopicResponse_new ret) {
+                //首先检查参数
+                if (ret == null || ret.code != 0 || ret.data == null) {
+                    //这种情况 应该是 请求本身出现错误
+                    DatabaseManager.topicCreateFailed(mockTopic);
+                    uiHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            callback.onTopicCreateFailed();
+                        }
+                    });
+                    return;
+                }
+                if (ret.data.topic == null || ret.data.topic.size() == 0) {
+                    //这种情况可能是 已经存在了 需要创建的 topic
+                    DatabaseManager.topicCreateFailed(mockTopic);
+                    uiHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            callback.onTopicCreateFailed();
+                        }
+                    });
+                    return;
+                }
+
+                final ImTopic_new imTopicNew = ret.data.topic.get(0);
+                //进行 mockTopic->realTopic 的转换
+                DatabaseManager.migrateMockTopicToRealTopic(mockTopic, imTopicNew);
+                //回调给上层
+
+                uiHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        callback.onTopicCreatedSuccess(mockTopic);
+                    }
+                });
+            }
+
+            @Override
+            public void onFail(YXRequestBase request, Error error) {
+                DatabaseManager.topicCreateFailed(mockTopic);
+                uiHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        callback.onTopicCreateFailed();
+                    }
+                });
+            }
+        });
     }
 
 

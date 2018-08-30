@@ -1,9 +1,16 @@
 package com.yanxiu.im.business.utils;
 
+import com.yanxiu.im.Constants;
+import com.yanxiu.im.bean.MsgItemBean;
+import com.yanxiu.im.bean.TopicItemBean;
+import com.yanxiu.im.db.DbMyMsg;
+import com.yanxiu.im.manager.DatabaseManager;
+
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.UUID;
 
 /**
  * Created by 朱晓龙 on 2018/5/11 13:51.
@@ -95,4 +102,38 @@ public class ImDateFormateUtils {
         ret=format.format(date);
         return ret;
     }
+
+
+    public static MsgItemBean createTextMsgBean(String msgStr, TopicItemBean belongTopic){
+        MsgItemBean msgItemBean = new MsgItemBean(MsgItemBean.MSG_TYPE_MYSELF, 10);
+        msgItemBean.setState(DbMyMsg.State.Sending.ordinal());
+        msgItemBean.setLocalViewUrl("");
+        msgItemBean.setMsgId(belongTopic.generateMyMsgId());
+        msgItemBean.setTopicId(belongTopic.getTopicId());
+        msgItemBean.setMsg(msgStr);
+        msgItemBean.setSenderId(Constants.imId);
+        msgItemBean.setReqId(UUID.randomUUID().toString());
+        msgItemBean.setSendTime(System.currentTimeMillis());
+        //保存数据库
+        DatabaseManager.createOrUpdateMyMsg(msgItemBean);
+        return msgItemBean;
+    }
+    public static MsgItemBean createImgMsgBean(String imgUrl, TopicItemBean belongTopic) {
+        MsgItemBean msgItemBean = new MsgItemBean(MsgItemBean.MSG_TYPE_MYSELF, 20);
+        msgItemBean.setState(DbMyMsg.State.Sending.ordinal());
+        msgItemBean.setLocalViewUrl(imgUrl);
+        msgItemBean.setMsgId(belongTopic.generateMyMsgId());
+        msgItemBean.setTopicId(belongTopic.getTopicId());
+        msgItemBean.setMsg("");
+        msgItemBean.setSenderId(Constants.imId);
+        msgItemBean.setReqId(UUID.randomUUID().toString());
+        msgItemBean.setSendTime(System.currentTimeMillis());
+        Integer[] size = ImageFileUtils.getPicWithAndHeight(imgUrl);
+        msgItemBean.setWidth(size[0]);
+        msgItemBean.setHeight(size[1]);
+        //保存数据库
+        DatabaseManager.createOrUpdateMyMsg(msgItemBean);
+        return msgItemBean;
+    }
+
 }

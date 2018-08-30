@@ -11,27 +11,18 @@ import com.yanxiu.im.Constants;
 import com.yanxiu.im.TopicsReponsery;
 import com.yanxiu.im.bean.MsgItemBean;
 import com.yanxiu.im.bean.TopicItemBean;
-import com.yanxiu.im.bean.net_bean.ImTopic_new;
 import com.yanxiu.im.business.msglist.interfaces.MsgListContract;
 import com.yanxiu.im.business.topiclist.sorter.ImTopicSorter;
-import com.yanxiu.im.business.utils.ImageFileUtils;
+import com.yanxiu.im.business.utils.ImDateFormateUtils;
 import com.yanxiu.im.business.utils.TopicInMemoryUtils;
 import com.yanxiu.im.db.DbMember;
-import com.yanxiu.im.db.DbMyMsg;
 import com.yanxiu.im.manager.DatabaseManager;
-import com.yanxiu.im.net.TopicCreateTopicRequest_new;
-import com.yanxiu.im.net.TopicCreateTopicResponse_new;
 import com.yanxiu.im.sender.ISender;
 import com.yanxiu.im.sender.SenderFactory;
 import com.yanxiu.im.sender.SenderManager;
-import com.yanxiu.lib.yx_basic_library.network.IYXHttpCallback;
-import com.yanxiu.lib.yx_basic_library.network.YXRequestBase;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
-
-import okhttp3.Request;
 
 /**
  * Created by 朱晓龙 on 2018/5/8 15:17.
@@ -123,57 +114,6 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
         }
     }
 
-
-    /**
-     * 创建realTopic
-     *
-     * @param createTopicCallback
-     */
-    private void createRealTopic(long memberId, String fromTopicId, final TopicItemBean currentTopic, final CreateTopicCallback createTopicCallback) {
-        TopicCreateTopicRequest_new createTopicRequest = new TopicCreateTopicRequest_new();
-        createTopicRequest.imToken = Constants.imToken;
-        createTopicRequest.topicType = "1"; // 私聊
-        createTopicRequest.imMemberIds = Long.toString(Constants.imId) + "," + Long.toString(memberId);
-        createTopicRequest.fromGroupTopicId = fromTopicId;
-        createTopicRequest.startRequest(TopicCreateTopicResponse_new.class, new IYXHttpCallback<TopicCreateTopicResponse_new>() {
-            @Override
-            public void onRequestCreated(Request request) {
-            }
-
-            @Override
-            public void onSuccess(YXRequestBase request, final TopicCreateTopicResponse_new ret) {
-
-                ImTopic_new imTopic = null;
-                if (ret != null && ret.data != null && ret.data.topic != null && !ret.data.topic.isEmpty()) {
-                    // 应该只有一个imTopic
-                    imTopic = ret.data.topic.get(0);
-                }
-                if (imTopic == null) { //视为失败
-                    DatabaseManager.topicCreateFailed(currentTopic);
-                    createTopicCallback.onFail();
-                    return;
-                }
-                DatabaseManager.migrateMockTopicToRealTopic(currentTopic, imTopic);
-                //创建topic 成功 开始发送消息
-                createTopicCallback.onSuccess();
-
-            }
-
-            @Override
-            public void onFail(YXRequestBase request, Error error) {
-                DatabaseManager.topicCreateFailed(currentTopic);
-                createTopicCallback.onFail();
-            }
-        });
-    }
-
-    private interface CreateTopicCallback {
-        void onSuccess();
-
-        void onFail();
-    }
-
-
     /**
      * 执行发送文字消息的逻辑、数据处理
      * 1、创建文字类型的 MsgItemBean
@@ -189,54 +129,41 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
      */
     @Override
     public void doSendTextMsg(final String msgStr, @NonNull final TopicItemBean currentTopic) {
-        //根据文字内容创建msgbean 如果是临时topic currentTopic 是一个mocktopic
+        //首先创建 需要发送的 msgitebean
         final MsgItemBean msgItemBean = createTextMsgBean(msgStr, currentTopic);
         List<MsgItemBean> msgList = currentTopic.getMsgList();
         if (msgList == null) {
             msgList = new ArrayList<>();
             currentTopic.setMsgList(msgList);
         }
-
         msgList.add(0, msgItemBean);
         TopicInMemoryUtils.processMsgListDateInfo(msgList);
         sortInsertTopics(currentTopic.getTopicId());
-        //通知UI 更新
-        if (view != null) {
-            view.onNewMsg();
-        }
+        //内存 topic 处理完毕 回调 ui 进行显示
+        view.onNewMsg();
 
+        //判断当前 topic 是否为 mocktopic
         if (DatabaseManager.isMockTopic(currentTopic)) {
-
+            //如果是 mocktopic 先请求创建 realtopic
             //先创建topic
-            long memberId = -1;
-            for (DbMember memberNew : currentTopic.getMembers()) {
-                if (memberNew.getImId() != Constants.imId) {
-                    memberId = memberNew.getImId();
-                    break;
-                }
-            }
-            createRealTopic(memberId, currentTopic.getFromTopic(), currentTopic, new CreateTopicCallback() {
+            TopicsReponsery.getInstance().createNewTopic(currentTopic, currentTopic.getFromTopic(), new TopicsReponsery.CreateTopicCallback() {
                 @Override
-                public void onSuccess() {
+                public void onTopicCreatedSuccess(TopicItemBean topicItemBean) {
+                    //创建成功  执行一次 递归操作
                     initSenderManager(currentTopic);
                     mTextSenderManager.addSender(msgItemBean.getISender());
                 }
 
                 @Override
-                public void onFail() {
-                    if (view != null) {
-                        mHandler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                view.onCreateTopicFail();
-                            }
-                        });
-
-                    }
+                public void onTopicCreateFailed() {
+                    //TODO 创建失败 直接显示 失败操作？！
+                    Log.i(TAG, "onTopicCreateFailed: ");
+                    view.onNewMsg();
                 }
             });
         } else {
-            //如果不是mocktopic 直接发送
+
+            //显示后 执行 发送
             initSenderManager(currentTopic);
             mTextSenderManager.addSender(msgItemBean.getISender());
         }
@@ -244,15 +171,7 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
 
     @NonNull
     private MsgItemBean createTextMsgBean(String msgStr, TopicItemBean currentTopic) {
-        MsgItemBean msgItemBean = new MsgItemBean(MsgItemBean.MSG_TYPE_MYSELF, 10);
-        msgItemBean.setState(DbMyMsg.State.Sending.ordinal());
-        msgItemBean.setLocalViewUrl("");
-        msgItemBean.setMsgId(currentTopic.generateMyMsgId());
-        msgItemBean.setTopicId(currentTopic.getTopicId());
-        msgItemBean.setMsg(msgStr);
-        msgItemBean.setSenderId(Constants.imId);
-        msgItemBean.setReqId(UUID.randomUUID().toString());
-        msgItemBean.setSendTime(System.currentTimeMillis());
+        MsgItemBean msgItemBean = ImDateFormateUtils.createTextMsgBean(msgStr, currentTopic);
         //保存数据库
         DatabaseManager.createOrUpdateMyMsg(msgItemBean);
         return msgItemBean;
@@ -281,6 +200,7 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
      */
     @Override
     public void doSendImgMsg(final String imgUrl, final TopicItemBean currentTopic) {
+        //首先创建 需要发送的 msgitebean
         final MsgItemBean msgItemBean = createImgMsgBean(imgUrl, currentTopic);
         List<MsgItemBean> msgList = currentTopic.getMsgList();
         if (msgList == null) {
@@ -288,50 +208,31 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
             currentTopic.setMsgList(msgList);
         }
         msgList.add(0, msgItemBean);
+        TopicInMemoryUtils.processMsgListDateInfo(msgList);
         sortInsertTopics(currentTopic.getTopicId());
-        //通知UI 更新
-        if (view != null) {
-            mHandler.post(new Runnable() {
-                @Override
-                public void run() {
-                    view.onNewMsg();
-                }
-            });
-
-        }
-
+        //内存 topic 处理完毕 回调 ui 进行显示
+        view.onNewMsg();
+        //判断当前 topic 是否为 mocktopic
         if (DatabaseManager.isMockTopic(currentTopic)) {
-
+            //如果是 mocktopic 先请求创建 realtopic
             //先创建topic
-            long memberId = -1;
-            for (DbMember memberNew : currentTopic.getMembers()) {
-                if (memberNew.getImId() != Constants.imId) {
-                    memberId = memberNew.getImId();
-                    break;
-                }
-            }
-            createRealTopic(memberId, currentTopic.getFromTopic(), currentTopic, new CreateTopicCallback() {
+            TopicsReponsery.getInstance().createNewTopic(currentTopic, currentTopic.getFromTopic(), new TopicsReponsery.CreateTopicCallback() {
                 @Override
-                public void onSuccess() {
+                public void onTopicCreatedSuccess(TopicItemBean topicItemBean) {
+                    //创建成功  执行一次 递归操作
                     initSenderManager(currentTopic);
                     mImageSenderManager.addSender(msgItemBean.getISender());
                 }
 
                 @Override
-                public void onFail() {
-                    if (view != null) {
-                        mHandler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                view.onCreateTopicFail();
-                            }
-                        });
-
-                    }
+                public void onTopicCreateFailed() {
+                    //TODO 创建失败 直接显示 失败操作？！
+                    Log.i(TAG, "onTopicCreateFailed: ");
+                    view.onNewMsg();
                 }
             });
         } else {
-            //开始发送msg
+            //执行 发送
             initSenderManager(currentTopic);
             mImageSenderManager.addSender(msgItemBean.getISender());
         }
@@ -339,21 +240,10 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
 
     @NonNull
     private MsgItemBean createImgMsgBean(String imgUrl, TopicItemBean currentTopic) {
-        MsgItemBean msgItemBean = new MsgItemBean(MsgItemBean.MSG_TYPE_MYSELF, 20);
-        msgItemBean.setState(DbMyMsg.State.Sending.ordinal());
-        msgItemBean.setLocalViewUrl(imgUrl);
-        msgItemBean.setMsgId(currentTopic.generateMyMsgId());
-        msgItemBean.setTopicId(currentTopic.getTopicId());
-        msgItemBean.setMsg("");
-        msgItemBean.setSenderId(Constants.imId);
-        msgItemBean.setReqId(UUID.randomUUID().toString());
-        msgItemBean.setSendTime(System.currentTimeMillis());
-        Integer[] size = ImageFileUtils.getPicWithAndHeight(imgUrl);
-        msgItemBean.setWidth(size[0]);
-        msgItemBean.setHeight(size[1]);
+        final MsgItemBean imgMsgBean = ImDateFormateUtils.createImgMsgBean(imgUrl, currentTopic);
         //保存数据库
-        DatabaseManager.createOrUpdateMyMsg(msgItemBean);
-        return msgItemBean;
+        DatabaseManager.createOrUpdateMyMsg(imgMsgBean);
+        return imgMsgBean;
     }
 
     @Override
@@ -376,7 +266,6 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
         msgList.add(0, msgItemBean);
         //检查日期显示
         TopicInMemoryUtils.processMsgListDateInfo(msgList);
-
         sortInsertTopics(currentTopic.getTopicId());
         //通知UI显示
         if (view != null) {
@@ -389,16 +278,9 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
         if (DatabaseManager.isMockTopic(currentTopic)) {
 
             //先创建topic
-            long memberId = -1;
-            for (DbMember memberNew : currentTopic.getMembers()) {
-                if (memberNew.getImId() != Constants.imId) {
-                    memberId = memberNew.getImId();
-                    break;
-                }
-            }
-            createRealTopic(memberId, currentTopic.getFromTopic(), currentTopic, new CreateTopicCallback() {
+            TopicsReponsery.getInstance().createNewTopic(currentTopic, currentTopic.getFromTopic(), new TopicsReponsery.CreateTopicCallback() {
                 @Override
-                public void onSuccess() {
+                public void onTopicCreatedSuccess(TopicItemBean topicItemBean) {
                     initSenderManager(currentTopic);
                     //开始发送msg
                     if (msgItemBean.getContentType() == 20) {
@@ -409,16 +291,8 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
                 }
 
                 @Override
-                public void onFail() {
-                    if (view != null) {
-                        mHandler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                view.onCreateTopicFail();
-                            }
-                        });
-
-                    }
+                public void onTopicCreateFailed() {
+                    view.onCreateTopicFail();
                 }
             });
         } else {
@@ -497,7 +371,7 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
     /**
      * 点击用户头像 打开一个私聊
      * 1、私聊已经存在  2、私聊不存在
-     * */
+     */
     @Override
     public void openPrivateTopicByMember(long memberId, long fromTopicId) {
         Log.i(TAG, "openPrivateTopicByMember: ");
@@ -518,7 +392,8 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
 
     /**
      * 当用户 由topic列表点击topic 进入时 调用
-     *  此时的 topic 一定存在 所以 只查找本地数据即可
+     * 此时的 topic 一定存在 所以 只查找本地数据即可
+     *
      * @param topicId 查找目标的id
      */
     @Override
@@ -543,11 +418,12 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
             }
         });
     }
+
     /**
      * 有 push 推送过来  打开的对话
      * 1、本地有目标 topic
      * 2、本地没有目标 topic 需要创建一个临时的 TempTopic 来显示界面 并等待服务器请求目标 topic 的详细信息回来更新
-     * */
+     */
     @Override
     public void openPushTopic(final long topicId) {
         Log.i(TAG, "openPushTopic: ");
@@ -574,20 +450,14 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
      */
     @Override
     public TopicItemBean createMockTopicForMsg(long memberId, long fromTopic) {
-        List<TopicItemBean> topics = SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST);
-        TopicItemBean mockTopic = DatabaseManager.createMockTopic(memberId, fromTopic);
-        if (topics != null) {
-            topics.add(mockTopic);
-            ImTopicSorter.sortByLatestTime(topics);
-        }
-        return mockTopic;
+        return TopicsReponsery.getInstance().createMockTopic(fromTopic, memberId);
     }
 
     /**
      * 检查当前 开启聊天界面的私聊与 mqtt通知的新topic 是否可以合并
      */
     public boolean checkNullTopicCanbeMerged(long topicId, long memberId) {
-        List<TopicItemBean> topics = SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST);
+        final ArrayList<TopicItemBean> topics = TopicsReponsery.getInstance().getTopicInMemory();
         if (topics == null) {
             return false;
         }

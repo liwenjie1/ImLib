@@ -100,11 +100,11 @@ public final class ImTopicListRecyclerViewAdapter<E extends TopicItemBean> exten
             holder.setData(dataList.get(position));
         }
         if (holder.itemView != null) {
-            if (mRecyclerViewItemOnClickListener != null) {
+            if (mTopicRecyclerViewClickListener != null) {
                 holder.itemView.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        mRecyclerViewItemOnClickListener.onItemClicked(holder.itemView, position);
+                        mTopicRecyclerViewClickListener.onTopicItemClicked(position,dataList.get(position));
                     }
                 });
             }
@@ -131,5 +131,15 @@ public final class ImTopicListRecyclerViewAdapter<E extends TopicItemBean> exten
 
     public void setRecyclerViewItemLongClickListener(RecyclerViewItemLongClickListener recyclerViewItemLongClickListener) {
         mRecyclerViewItemLongClickListener = recyclerViewItemLongClickListener;
+    }
+
+    private TopicRecyclerViewClickListener mTopicRecyclerViewClickListener;
+
+    public void setTopicRecyclerViewClickListener(TopicRecyclerViewClickListener topicRecyclerViewClickListener) {
+        mTopicRecyclerViewClickListener = topicRecyclerViewClickListener;
+    }
+
+    public interface TopicRecyclerViewClickListener{
+        void onTopicItemClicked(int postion,TopicItemBean bean);
     }
 }

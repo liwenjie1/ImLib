@@ -23,9 +23,9 @@ import com.yanxiu.im.Constants;
 import com.yanxiu.im.R;
 import com.yanxiu.im.bean.MsgItemBean;
 import com.yanxiu.im.bean.TopicItemBean;
+import com.yanxiu.im.business.contacts.activity.ContactsActivity;
 import com.yanxiu.im.business.interfaces.ImUnreadMsgListener;
 import com.yanxiu.im.business.interfaces.ImUserRemoveFromTopicListener;
-import com.yanxiu.im.business.interfaces.RecyclerViewItemOnClickListener;
 import com.yanxiu.im.business.interfaces.TitlebarActionListener;
 import com.yanxiu.im.business.msglist.activity.ImMsgListActivity;
 import com.yanxiu.im.business.topiclist.adapter.ImTopicListRecyclerViewAdapter;
@@ -137,26 +137,24 @@ public class ImTopicListFragment extends FaceShowBaseFragment
                 //学员端才有 通讯录功能
                 //事件统计 点击通讯录
                 EventUpdate.onClickContactEvent(getActivity());
-                ImMsgListActivity.invokeByPush(getActivity(), 100, ImMsgListActivity.REQUEST_CODE_PUSH);
-//                ContactsActivity.invoke(ImTopicListFragment.this);
+                ContactsActivity.invoke(ImTopicListFragment.this);
                 if (titlebarActionListener != null) {
                     titlebarActionListener.onRightComponpentClicked();
                 }
             }
         });
         //点击topic 进入聊天界面
-        mRecyclerAdapter.setmRecyclerViewItemOnClickListener(new RecyclerViewItemOnClickListener() {
+        mRecyclerAdapter.setTopicRecyclerViewClickListener(new ImTopicListRecyclerViewAdapter.TopicRecyclerViewClickListener() {
             @Override
-            public void onItemClicked(View view, int position) {
+            public void onTopicItemClicked(int position,TopicItemBean bean) {
                 mRecyclerAdapter.notifyItemChanged(position);
                 mRecyclerAdapter.notifyDataSetChanged();
-                TopicItemBean currentTopic = mRecyclerAdapter.getDataList().get(position);
                 //事件统计 点击群聊 topic
-                if (TextUtils.equals(currentTopic.getType(), "2")) {
+                if (TextUtils.equals(bean.getType(), "2")) {
                     EventUpdate.onClickGroupTopicEvent(getActivity());
                 }
 
-                ImMsgListActivity.invoke(ImTopicListFragment.this, currentTopic.getTopicId(), ImMsgListActivity.REQUEST_CODE_TOPICID);
+                ImMsgListActivity.invoke(ImTopicListFragment.this, bean.getTopicId(), ImMsgListActivity.REQUEST_CODE_TOPICID);
             }
         });
         EventBus.getDefault().register(this);
