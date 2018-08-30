@@ -303,7 +303,9 @@ public class MqttConnectManager {
                 public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
                     YXLogger.d(TAG, "connect failure");
                     //失败
-                    connectCallback.onFailure();
+                    if (connectCallback != null) {
+                        connectCallback.onFailure();
+                    }
                 }
             });
         } catch (MqttException e) {
