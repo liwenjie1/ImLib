@@ -60,6 +60,7 @@ public class TopicsReponsery {
 
         needUpdateMemberTopics = new ArrayList<>();
         needUpdateMsgTopics = new ArrayList<>();
+        DatabaseManager.useDbForUser(Long.toString(Constants.imId) + "_db");
     }
 
     public void releaseResource() {
@@ -140,7 +141,7 @@ public class TopicsReponsery {
 
     public ArrayList<TopicItemBean> getLocalTopicList(long imId) {
         //异步获取 数据库数据 topic列表
-        DatabaseManager.useDbForUser(Long.toString(imId) + "_db");//todo:应该放在config里面去
+
         final List<TopicItemBean> fromDb = (ArrayList<TopicItemBean>) DatabaseManager.topicsFromDb();
         addAllToMemory((ArrayList<TopicItemBean>) fromDb);
         return topicInMemory;
@@ -231,6 +232,7 @@ public class TopicsReponsery {
 
             @Override
             public void onFail(YXRequestBase request, Error error) {
+
             }
         });
     }
