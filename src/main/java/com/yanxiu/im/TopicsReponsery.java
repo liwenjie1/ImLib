@@ -64,12 +64,14 @@ public class TopicsReponsery {
 
     public void releaseResource() {
         MqttConnectManager.getInstance().disconnectMqttServer();
-        topicInMemory.clear();
+        if (topicInMemory != null) {
+            topicInMemory.clear();
+        }
         INSTANCE = null;
     }
 
 
-    private ArrayList<TopicItemBean> topicInMemory;
+    private ArrayList<TopicItemBean> topicInMemory=new ArrayList<>();
 
     /**
      * 优化请求队列
