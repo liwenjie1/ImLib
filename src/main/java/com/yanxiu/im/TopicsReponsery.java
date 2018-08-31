@@ -60,7 +60,6 @@ public class TopicsReponsery {
 
         needUpdateMemberTopics = new ArrayList<>();
         needUpdateMsgTopics = new ArrayList<>();
-        DatabaseManager.useDbForUser(Long.toString(Constants.imId) + "_db");
     }
 
     public void releaseResource() {

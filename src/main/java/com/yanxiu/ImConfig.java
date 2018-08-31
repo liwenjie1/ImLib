@@ -4,6 +4,7 @@ import android.text.TextUtils;
 
 import com.yanxiu.im.Constants;
 import com.yanxiu.im.bean.net_bean.ImTokenInfo_new;
+import com.yanxiu.im.manager.DatabaseManager;
 import com.yanxiu.lib.yx_basic_library.util.logger.YXLogger;
 
 /**
@@ -52,6 +53,9 @@ public class ImConfig {
         Constants.token = token;
         // 成功初始化的标志  imid 有效  imtoken 有值   token 为 app 层级的参数 有 app 层级进行判断
         hasInitialazed = (Constants.imId > 0 && !TextUtils.isEmpty(Constants.imToken));
+        if (hasInitialazed) {
+            DatabaseManager.useDbForUser(Long.toString(Constants.imId) + "_db");
+        }
     }
 
     public static void setClientType(ClientType type) {
