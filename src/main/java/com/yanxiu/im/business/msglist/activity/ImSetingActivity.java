@@ -33,6 +33,7 @@ public class ImSetingActivity extends ImBaseActivity implements ImTitleLayout.Ti
     }
 
 
+    private TopicItemBean currentTopic;
     private ImTitleLayout mImTitleLayout;
     private ImSettingItemView mImNoticeSettingItem;
     private ImSettingItemView mImTalkSettingItem;
@@ -63,8 +64,8 @@ public class ImSetingActivity extends ImBaseActivity implements ImTitleLayout.Ti
         mImNoticeSettingItem = findViewById(R.id.im_notice_setting);
         mImTalkSettingItem = findViewById(R.id.im_talk_setting);
 
-        im_setting_private_info_layout=findViewById(R.id.ll_im_setting_private_topic_info);
-        im_setting_group_info_layout=findViewById(R.id.ll_group_info);
+        im_setting_private_info_layout = findViewById(R.id.ll_im_setting_private_topic_info);
+        im_setting_group_info_layout = findViewById(R.id.ll_group_info);
     }
 
 
@@ -87,6 +88,9 @@ public class ImSetingActivity extends ImBaseActivity implements ImTitleLayout.Ti
 
             @Override
             public void onCheckedChanged(ImSwitchButton view, boolean isChecked) {
+                if (currentTopic != null) {
+                    currentTopic.setBlockNotice(isChecked);
+                }
                 mImSettingPresenter.dosetNotice(isChecked);
             }
         });
@@ -94,6 +98,9 @@ public class ImSetingActivity extends ImBaseActivity implements ImTitleLayout.Ti
         mImTalkSettingItem.setOnSwitchCheckedChangedListener(new ImSwitchButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(ImSwitchButton view, boolean isChecked) {
+                if (currentTopic != null) {
+                    currentTopic.setSilence(isChecked);
+                }
                 mImSettingPresenter.dosetSilent(isChecked);
             }
         });
@@ -122,27 +129,28 @@ public class ImSetingActivity extends ImBaseActivity implements ImTitleLayout.Ti
 
     @Override
     public void onTopicFound(TopicItemBean topicBean) {
+        currentTopic = topicBean;
         im_setting_activity_classname_tv.setText(topicBean.getGroup());
 
         mImNoticeSettingItem.setSwitchBtnChecked(mImSettingPresenter.getNoticeSetting());
         mImTalkSettingItem.setSwitchBtnChecked(mImSettingPresenter.getSilentSetting());
         //如果是群聊
-        if (TextUtils.equals("2",topicBean.getType())) {
+        if (TextUtils.equals("2", topicBean.getType())) {
             im_setting_group_info_layout.setVisibility(View.VISIBLE);
             im_setting_private_info_layout.setVisibility(View.GONE);
 
             //设置 群聊信息 名称
-            TextView groupName=findViewById(R.id.im_setting_activity_classname_tv);
-            groupName.setText(topicBean.getGroup()+"");
+            TextView groupName = findViewById(R.id.im_setting_activity_classname_tv);
+            groupName.setText(topicBean.getGroup() + "");
             //根据 topic 禁言字段显示 toggle禁言状态
 
-        }else {
+        } else {
             im_setting_group_info_layout.setVisibility(View.GONE);
             im_setting_private_info_layout.setVisibility(View.VISIBLE);
             //设置私聊 对象信息
             for (DbMember dbMember : topicBean.getMembers()) {
-                if (dbMember.getImId()!= Constants.imId) {
-                    ImageView memberAvaral=findViewById(R.id.im_setting_member_avaral);
+                if (dbMember.getImId() != Constants.imId) {
+                    ImageView memberAvaral = findViewById(R.id.im_setting_member_avaral);
 
                     Glide.with(this)
                             .load(dbMember.getAvatar())
@@ -151,11 +159,14 @@ public class ImSetingActivity extends ImBaseActivity implements ImTitleLayout.Ti
                             .placeholder(R.drawable.im_chat_default)
                             .into(memberAvaral);
 
-                    TextView memberName=findViewById(R.id.im_setting_member_name);
-                    memberName.setText(dbMember.getName()+"");
+                    TextView memberName = findViewById(R.id.im_setting_member_name);
+                    memberName.setText(dbMember.getName() + "");
                     break;
                 }
             }
         }
+
+        //设置 toggle state
+
     }
 }

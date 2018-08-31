@@ -154,7 +154,6 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
         initImagePicker();
         EventBus.getDefault().register(this);
 
-        showSlientNotice(true);
     }
 
 
@@ -662,6 +661,7 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
+                showSlientNotice(currentTopic.isSilence());
                 setTitlemsg(currentTopic);
                 msgRecyclerAdapter.notifyDataSetChanged();
             }

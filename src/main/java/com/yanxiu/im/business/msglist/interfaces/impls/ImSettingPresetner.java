@@ -6,6 +6,7 @@ import android.text.TextUtils;
 
 import com.test.yanxiu.common_base.utils.SharedSingleton;
 import com.yanxiu.im.Constants;
+import com.yanxiu.im.TopicsReponsery;
 import com.yanxiu.im.bean.TopicItemBean;
 import com.yanxiu.im.business.msglist.interfaces.ImSettingContract;
 import com.yanxiu.im.business.utils.TopicInMemoryUtils;
@@ -86,6 +87,7 @@ public class ImSettingPresetner implements ImSettingContract.IPresenter {
         mockHttpHandler.postDelayed(new Runnable() {
             @Override
             public void run() {
+
                 mIView.onSetNotice(mRandom.nextBoolean());
             }
         }, 200);
@@ -93,11 +95,14 @@ public class ImSettingPresetner implements ImSettingContract.IPresenter {
 
     @Override
     public void doGetTopicInfo(long topicId) {
-        List<TopicItemBean> topics = SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST);
-        TopicItemBean targetTopic = TopicInMemoryUtils.findTopicByTopicId(topicId, topics);
-        if (targetTopic != null) {
-            mIView.onTopicFound(targetTopic);
-        }
+        TopicsReponsery.getInstance().getLocalTopic(topicId, new TopicsReponsery.GetTopicItemBeanCallback() {
+            @Override
+            public void onGetTopicItemBean(TopicItemBean bean) {
+                if (bean != null) {
+                    mIView.onTopicFound(bean);
+                }
+            }
+        });
     }
 
     public boolean getNoticeSetting() {

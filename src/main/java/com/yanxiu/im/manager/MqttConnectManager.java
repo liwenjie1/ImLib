@@ -326,7 +326,6 @@ public class MqttConnectManager {
                     e.printStackTrace();
                 }
             }
-            client.close();
         }
         mqttConnections.clear();
     }

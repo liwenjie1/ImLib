@@ -594,12 +594,17 @@ public class DatabaseManager {
 //            dbMember.save();
 //        }
         //更新 member 信息
-        long start=System.currentTimeMillis();
-        updateMembers(dbTopic,topic.members);
+        long start = System.currentTimeMillis();
+        updateMembers(dbTopic, topic.members);
 //        Log.i("dbupdate", "更新 member 花费  "+(System.currentTimeMillis()-start));
         updateMembersThatNeedUpdate(dbTopic, topic);
         dbTopic.save();
         return changeDbTopicToTopicItemBean(dbTopic);
+    }
+
+
+    public static void updateTopicMembersWithImTopic(TopicItemBean localTopic, List<ImTopic_new.Member> imMembers) {
+
     }
 
     /**
@@ -647,9 +652,9 @@ public class DatabaseManager {
         //找到所有数据库中有的 members
         final List<DbMember> memberAlreadyInDb = DataSupport.where(url.toString()).find(DbMember.class);
 
-        List<DbMember> insertMembers=new ArrayList<>();
+        List<DbMember> insertMembers = new ArrayList<>();
         for (ImTopic_new.Member imMember : members) {
-            boolean has=false;
+            boolean has = false;
             //去除数据库中有的
             for (DbMember dbMember : memberAlreadyInDb) {
                 if (imMember.memberInfo.imId == dbMember.getImId()) {
@@ -658,13 +663,13 @@ public class DatabaseManager {
                     dbMember.setAvatar(imMember.memberInfo.avatar);
                     dbMember.setName(imMember.memberInfo.memberName);
                     dbMember.getTopics().add(dbTopic);
-                    has=true;
+                    has = true;
                     break;
                 }
             }
             //数据库中没有的 进行insert操作 加入到待保存列表
             if (!has) {
-                DbMember dbMember=new DbMember();
+                DbMember dbMember = new DbMember();
                 dbMember.setImId(imMember.memberInfo.imId);
                 dbMember.setRole(imMember.memberInfo.memberType);
                 dbMember.setAvatar(imMember.memberInfo.avatar);

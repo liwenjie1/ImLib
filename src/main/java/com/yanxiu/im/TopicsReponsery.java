@@ -233,7 +233,7 @@ public class TopicsReponsery {
 
             @Override
             public void onFail(YXRequestBase request, Error error) {
-
+                Log.i(TAG, "onFail: "+error.getMessage());
             }
         });
     }
@@ -503,8 +503,7 @@ public class TopicsReponsery {
     public void getPrivateTopicByMemberid(long memberId, long fromTopic, GetPrivateTopicCallback<TopicItemBean> callback) {
         TopicItemBean resultBean = null;
         //内存检查
-        final ArrayList<TopicItemBean> topics = SharedSingleton.getInstance().<ArrayList<TopicItemBean>>get(SharedSingleton.KEY_TOPIC_LIST);
-        resultBean = TopicInMemoryUtils.findPrivateTopicByMemberId(memberId, topics);
+        resultBean = TopicInMemoryUtils.findPrivateTopicByMemberId(memberId, topicInMemory);
         //数据库检查
         if (resultBean == null) {
             final List<TopicItemBean> dbTopics = DatabaseManager.topicsFromDb();

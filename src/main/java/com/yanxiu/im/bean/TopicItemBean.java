@@ -29,10 +29,30 @@ public class TopicItemBean extends YXBaseBean {
     private long latestMsgTime;
     private List<MsgItemBean> msgList = new ArrayList<>();
 
+    /*禁言和免打扰*/
+    private boolean silence;//禁言
+    private boolean blockNotice;//免打扰
+
+    public boolean isSilence() {
+        return silence;
+    }
+
+    public void setSilence(boolean silence) {
+        this.silence = silence;
+    }
+
+    public boolean isBlockNotice() {
+        return blockNotice;
+    }
+
+    public void setBlockNotice(boolean blockNotice) {
+        this.blockNotice = blockNotice;
+    }
+
     /**
      * 最有一条http请求成功的msg
-     * */
-    private long requestMsgId =Long.MAX_VALUE;
+     */
+    private long requestMsgId = Long.MAX_VALUE;
 
     public long getRequestMsgId() {
         return requestMsgId;
@@ -43,9 +63,9 @@ public class TopicItemBean extends YXBaseBean {
     }
 
     public MsgItemBean getLatestMsg() {
-        if (msgList != null&&msgList.size()>0) {
+        if (msgList != null && msgList.size() > 0) {
             //倒序：取第一个 正序：取最后一个
-           return msgList.get(0);
+            return msgList.get(0);
         }
         return null;
     }
@@ -57,7 +77,6 @@ public class TopicItemBean extends YXBaseBean {
     /**
      * 创建msg时，生成msgid
      *
-
      * @return
      */
     public long generateMyMsgId() {

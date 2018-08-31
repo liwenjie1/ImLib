@@ -1,7 +1,6 @@
 package com.yanxiu.im.bean.net_bean;
 
 import com.google.gson.annotations.SerializedName;
-import com.yanxiu.im.bean.net_bean.ImMember_new;
 
 import java.util.List;
 
@@ -24,6 +23,7 @@ public class ImTopic_new {
     public long latestMsgTime;  // 格式 1514475540032
 
     public List<Member> members;
+
     public class Member {
         // 其余字段暂时不用
         public long memberId;   // 就是imId
