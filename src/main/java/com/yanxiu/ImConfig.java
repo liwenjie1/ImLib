@@ -10,8 +10,8 @@ import com.yanxiu.lib.yx_basic_library.YXApplication;
 import com.yanxiu.lib.yx_basic_library.util.logger.YXLogger;
 
 /**
+ * Im初始化操作，在这个文件里统一操作
  * Created by 戴延枫 on 2018/5/15.
- * //TODO:暂时放在这，一些初始化操作什么的，感觉放在这个文件里统一操作比较好
  */
 
 public class ImConfig {
