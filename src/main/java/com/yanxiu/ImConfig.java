@@ -5,6 +5,8 @@ import android.text.TextUtils;
 import com.yanxiu.im.Constants;
 import com.yanxiu.im.bean.net_bean.ImTokenInfo_new;
 import com.yanxiu.im.manager.DatabaseManager;
+import com.yanxiu.im.manager.MqttConnectManager;
+import com.yanxiu.lib.yx_basic_library.YXApplication;
 import com.yanxiu.lib.yx_basic_library.util.logger.YXLogger;
 
 /**
@@ -55,6 +57,18 @@ public class ImConfig {
         hasInitialazed = (Constants.imId > 0 && !TextUtils.isEmpty(Constants.imToken));
         if (hasInitialazed) {
             DatabaseManager.useDbForUser(Long.toString(Constants.imId) + "_db");
+            MqttConnectManager.init(YXApplication.getContext().getApplicationContext());
+            MqttConnectManager.getInstance().connectMqttServer(new MqttConnectManager.MqttServerConnectCallback() {
+                @Override
+                public void onSuccess() {
+
+                }
+
+                @Override
+                public void onFailure() {
+
+                }
+            });
         }
     }
 
