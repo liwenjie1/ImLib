@@ -21,7 +21,6 @@ import com.test.yanxiu.common_base.utils.talkingdata.EventUpdate;
 import com.yanxiu.ImConfig;
 import com.yanxiu.im.Constants;
 import com.yanxiu.im.R;
-import com.yanxiu.im.TopicsReponsery;
 import com.yanxiu.im.bean.MsgItemBean;
 import com.yanxiu.im.bean.TopicItemBean;
 import com.yanxiu.im.business.contacts.activity.ContactsActivity;
@@ -165,7 +164,6 @@ public class ImTopicListFragment extends FaceShowBaseFragment
 
     @Override
     public void onDestroy() {
-        TopicsReponsery.getInstance().releaseResource();
         EventBus.getDefault().unregister(this);
         super.onDestroy();
     }

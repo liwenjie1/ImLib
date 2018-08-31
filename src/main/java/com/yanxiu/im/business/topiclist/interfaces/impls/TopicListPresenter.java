@@ -127,7 +127,9 @@ public class TopicListPresenter implements TopicListContract.Presenter {
             @Override
             public void onGetTopicItemBean(TopicItemBean bean) {
                 //会多次回调 知道完全结束
-                view.onTopicUpdate(bean.getTopicId());
+                if (bean != null) {
+                    view.onTopicUpdate(bean.getTopicId());
+                }
             }
         });
     }

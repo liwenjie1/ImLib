@@ -38,7 +38,6 @@ import com.test.yanxiu.common_base.utils.permission.OnPermissionCallback;
 import com.test.yanxiu.common_base.utils.talkingdata.EventUpdate;
 import com.yanxiu.im.Constants;
 import com.yanxiu.im.R;
-import com.yanxiu.im.TopicsReponsery;
 import com.yanxiu.im.bean.MsgItemBean;
 import com.yanxiu.im.bean.TopicItemBean;
 import com.yanxiu.im.business.msglist.ImMsgListFoucsLinearLayoutManager;
@@ -802,7 +801,6 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
     protected void onDestroy() {
         EventBus.getDefault().unregister(this);
         im_msglist_recyclerview.setAdapter(null);
-        TopicsReponsery.getInstance().releaseResource();
         super.onDestroy();
     }
 
