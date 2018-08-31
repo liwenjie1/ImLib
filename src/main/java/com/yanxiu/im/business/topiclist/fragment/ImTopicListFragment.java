@@ -161,7 +161,6 @@ public class ImTopicListFragment extends FaceShowBaseFragment
         EventBus.getDefault().register(this);
     }
 
-
     @Override
     public void onDestroy() {
         EventBus.getDefault().unregister(this);
@@ -225,7 +224,10 @@ public class ImTopicListFragment extends FaceShowBaseFragment
      */
     @Override
     public void onTopicListUpdate() {
+        Log.i(TAG, "onTopicListUpdate: ");
         mRecyclerAdapter.setDataList(topicListPresenter.getTopicInMemory());
+        mqttConnectPresenter.subscribeTopics(topicListPresenter.getTopicInMemory());
+
         mRecyclerAdapter.notifyDataSetChanged();
         //检查红点状态
         topicListPresenter.doUpdateTopicInfo();
@@ -289,14 +291,17 @@ public class ImTopicListFragment extends FaceShowBaseFragment
      */
     @Subscribe
     public void onMqttNewMsg(NewMsgEvent event) {
+        Log.i("mqtt", "onMqttNewMsg: ");
         MsgItemBean newMsg = event.msg;
         topicListPresenter.doReceiveNewMsg(newMsg);
     }
 
     @Subscribe
     public void onMqttConnected(MqttConnectedEvent event) {
+        Log.i("mqtt", "onMqttConnected: ");
         //mqtt 服务器连接通知 通知后 刷新数据列表
         topicListPresenter.doTopicListUpdate();
+        Toast.makeText(getActivity(), "mqtt 连接成功", Toast.LENGTH_SHORT).show();
     }
 
 

@@ -4,8 +4,11 @@ import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
+import android.util.Log;
 
+import com.yanxiu.im.Constants;
 import com.yanxiu.im.db.ImSpManager;
+import com.yanxiu.im.event.MqttConnectedEvent;
 import com.yanxiu.im.net.PolicyConfigRequest_new;
 import com.yanxiu.im.net.PolicyConfigResponse_new;
 import com.yanxiu.lib.yx_basic_library.YXApplication;
@@ -14,9 +17,15 @@ import com.yanxiu.lib.yx_basic_library.network.YXRequestBase;
 import com.yanxiu.lib.yx_basic_library.util.logger.YXLogger;
 
 import org.eclipse.paho.android.service.MqttAndroidClient;
+import org.eclipse.paho.client.mqttv3.IMqttActionListener;
+import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
+import org.eclipse.paho.client.mqttv3.IMqttToken;
+import org.eclipse.paho.client.mqttv3.MqttCallback;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
+import org.eclipse.paho.client.mqttv3.MqttMessage;
+import org.greenrobot.eventbus.EventBus;
 
 import java.util.HashMap;
 import java.util.UUID;
@@ -138,6 +147,9 @@ public class MqttConnectManager {
      * 订阅 topic  当前项目为订阅  imtopic
      */
     public void subscribeTopics(long... topicId) {
+        if (mMqttClient == null) {
+            return;
+        }
         String[] topics = new String[topicId.length];
         int[] qoss = new int[topicId.length];
         for (int i = 0; i < topics.length; i++) {
@@ -145,7 +157,17 @@ public class MqttConnectManager {
             qoss[i] = 1;
         }
         try {
-            mMqttClient.subscribe(topics, qoss);
+            mMqttClient.subscribe(topics, qoss, applicationContext, new IMqttActionListener() {
+                @Override
+                public void onSuccess(IMqttToken asyncActionToken) {
+                    Log.i(TAG, "subscribe topic onSuccess: ");
+                }
+
+                @Override
+                public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
+                    Log.i(TAG, "subscribe topic onFailure: ");
+                }
+            });
         } catch (MqttException e) {
             e.printStackTrace();
         }
@@ -165,7 +187,17 @@ public class MqttConnectManager {
 
     public void subscribeMember(long imId) {
         try {
-            mMqttClient.subscribe(constructMemberStr(imId), 1);
+            mMqttClient.subscribe(constructMemberStr(imId), 1, applicationContext, new IMqttActionListener() {
+                @Override
+                public void onSuccess(IMqttToken asyncActionToken) {
+                    Log.i(TAG, "subscribe member onSuccess: ");
+                }
+
+                @Override
+                public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
+                    Log.i(TAG, "subscribe member onFailure: ");
+                }
+            });
         } catch (MqttException e) {
             e.printStackTrace();
         }
@@ -232,72 +264,106 @@ public class MqttConnectManager {
 
     }
 
+
+    private boolean isConnectionLost = false;
+    private boolean isReconnecting = false;
+    private int retryTime = 999;
+    private MqttReconnectManager mReconnectManager;
+
     /**
      * 连接到 目标mqtt服务器
      * 哪里需要 mqtt 哪里调用  基本为  ImTopicListFragment 与  MsgListActivity 部分会使用
      */
     public void connectMqttServer(@NonNull String host, final MqttServerConnectCallback connectCallback) {
-//        if (TextUtils.isEmpty(host)) {
-//            if (connectCallback != null) {
-//                connectCallback.onFailure();
-//            }
-//            return;
-//        }
-//        //设置连接参数
-//        MqttConnectOptions options = getMqttConnectOptions();
-//        //检查 是否有其他 mqtt 连接在运行 如果有  断开连接
-//        disconnectClientOnExsist();
-//        mMqttClient = new MqttAndroidClient(applicationContext, "tcp://" + host, createClientId());
-//        //保存....
-//        mqttConnections.put(host, mMqttClient);
-//        //设置 mqtt 的监听
-//        mMqttClient.setCallback(new MqttCallback() {
-//            @Override
-//            public void connectionLost(Throwable cause) {
-//                //连接丢失
-//                Log.i(TAG, "connectionLost: ");
-//            }
-//
-//            @Override
-//            public void messageArrived(String topic, MqttMessage message) throws Exception {
-//                //收到新消息
-//                Log.i(TAG, "messageArrived: ");
-//                MqttProtobufManager.dealWithData(message.getPayload());
-//            }
-//
-//            @Override
-//            public void deliveryComplete(IMqttDeliveryToken token) {
-//                //
-//                Log.i(TAG, "deliveryComplete: ");
-//            }
-//        });
-//        //进行连接
-//        //连接行为监听
-//        try {
-//            mMqttClient.connect(options, new IMqttActionListener() {
-//                @Override
-//                public void onSuccess(IMqttToken asyncActionToken) {
-//                    YXLogger.d(TAG, "connect success");
-//                    //连接成功
-//                    if (connectCallback != null) {
-//                        connectCallback.onSuccess();
-//                        //发送 eventbus 通知 mqtt 连接成功
-//                        EventBus.getDefault().post(new MqttConnectedEvent());
-//                    }
-//                }
-//
-//                @Override
-//                public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-//                    YXLogger.d(TAG, "connect failure");
-//                    //失败
-//                    if (connectCallback != null) {
-//                        connectCallback.onFailure();
-//                    }
-//                }
-//            });
-//        } catch (MqttException e) {
-//            e.printStackTrace();
-//        }
+        if (TextUtils.isEmpty(host)) {
+            if (connectCallback != null) {
+                connectCallback.onFailure();
+            }
+            return;
+        }
+        //设置连接参数
+        final MqttConnectOptions options = getMqttConnectOptions();
+        //检查 是否有其他 mqtt 连接在运行 如果有  断开连接
+        if (mMqttClient != null && mMqttClient.isConnected()) {
+            return;
+        }
+        disconnectClientOnExsist();
+        mMqttClient = new MqttAndroidClient(applicationContext, "tcp://" + host, createClientId());
+        //保存....
+        mqttConnections.put(host, mMqttClient);
+        //设置 mqtt 的监听
+        mMqttClient.setCallback(new MqttCallback() {
+            @Override
+            public void connectionLost(Throwable cause) {
+                synchronized (MqttConnectManager.class) {
+                    //连接丢失
+                    isConnectionLost = true;
+                    //进行重连 不限次数 30秒间隔
+                    mReconnectManager = new MqttReconnectManager(-1, 30);
+                    isReconnecting = true;
+                    mReconnectManager.start(new MqttReconnectManager.AlarmCallback() {
+                        @Override
+                        public void onTick() {
+                            Log.i(TAG, "onTick: attemp to reconnect");
+                            doConnect(connectCallback, options);
+                        }
+                    });
+
+                }
+                Log.i(TAG, "connectionLost: ");
+            }
+
+            @Override
+            public void messageArrived(String topic, MqttMessage message) throws Exception {
+                //收到新消息
+                Log.i(TAG, "messageArrived: ");
+                MqttProtobufManager.dealWithData(message.getPayload());
+            }
+
+            @Override
+            public void deliveryComplete(IMqttDeliveryToken token) {
+                //
+                Log.i(TAG, "deliveryComplete: ");
+            }
+        });
+        //进行连接
+        //连接行为监听
+        doConnect(connectCallback, options);
+    }
+
+    private void doConnect(final MqttServerConnectCallback connectCallback, MqttConnectOptions options) {
+        if (mMqttClient == null) {
+            return;
+        }
+        try {
+            mMqttClient.connect(options, new IMqttActionListener() {
+                @Override
+                public void onSuccess(IMqttToken asyncActionToken) {
+                    if (isReconnecting) {
+                        mReconnectManager.cancel();
+                    }
+                    YXLogger.d(TAG, "connect success");
+                    //连接成功
+                    if (connectCallback != null) {
+                        connectCallback.onSuccess();
+                        //发送 eventbus 通知 mqtt 连接成功
+                        EventBus.getDefault().post(new MqttConnectedEvent());
+                        subscribeMember(Constants.imId);
+                    }
+                }
+
+                @Override
+                public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
+                    YXLogger.d(TAG, "connect failure");
+                    //失败
+                    if (connectCallback != null) {
+                        connectCallback.onFailure();
+                    }
+                }
+            });
+        } catch (MqttException e) {
+            e.printStackTrace();
+        }
     }
 
     /**

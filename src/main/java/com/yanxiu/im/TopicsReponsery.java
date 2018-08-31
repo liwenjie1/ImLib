@@ -24,9 +24,12 @@ import com.yanxiu.im.net.GetTopicMsgsResponse_new;
 import com.yanxiu.lib.yx_basic_library.network.IYXHttpCallback;
 import com.yanxiu.lib.yx_basic_library.network.YXRequestBase;
 
+import org.greenrobot.eventbus.Subscribe;
+
 import java.util.ArrayList;
 import java.util.List;
 
+import de.greenrobot.event.EventBus;
 import okhttp3.Request;
 
 /**
@@ -58,7 +61,10 @@ public class TopicsReponsery {
         needUpdateMemberTopics = new ArrayList<>();
         needUpdateMsgTopics = new ArrayList<>();
         mHttpRequestManager = new HttpRequestManager();
+
     }
+
+
 
     public void releaseResource() {
         MqttConnectManager.getInstance().disconnectMqttServer();

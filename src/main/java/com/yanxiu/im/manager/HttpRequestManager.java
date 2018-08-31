@@ -21,7 +21,7 @@ import okhttp3.Request;
 public class HttpRequestManager {
 
     public RequestQueueManager requestQueueManager = new RequestQueueManager();
-
+    private final String TAG=getClass().getSimpleName();
 
     private ArrayList<UUID> requests;
 

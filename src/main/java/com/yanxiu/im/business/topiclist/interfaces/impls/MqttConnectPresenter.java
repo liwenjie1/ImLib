@@ -1,5 +1,7 @@
 package com.yanxiu.im.business.topiclist.interfaces.impls;
 
+import android.util.Log;
+
 import com.yanxiu.im.bean.TopicItemBean;
 import com.yanxiu.im.business.topiclist.interfaces.MqttConnectContract;
 import com.yanxiu.im.manager.MqttConnectManager;
@@ -33,32 +35,27 @@ public class MqttConnectPresenter implements MqttConnectContract.Presenter {
             YXLogger.e("immqtt", "topiclist is null ");
             return;
         }
+
+//        long[] ids=new long[topics.size()];
+//        for (int i = 0; i < ids.length; i++) {
+//            ids[i]=topics.get(i).getTopicId();
+//        }
+//        MqttConnectManager.getInstance().subscribeTopics(ids);
         for (TopicItemBean topic : topics) {
             subScribeTopic(topic.getTopicId());
         }
     }
 
-    public void connectMqttServer() {
-        //request  mqtt host
-        String host = "";
-        MqttConnectManager.getInstance().connectMqttServer(host, new MqttConnectManager.MqttServerConnectCallback() {
-            @Override
-            public void onSuccess() {
-                view.onConnected();
-            }
-
-            @Override
-            public void onFailure() {
-                view.onDisconnected();
-            }
-        });
-    }
 
     @Override
     public void subScribeTopic(long topicId) {
+        Log.i(TAG, "subScribeTopic: ");
+        MqttConnectManager.getInstance().subscribeTopics(topicId);
     }
 
     @Override
     public void unsubScribeTopic(long topicId) {
+        Log.i(TAG, "unsubScribeTopic: ");
+        MqttConnectManager.getInstance().unsubscribeTopics(topicId);
     }
 }

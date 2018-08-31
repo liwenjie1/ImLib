@@ -129,6 +129,7 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
         Intent intent = new Intent(context, ImMsgListActivity.class);
         intent.putExtra("topicId", topicId + "");
         intent.putExtra("requestCode", requestCode);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         context.startActivity(intent);
     }
 
@@ -622,7 +623,9 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
     public void onMqttConnected(MqttConnectedEvent event) {
         //mqtt 服务器连接通知 通知后 刷新数据列表
         msgListPresenter.updateTopicInfo(currentTopic);
+        Toast.makeText(this, "mqtt 连接成功", Toast.LENGTH_SHORT).show();
     }
+
 
     //endregion
 
