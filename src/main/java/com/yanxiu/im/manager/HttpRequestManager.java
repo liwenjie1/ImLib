@@ -9,6 +9,10 @@ import com.yanxiu.im.net.TopicCreateTopicResponse_new;
 import com.yanxiu.im.net.TopicGetMemberTopicsRequest_new;
 import com.yanxiu.im.net.TopicGetMemberTopicsResponse_new;
 import com.yanxiu.im.net.TopicGetTopicsResponse_new;
+import com.yanxiu.im.net.UpdatePersonalConfigRequest;
+import com.yanxiu.im.net.UpdatePersonalConfigResponse;
+import com.yanxiu.im.net.UpdatePublicConfigRequest;
+import com.yanxiu.im.net.UpdatePublicConfigResponse;
 import com.yanxiu.lib.yx_basic_library.network.IYXHttpCallback;
 import com.yanxiu.lib.yx_basic_library.network.YXRequestBase;
 
@@ -21,14 +25,15 @@ import okhttp3.Request;
 public class HttpRequestManager {
 
     public RequestQueueManager requestQueueManager = new RequestQueueManager();
-    private final String TAG=getClass().getSimpleName();
+    private final String TAG = getClass().getSimpleName();
 
     private ArrayList<UUID> requests;
 
     public HttpRequestManager() {
-        requests=new ArrayList<>();
+        requests = new ArrayList<>();
     }
-    public void clearReuqest(){
+
+    public void clearReuqest() {
         if (requests != null) {
             for (UUID request : requests) {
 
@@ -219,6 +224,74 @@ public class HttpRequestManager {
         void onCreated(E topic);
 
         void onFailure();
+    }
+
+
+    /**
+     * 个人配置
+     */
+    public void requestUpdatePersonalConfig(long topicId, int quite,final UpdateTopicConfigCallback<ImTopic_new> callback) {
+        UpdatePersonalConfigRequest request=new UpdatePersonalConfigRequest();
+        request.topicId= String.valueOf(topicId);
+        request.quite= String.valueOf(quite);
+        requestQueueManager.addRequest(request, UpdatePersonalConfigResponse.class, new IYXHttpCallback<UpdatePersonalConfigResponse>() {
+            @Override
+            public void onRequestCreated(Request request) {
+
+            }
+
+            @Override
+            public void onSuccess(YXRequestBase request, UpdatePersonalConfigResponse ret) {
+                if (ret.code!=0||ret.getData()==null||ret.getData().getTopic()==null||ret.getData().getTopic().size()==0) {
+                    callback.onFilure("请求失败");
+                    return;
+                }
+                final ImTopic_new imTopicNew = ret.getData().getTopic().get(0);
+                callback.onUpdated(imTopicNew);
+            }
+
+            @Override
+            public void onFail(YXRequestBase request, Error error) {
+                callback.onFilure(error.getMessage());
+            }
+        });
+
+    }
+
+    /**
+     * 公共配置
+     */
+    public void requestUpdatePublicConfig(long topicId, int speak, final UpdateTopicConfigCallback<ImTopic_new> callback) {
+        UpdatePublicConfigRequest request=new UpdatePublicConfigRequest();
+        request.topicId= String.valueOf(topicId);
+        request.speak= String.valueOf(speak);
+        requestQueueManager.addRequest(request, UpdatePublicConfigResponse.class, new IYXHttpCallback<UpdatePublicConfigResponse>() {
+            @Override
+            public void onRequestCreated(Request request) {
+
+            }
+
+            @Override
+            public void onSuccess(YXRequestBase request, UpdatePublicConfigResponse ret) {
+                if (ret.code!=0||ret.getData()==null||ret.getData().getTopic()==null||ret.getData().getTopic().size()==0) {
+                    callback.onFilure("请求失败");
+                    return;
+                }
+                final ImTopic_new imTopicNew = ret.getData().getTopic().get(0);
+                callback.onUpdated(imTopicNew);
+            }
+
+            @Override
+            public void onFail(YXRequestBase request, Error error) {
+                callback.onFilure(error.getMessage());
+            }
+        });
+    }
+
+    public interface UpdateTopicConfigCallback<E> {
+        void onUpdated(E imTopic);
+
+        void onFilure(String msg);
     }
 
 

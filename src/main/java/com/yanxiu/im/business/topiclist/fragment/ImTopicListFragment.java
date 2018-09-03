@@ -232,6 +232,7 @@ public class ImTopicListFragment extends FaceShowBaseFragment
         //检查红点状态
         topicListPresenter.doUpdateTopicInfo();
         topicListPresenter.doCheckRedDot(mRecyclerAdapter.getDataList());
+        Toast.makeText(getActivity(), "topic 列表更新", Toast.LENGTH_SHORT).show();
 
     }
 

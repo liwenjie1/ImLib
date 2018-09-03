@@ -747,7 +747,7 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
     @Override
     public void onRealTopicOpened(TopicItemBean realBean) {
         //打开一个 本地存在的 realtopic
-        currentTopic=realBean;
+        currentTopic = realBean;
         setTitlemsg(realBean);
     }
 
@@ -928,6 +928,8 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
             return 0;
         }
     }
+
+
 
     private boolean isSoftShowing() {
         //获取当前屏幕内容的高度

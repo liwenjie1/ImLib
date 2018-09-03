@@ -478,6 +478,14 @@ public class DatabaseManager {
         topicItemBean.setLatestMsgId(dbTopic_.latestMsgId);
         topicItemBean.setLatestMsgTime(dbTopic_.latestMsgTime);
         topicItemBean.setMsgList(dbTopic_.getMergedMsgs());
+
+        topicItemBean.setSilence(dbTopic_.speak == 0);// 0开启禁言 1非禁言
+        if (dbTopic_.getPersonalConfig() != null) {
+            topicItemBean.setBlockNotice(dbTopic_.getPersonalConfig().getQuite() == 1);//1 开启免打扰 0 关闭免打扰
+        }else {
+            topicItemBean.setBlockNotice(false);
+        }
+
         return topicItemBean;
     }
 
@@ -584,6 +592,8 @@ public class DatabaseManager {
         dbTopic.setType(topic.topicType);
         dbTopic.setChange(topic.topicChange);
         dbTopic.setGroup(topic.topicGroup);
+        dbTopic.setSpeak(topic.getSpeak());
+        dbTopic.setPersonalConfig(topic.getPersonalConfigInfo());
 //        dbTopic.getMembers().clear();
 //
 //        for (ImTopic_new.Member member : topic.members) {
@@ -617,6 +627,7 @@ public class DatabaseManager {
         List<DbMember> members = DataSupport.findAll(DbMember.class);
         return members;
     }
+
 
     /**
      * 获取member

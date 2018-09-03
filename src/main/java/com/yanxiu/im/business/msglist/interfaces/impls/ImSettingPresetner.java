@@ -38,9 +38,9 @@ public class ImSettingPresetner implements ImSettingContract.IPresenter {
     /**
      * 检查当前用户是否有禁言权限 前提是 管理端登录
      * 检查当前用户在目标topic 的角色
-     * */
-    public boolean checkCurrentUserRole(long topicId){
-        List<TopicItemBean> topics=SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST);
+     */
+    public boolean checkCurrentUserRole(long topicId) {
+        List<TopicItemBean> topics = SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST);
         TopicItemBean targetTopic = TopicInMemoryUtils.findTopicByTopicId(topicId, topics);
         if (targetTopic == null) {
             return false;
@@ -51,8 +51,8 @@ public class ImSettingPresetner implements ImSettingContract.IPresenter {
         }
 
         for (DbMember dbMember : targetTopic.getMembers()) {
-            if (dbMember.getImId()== Constants.imId) {
-              return  dbMember.getRole()==0;
+            if (dbMember.getImId() == Constants.imId) {
+                return dbMember.getRole() == 0;
             }
         }
         return false;
@@ -64,15 +64,22 @@ public class ImSettingPresetner implements ImSettingContract.IPresenter {
      * @param silent
      */
     @Override
-    public void dosetSilent(boolean silent) {
-        // TODO: 2018/6/6 网络请求
-        mockHttpHandler.postDelayed(new Runnable() {
+    public void dosetSilent(long topicId, final boolean silent) {
+        //先找到内存中的 topicbean
+        TopicsReponsery.getInstance().getLocalTopic(topicId, new TopicsReponsery.GetTopicItemBeanCallback() {
             @Override
-            public void run() {
-                mIView.onSetSilent(mRandom.nextBoolean());
+            public void onGetTopicItemBean(TopicItemBean bean) {
+                //网络请求更改设置
+                TopicsReponsery.getInstance().updatePublicConfig(bean, silent ? 0 : 1, new TopicsReponsery.UpdateConfigCallback<TopicItemBean>() {
+                    @Override
+                    public void onTopicConfigUpdated(TopicItemBean topicBean) {
+                        if (mIView != null) {
+                            mIView.onSetSilent(silent);
+                        }
+                    }
+                });
             }
-        }, 200);
-
+        });
 
     }
 
@@ -82,15 +89,24 @@ public class ImSettingPresetner implements ImSettingContract.IPresenter {
      * @param shouldNotice
      */
     @Override
-    public void dosetNotice(boolean shouldNotice) {
-        // TODO: 2018/6/6 网络请求
-        mockHttpHandler.postDelayed(new Runnable() {
+    public void dosetNotice(long topicId, final boolean shouldNotice) {
+        //先找到内存中的 topicbean
+        TopicsReponsery.getInstance().getLocalTopic(topicId, new TopicsReponsery.GetTopicItemBeanCallback() {
             @Override
-            public void run() {
-
-                mIView.onSetNotice(mRandom.nextBoolean());
+            public void onGetTopicItemBean(TopicItemBean bean) {
+                //网络请求更改设置
+                TopicsReponsery.getInstance().updatePersonalConfig(bean, shouldNotice ? 1 : 0, new TopicsReponsery.UpdateConfigCallback<TopicItemBean>() {
+                    @Override
+                    public void onTopicConfigUpdated(TopicItemBean topicBean) {
+                        if (mIView != null) {
+                            mIView.onSetSilent(shouldNotice);
+                        }
+                    }
+                });
             }
-        }, 200);
+        });
+
+
     }
 
     @Override

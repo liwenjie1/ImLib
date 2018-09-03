@@ -1,6 +1,7 @@
 package com.yanxiu.im.db;
 
 import com.yanxiu.im.bean.MsgItemBean;
+import com.yanxiu.im.bean.net_bean.ImTopic_new;
 
 import org.litepal.annotation.Column;
 import org.litepal.crud.DataSupport;
@@ -35,7 +36,26 @@ public class DbTopic extends DataSupport {
     public long latestMsgTime;
     @Column(ignore = true)
     public List<MsgItemBean> mergedMsgs = new ArrayList<>();
+    @Column(ignore = true)
+    public int speak;
+    @Column(ignore = true)
+    public ImTopic_new.PersonalConfigInfoBean personalConfig;
 
+    public int getSpeak() {
+        return speak;
+    }
+
+    public void setSpeak(int speak) {
+        this.speak = speak;
+    }
+
+    public ImTopic_new.PersonalConfigInfoBean getPersonalConfig() {
+        return personalConfig;
+    }
+
+    public void setPersonalConfig(ImTopic_new.PersonalConfigInfoBean personalConfig) {
+        this.personalConfig = personalConfig;
+    }
 
     public long getTopicId() {
         return topicId;
