@@ -26,6 +26,9 @@ public class DbTopic extends DataSupport {
     private long fromGroup;   // 来源群id， 私聊如果来自班级群，传群id。否则不传
     private boolean showDot = false;
 
+    private boolean alreadyDeletedLocalTopic = false;//本地删除了对话,默认为false
+    private long latestMsgIdWhenDeletedLocalTopic = -1;//本地删除了对话时，最后的消息id
+
     private List<DbMember> members = new ArrayList<>();
 
     // 只为UI显示用，不做数据库存储用
@@ -131,5 +134,21 @@ public class DbTopic extends DataSupport {
 
     public void setFromTopic(String fromTopic) {
         this.fromTopic = fromTopic;
+    }
+
+    public boolean isAlreadyDeletedLocalTopic() {
+        return alreadyDeletedLocalTopic;
+    }
+
+    public void setAlreadyDeletedLocalTopic(boolean alreadyDeletedLocalTopic) {
+        this.alreadyDeletedLocalTopic = alreadyDeletedLocalTopic;
+    }
+
+    public long getLatestMsgIdWhenDeletedLocalTopic() {
+        return latestMsgIdWhenDeletedLocalTopic;
+    }
+
+    public void setLatestMsgIdWhenDeletedLocalTopic(long latestMsgIdWhenDeletedLocalTopic) {
+        this.latestMsgIdWhenDeletedLocalTopic = latestMsgIdWhenDeletedLocalTopic;
     }
 }

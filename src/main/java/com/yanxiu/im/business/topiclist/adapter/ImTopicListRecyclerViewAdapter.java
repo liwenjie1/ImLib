@@ -56,11 +56,7 @@ public final class ImTopicListRecyclerViewAdapter<E extends TopicItemBean> exten
     }
 
     public void setDataList(List<E> dataList) {
-        this.dataList.clear();
-        if (dataList != null) {
-
-            this.dataList.addAll(dataList);
-        }
+        this.dataList = dataList;
     }
 
     public List<E> getDataList() {
@@ -113,7 +109,7 @@ public final class ImTopicListRecyclerViewAdapter<E extends TopicItemBean> exten
                     @Override
                     public boolean onLongClick(View v) {
                         //长按删除
-                        return mRecyclerViewItemLongClickListener.onItemLongClicked(v, position);
+                        return mRecyclerViewItemLongClickListener.onItemLongClicked(position,dataList.get(position));
                     }
                 });
             }

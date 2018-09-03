@@ -21,11 +21,13 @@ import com.test.yanxiu.common_base.utils.talkingdata.EventUpdate;
 import com.yanxiu.ImConfig;
 import com.yanxiu.im.Constants;
 import com.yanxiu.im.R;
+import com.yanxiu.im.TopicsReponsery;
 import com.yanxiu.im.bean.MsgItemBean;
 import com.yanxiu.im.bean.TopicItemBean;
 import com.yanxiu.im.business.contacts.activity.ContactsActivity;
 import com.yanxiu.im.business.interfaces.ImUnreadMsgListener;
 import com.yanxiu.im.business.interfaces.ImUserRemoveFromTopicListener;
+import com.yanxiu.im.business.interfaces.RecyclerViewItemLongClickListener;
 import com.yanxiu.im.business.interfaces.TitlebarActionListener;
 import com.yanxiu.im.business.msglist.activity.ImMsgListActivity;
 import com.yanxiu.im.business.topiclist.adapter.ImTopicListRecyclerViewAdapter;
@@ -156,6 +158,22 @@ public class ImTopicListFragment extends FaceShowBaseFragment
                 }
 
                 ImMsgListActivity.invoke(ImTopicListFragment.this, bean.getTopicId(), ImMsgListActivity.REQUEST_CODE_TOPICID);
+            }
+        });
+        //长按删除
+        mRecyclerAdapter.setRecyclerViewItemLongClickListener(new RecyclerViewItemLongClickListener() {
+
+            @Override
+            public boolean onItemLongClicked(final int position, TopicItemBean bean) {
+                TopicsReponsery.getInstance().deleteTopicHistory(bean, new TopicsReponsery.DeleteTopicCallback() {
+
+                    @Override
+                    public void onTopicDeleted() {
+                        mRecyclerAdapter.notifyItemRemoved(position);
+                        mRecyclerAdapter.notifyItemRangeChanged(position, mRecyclerAdapter.getItemCount() - position - 1);
+                    }
+                });
+                return true;
             }
         });
         EventBus.getDefault().register(this);

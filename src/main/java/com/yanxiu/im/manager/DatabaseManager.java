@@ -890,6 +890,24 @@ public class DatabaseManager {
 
     }
 
+    /**
+     * 清空topic的本地聊天记录
+     * 根据给定的topic id 清空msg信息
+     */
+    public static void deleteLocalMsgByTopicId(TopicItemBean topicItemBean) {
+        DataSupport.deleteAll(DbMsg.class,
+                "topicId = ? ", String.valueOf(topicItemBean.getTopicId()));
+        DataSupport.deleteAll(DbMyMsg.class,
+                "topicId = ? ", String.valueOf(topicItemBean.getTopicId()));
+
+        DbTopic dbTopic = getTopicById(topicItemBean.getTopicId());
+        if(dbTopic != null){
+            dbTopic.setAlreadyDeletedLocalTopic(true);
+            dbTopic.setLatestMsgIdWhenDeletedLocalTopic(topicItemBean.getLatestMsgId());
+            dbTopic.save();
+        }
+    }
+
 
     //mockTpoic start
 
