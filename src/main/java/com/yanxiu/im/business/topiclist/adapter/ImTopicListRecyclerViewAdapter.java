@@ -8,7 +8,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.test.yanxiu.common_base.utils.SharedSingleton;
 import com.yanxiu.im.R;
 import com.yanxiu.im.bean.TopicItemBean;
 import com.yanxiu.im.business.interfaces.RecyclerViewItemLongClickListener;
@@ -16,7 +15,6 @@ import com.yanxiu.im.business.interfaces.RecyclerViewItemOnClickListener;
 import com.yanxiu.im.business.topiclist.adapter.topicviewholder.ImGroupTopicViewHolder;
 import com.yanxiu.im.business.topiclist.adapter.topicviewholder.ImPrivateTopicViewHolder;
 import com.yanxiu.im.business.topiclist.adapter.topicviewholder.ImTopicBaseViewHolder;
-import com.yanxiu.im.manager.DatabaseManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -55,21 +53,34 @@ public final class ImTopicListRecyclerViewAdapter<E extends TopicItemBean> exten
         dataList = new ArrayList<>();
     }
 
-    public void setDataList(List<E> dataList) {
-        this.dataList.clear();
+    public void notifyItemChangedByTopicId(long topicId) {
+        int positon = -1;
         if (dataList != null) {
-
-            this.dataList.addAll(dataList);
+            for (E e : dataList) {
+                if (e.getTopicId() == topicId) {
+                    positon = dataList.indexOf(e);
+                    break;
+                }
+            }
+        }
+        if (positon > 0 && positon < getItemCount()) {
+            notifyItemChanged(positon);
         }
     }
 
+    public void setDataList(List<E> dataList) {
+        this.dataList = dataList;
+    }
+
     public List<E> getDataList() {
-        //test 数据被回收 的情况 获取会 null 重新由数据库读取一遍
-        if (SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST)==null) {
-            final List<TopicItemBean> beans = DatabaseManager.topicsFromDb();
-            SharedSingleton.getInstance().set(SharedSingleton.KEY_TOPIC_LIST,beans==null?new ArrayList<TopicItemBean>():beans);
-        }
-        return SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST);
+        return dataList;
+//
+//        //test 数据被回收 的情况 获取会 null 重新由数据库读取一遍
+//        if (SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST)==null) {
+//            final List<TopicItemBean> beans = DatabaseManager.topicsFromDb();
+//            SharedSingleton.getInstance().set(SharedSingleton.KEY_TOPIC_LIST,beans==null?new ArrayList<TopicItemBean>():beans);
+//        }
+//        return SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST);
     }
 
     @Override
@@ -99,12 +110,13 @@ public final class ImTopicListRecyclerViewAdapter<E extends TopicItemBean> exten
         if (dataList != null) {
             holder.setData(dataList.get(position));
         }
+//        holder.setItemVisiable(position % 2 == 0);
         if (holder.itemView != null) {
             if (mTopicRecyclerViewClickListener != null) {
                 holder.itemView.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        mTopicRecyclerViewClickListener.onTopicItemClicked(position,dataList.get(position));
+                        mTopicRecyclerViewClickListener.onTopicItemClicked(position, dataList.get(position));
                     }
                 });
             }
@@ -139,7 +151,7 @@ public final class ImTopicListRecyclerViewAdapter<E extends TopicItemBean> exten
         mTopicRecyclerViewClickListener = topicRecyclerViewClickListener;
     }
 
-    public interface TopicRecyclerViewClickListener{
-        void onTopicItemClicked(int postion,TopicItemBean bean);
+    public interface TopicRecyclerViewClickListener {
+        void onTopicItemClicked(int postion, TopicItemBean bean);
     }
 }

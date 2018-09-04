@@ -238,7 +238,7 @@ public class ImTopicListFragment extends FaceShowBaseFragment
 
     @Override
     public void onTopicUpdate(long topicId) {
-        mRecyclerAdapter.notifyDataSetChanged();
+        mRecyclerAdapter.notifyItemChangedByTopicId(topicId);
         //检查红点状态
         topicListPresenter.doCheckRedDot(mRecyclerAdapter.getDataList());
         EventBus.getDefault().post(new MsgListTopicUpdateEvent(topicId));

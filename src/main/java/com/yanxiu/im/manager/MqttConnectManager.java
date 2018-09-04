@@ -270,6 +270,8 @@ public class MqttConnectManager {
     private int retryTime = 999;
     private MqttReconnectManager mReconnectManager;
 
+    private MqttReconnectManager mHeartBeat;
+
     /**
      * 连接到 目标mqtt服务器
      * 哪里需要 mqtt 哪里调用  基本为  ImTopicListFragment 与  MsgListActivity 部分会使用
@@ -399,6 +401,8 @@ public class MqttConnectManager {
         options.setKeepAliveInterval(60);
         options.setUserName(userName);
         options.setPassword(passWord.toCharArray());
+        //定义遗言
+//        options.setWill();
         return options;
     }
 

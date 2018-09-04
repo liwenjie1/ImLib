@@ -42,6 +42,8 @@ public class ImGroupTopicViewHolder<E extends TopicItemBean> extends ImTopicBase
         MsgItemBean latestMsg = data.getLatestMsg();
         setLatestMsgInfo(latestMsg, true);
         redDot.setVisibility(data.isShowDot() ? View.VISIBLE : View.INVISIBLE);
+
+
     }
 
     @Override

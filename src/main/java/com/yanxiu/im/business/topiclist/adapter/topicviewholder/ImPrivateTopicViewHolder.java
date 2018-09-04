@@ -102,6 +102,7 @@ public class ImPrivateTopicViewHolder<E extends TopicItemBean> extends ImTopicBa
         latestMsgContent.setText(msgContent.toString());
     }
 
+
     //目前没有sender信息 重置
     @Override
     public void resetView() {
