@@ -4,7 +4,6 @@ import android.os.Handler;
 import android.os.Looper;
 import android.text.TextUtils;
 
-import com.test.yanxiu.common_base.utils.SharedSingleton;
 import com.yanxiu.im.Constants;
 import com.yanxiu.im.TopicsReponsery;
 import com.yanxiu.im.bean.TopicItemBean;
@@ -40,7 +39,7 @@ public class ImSettingPresetner implements ImSettingContract.IPresenter {
      * 检查当前用户在目标topic 的角色
      */
     public boolean checkCurrentUserRole(long topicId) {
-        List<TopicItemBean> topics = SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST);
+        List<TopicItemBean> topics = TopicsReponsery.getInstance().getTopicInMemory();
         TopicItemBean targetTopic = TopicInMemoryUtils.findTopicByTopicId(topicId, topics);
         if (targetTopic == null) {
             return false;

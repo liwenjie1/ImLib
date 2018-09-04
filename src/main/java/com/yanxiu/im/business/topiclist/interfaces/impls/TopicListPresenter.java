@@ -4,25 +4,18 @@ import android.content.Context;
 import android.os.Handler;
 import android.text.TextUtils;
 
-import com.test.yanxiu.common_base.utils.SharedSingleton;
 import com.yanxiu.im.Constants;
 import com.yanxiu.im.TopicsReponsery;
 import com.yanxiu.im.bean.MsgItemBean;
 import com.yanxiu.im.bean.TopicItemBean;
-import com.yanxiu.im.bean.net_bean.ImTopic_new;
 import com.yanxiu.im.business.topiclist.interfaces.TopicListContract;
 import com.yanxiu.im.business.topiclist.sorter.ImTopicSorter;
 import com.yanxiu.im.business.utils.TopicInMemoryUtils;
-import com.yanxiu.im.db.DbMember;
 import com.yanxiu.im.manager.DatabaseManager;
 import com.yanxiu.im.manager.RequestQueueManager;
-import com.yanxiu.lib.yx_basic_library.network.IYXHttpCallback;
-import com.yanxiu.lib.yx_basic_library.network.YXRequestBase;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import okhttp3.Request;
 
 
 /**
@@ -50,7 +43,8 @@ public class TopicListPresenter implements TopicListContract.Presenter {
         this.view = view;
         this.mContext = mContext;
     }
-    private Handler mHandler=new Handler();
+
+    private Handler mHandler = new Handler();
 
     public List<TopicItemBean> getTopicInMemory() {
         return TopicsReponsery.getInstance().getTopicInMemory();
@@ -103,7 +97,8 @@ public class TopicListPresenter implements TopicListContract.Presenter {
             }
         });
     }
-    public void doTopicListUpdate(){
+
+    public void doTopicListUpdate() {
         TopicsReponsery.getInstance().getServerTopicList(Constants.imToken, new TopicsReponsery.TopicListUpdateCallback<TopicItemBean>() {
             @Override
             public void onListUpdated(ArrayList<TopicItemBean> dataList) {
@@ -151,7 +146,7 @@ public class TopicListPresenter implements TopicListContract.Presenter {
 
     @Override
     public void doReceiveNewMsg(MsgItemBean msg) {
-        List<TopicItemBean> topics = SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST);
+        List<TopicItemBean> topics = TopicsReponsery.getInstance().getTopicInMemory();
         if (topics == null) {
             return;
         }
@@ -190,7 +185,7 @@ public class TopicListPresenter implements TopicListContract.Presenter {
 
     @Override
     public void doRemoveFromTopic(long topicId) {
-        List<TopicItemBean> topics = SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST);
+        List<TopicItemBean> topics = TopicsReponsery.getInstance().getTopicInMemory();
         if (topics == null) {
             return;
         }
@@ -217,7 +212,7 @@ public class TopicListPresenter implements TopicListContract.Presenter {
 
     @Override
     public void doAddedToTopic(long topicId, boolean mqtt) {
-        List<TopicItemBean> topics = SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST);
+        List<TopicItemBean> topics = TopicsReponsery.getInstance().getTopicInMemory();
         if (topics == null) {
             return;
         }
@@ -254,7 +249,6 @@ public class TopicListPresenter implements TopicListContract.Presenter {
     }
 
 
-
     /**
      * RequestQueueManager的回调，用来在http拉取数据结束后，合并mockTopic
      * 用来保证realtopic获取member和msg结束后，再merge。否则可能在合并mocktopic时，realtopic还没有执行完更新member或者msg
@@ -266,7 +260,7 @@ public class TopicListPresenter implements TopicListContract.Presenter {
          */
         @Override
         public void requestAllFinish() {
-            DatabaseManager.checkAndMigrateMockTopic();
+            DatabaseManager.checkAndMigrateMockTopic(TopicsReponsery.getInstance().getTopicInMemory());
         }
     }
 
@@ -294,101 +288,123 @@ public class TopicListPresenter implements TopicListContract.Presenter {
      * 而在 收到加入 topic 通知时 需要及时刷新列表
      *
      * @param topicId 收到 mqtt 删除推送的 topicID
-     * @param topics  用户当前所有的 topic
      */
-    public void checkUserRemove(final long topicId, final List<TopicItemBean> topics) {
-        com.yanxiu.im.net.TopicGetTopicsRequest_new getTopicsRequest = new com.yanxiu.im.net.TopicGetTopicsRequest_new();
-        getTopicsRequest.imToken = Constants.imToken;
-        getTopicsRequest.topicIds = topicId + "";
-        rqManager.addRequest(getTopicsRequest, com.yanxiu.im.net.TopicGetTopicsResponse_new.class, new IYXHttpCallback<com.yanxiu.im.net.TopicGetTopicsResponse_new>() {
-            /**
-             * startRequest()中生成get url，post body以后，调用OkHttp Request之前调用此回调
-             *
-             * @param request OkHttp Request
-             */
+    public void checkUserRemove(final long topicId) {
+        //首先获取 本地 topic 目标
+        TopicsReponsery.getInstance().getLocalTopic(topicId, new TopicsReponsery.GetTopicItemBeanCallback() {
             @Override
-            public void onRequestCreated(Request request) {
-            }
-
-            @Override
-            public void onSuccess(YXRequestBase request, com.yanxiu.im.net.TopicGetTopicsResponse_new ret) {
-                if (topics == null) {
-                    return;
-                }
-                // 更新数据库
-                List<TopicItemBean> topicsNeedUpdateMember = new ArrayList<>();
-                com.yanxiu.im.bean.net_bean.ImTopic_new imTopic = null;
-                List<com.yanxiu.im.bean.net_bean.ImTopic_new.Member> imMemberList = null;
-                if (ret.data.topic == null || ret.data.topic.isEmpty()) {
-                    //TODO:疑问：如果topic为空，是否意味着该topic已被删除？暂时不处理
-                    return;
-                }
-                //获取当前本地持有的 topic 对象
-                final TopicItemBean targetLocalTopic = TopicInMemoryUtils.findTopicByTopicId(topicId, topics);
-                //获取 推送的 目标 topic
-                imTopic = ret.data.topic.get(0);
-                //获取 目标 topic 的最新 member 列表
-                imMemberList = imTopic.members;
-                /* 对比 当前用户持有的 topic member 列表与 服务器返回的最新 member 列表 删除被移除的 member*/
-                synchronized (targetLocalTopic.getMembers()) {//可能同时两条 或多条 同一个 topic 的 member 推送 造成多线程操作 memberlist 所以加锁
-                    ArrayList<DbMember> dbMembershasBeenDel = new ArrayList<>();
-                    if (targetLocalTopic.getMembers() == null) {
-                        // 不知道怎么办
-                        return;
-                    }
-                    if (imMemberList == null) {
-                        //为了 member 统一删除方法
-                        imMemberList = new ArrayList<>();
-                    }
-
-                    for (DbMember dbMember : targetLocalTopic.getMembers()) {
-                        boolean remain = false;
-                        for (ImTopic_new.Member remainMember : imMemberList) {
-                            if (dbMember.getImId() == remainMember.memberId) {
-                                remain = true;
-                                break;
+            public void onGetTopicItemBean(TopicItemBean bean) {
+                //找到 目标 topicbean
+                TopicsReponsery.getInstance().updateTopicMemberInfoFromServer(bean, new TopicsReponsery.GetTopicItemBeanCallback() {
+                    @Override
+                    public void onGetTopicItemBean(TopicItemBean bean) {
+                        if (bean != null) {
+                            //遍历查找 是否自己还在 member 列表中
+                            final boolean remain = TopicInMemoryUtils.checkMemberInTopic(Constants.imId, bean);
+                            if (remain) {
+                                view.onRemovedFromTopic(topicId, bean.getName());
+                            } else {
+                                view.onOtherMemberRemoveFromTopic(topicId);
                             }
                         }
-                        if (!remain) {//如果用户已经不再列表中
-                            dbMembershasBeenDel.add(dbMember);
-                        }
                     }
-                    //删除那些不在列表中的 member
-                    targetLocalTopic.getMembers().removeAll(dbMembershasBeenDel);
-                    //判断被移除的 member 是不是自己
-                    for (DbMember removedMember : dbMembershasBeenDel) {
-                        if (removedMember.getImId() == Constants.imId) {
-                            /*如果是学员端 这里需要将 topic 列表进行删除 */
-                            if (Constants.APP_TYPE == Constants.APP_TYPE_STUDENT) {
-                                TopicInMemoryUtils.removeTopicFromListById(topicId, topics);
-                            }
-                            mHandler.post(new Runnable() {
-                                @Override
-                                public void run() {
-                                    if (view != null) {
-                                        view.onRemovedFromTopic(targetLocalTopic.getTopicId(), targetLocalTopic.getGroup());
-                                    }
-                                }
-                            });
-                        } else {//如果不是自己被移除  通知 其他人被移除
-                            mHandler.post(new Runnable() {
-                                @Override
-                                public void run() {
-                                    if (view != null) {
-                                        view.onOtherMemberRemoveFromTopic(targetLocalTopic.getTopicId());
-                                    }
-                                }
-                            });
-                        }
-                    }
-                }
-            }
-
-            @Override
-            public void onFail(YXRequestBase request, Error error) {
-
+                });
             }
         });
+
+
+//        com.yanxiu.im.net.TopicGetTopicsRequest_new getTopicsRequest = new com.yanxiu.im.net.TopicGetTopicsRequest_new();
+//        getTopicsRequest.imToken = Constants.imToken;
+//        getTopicsRequest.topicIds = topicId + "";
+//        rqManager.addRequest(getTopicsRequest, com.yanxiu.im.net.TopicGetTopicsResponse_new.class, new IYXHttpCallback<com.yanxiu.im.net.TopicGetTopicsResponse_new>() {
+//            /**
+//             * startRequest()中生成get url，post body以后，调用OkHttp Request之前调用此回调
+//             *
+//             * @param request OkHttp Request
+//             */
+//            @Override
+//            public void onRequestCreated(Request request) {
+//            }
+//
+//            @Override
+//            public void onSuccess(YXRequestBase request, com.yanxiu.im.net.TopicGetTopicsResponse_new ret) {
+//                if (topics == null) {
+//                    return;
+//                }
+//                // 更新数据库
+//                List<TopicItemBean> topicsNeedUpdateMember = new ArrayList<>();
+//                com.yanxiu.im.bean.net_bean.ImTopic_new imTopic = null;
+//                List<com.yanxiu.im.bean.net_bean.ImTopic_new.Member> imMemberList = null;
+//                if (ret.data.topic == null || ret.data.topic.isEmpty()) {
+//                    //TODO:疑问：如果topic为空，是否意味着该topic已被删除？暂时不处理
+//                    return;
+//                }
+//                //获取当前本地持有的 topic 对象
+//                final TopicItemBean targetLocalTopic = TopicInMemoryUtils.findTopicByTopicId(topicId, topics);
+//                //获取 推送的 目标 topic
+//                imTopic = ret.data.topic.get(0);
+//                //获取 目标 topic 的最新 member 列表
+//                imMemberList = imTopic.members;
+//                /* 对比 当前用户持有的 topic member 列表与 服务器返回的最新 member 列表 删除被移除的 member*/
+//                synchronized (targetLocalTopic.getMembers()) {//可能同时两条 或多条 同一个 topic 的 member 推送 造成多线程操作 memberlist 所以加锁
+//                    ArrayList<DbMember> dbMembershasBeenDel = new ArrayList<>();
+//                    if (targetLocalTopic.getMembers() == null) {
+//                        // 不知道怎么办
+//                        return;
+//                    }
+//                    if (imMemberList == null) {
+//                        //为了 member 统一删除方法
+//                        imMemberList = new ArrayList<>();
+//                    }
+//
+//                    for (DbMember dbMember : targetLocalTopic.getMembers()) {
+//                        boolean remain = false;
+//                        for (ImTopic_new.Member remainMember : imMemberList) {
+//                            if (dbMember.getImId() == remainMember.memberId) {
+//                                remain = true;
+//                                break;
+//                            }
+//                        }
+//                        if (!remain) {//如果用户已经不再列表中
+//                            dbMembershasBeenDel.add(dbMember);
+//                        }
+//                    }
+//                    //删除那些不在列表中的 member
+//                    targetLocalTopic.getMembers().removeAll(dbMembershasBeenDel);
+//                    //判断被移除的 member 是不是自己
+//                    for (DbMember removedMember : dbMembershasBeenDel) {
+//                        if (removedMember.getImId() == Constants.imId) {
+//                            /*如果是学员端 这里需要将 topic 列表进行删除 */
+//                            if (Constants.APP_TYPE == Constants.APP_TYPE_STUDENT) {
+//                                TopicInMemoryUtils.removeTopicFromListById(topicId, topics);
+//                            }
+//                            mHandler.post(new Runnable() {
+//                                @Override
+//                                public void run() {
+//                                    if (view != null) {
+//                                        view.onRemovedFromTopic(targetLocalTopic.getTopicId(), targetLocalTopic.getGroup());
+//                                    }
+//                                }
+//                            });
+//                        } else {//如果不是自己被移除  通知 其他人被移除
+//                            mHandler.post(new Runnable() {
+//                                @Override
+//                                public void run() {
+//                                    if (view != null) {
+//                                        view.onOtherMemberRemoveFromTopic(targetLocalTopic.getTopicId());
+//                                    }
+//                                }
+//                            });
+//                        }
+//                    }
+//                }
+//            }
+//
+//            @Override
+//            public void onFail(YXRequestBase request, Error error) {
+//
+//            }
+//        });
     }
 
 

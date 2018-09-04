@@ -6,6 +6,7 @@ import android.util.Log;
 
 import com.yanxiu.im.bean.MsgItemBean;
 import com.yanxiu.im.bean.TopicItemBean;
+import com.yanxiu.im.bean.net_bean.ImMember_new;
 import com.yanxiu.im.bean.net_bean.ImMsg_new;
 import com.yanxiu.im.bean.net_bean.ImTopic_new;
 import com.yanxiu.im.business.topiclist.sorter.ImTopicSorter;
@@ -18,15 +19,9 @@ import com.yanxiu.im.manager.DatabaseManager;
 import com.yanxiu.im.manager.HttpRequestManager;
 import com.yanxiu.im.manager.MqttConnectManager;
 import com.yanxiu.im.manager.RequestQueueManager;
-import com.yanxiu.im.net.GetTopicMsgsRequest_new;
-import com.yanxiu.im.net.GetTopicMsgsResponse_new;
-import com.yanxiu.lib.yx_basic_library.network.IYXHttpCallback;
-import com.yanxiu.lib.yx_basic_library.network.YXRequestBase;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import okhttp3.Request;
 
 /**
  * create by 朱晓龙 2018/8/23 下午4:28
@@ -308,6 +303,22 @@ public class TopicsReponsery {
         });
     }
 
+    /**
+     * 获取 topic 的 member 列表
+     */
+    public void updateTopicMemberInfoFromServer(final TopicItemBean bean, final GetTopicItemBeanCallback callback) {
+        requestTopicMemberInfoFromServer(bean, new GetTopicItemBeanCallback() {
+            @Override
+            public void onGetTopicItemBean(TopicItemBean beanCreateFromDB) {
+                if (beanCreateFromDB != null) {
+                    //更新 target 的 info
+                    updateMemberInfo(bean, beanCreateFromDB);
+                    callback.onGetTopicItemBean(bean);
+                }
+            }
+        });
+    }
+
 
     private void updateMemberInfo(TopicItemBean target, TopicItemBean infoBean) {
         target.getMembers().clear();
@@ -349,6 +360,7 @@ public class TopicsReponsery {
         mHttpRequestManager.requestTopicMemberList(Constants.imToken, Long.toString(bean.getTopicId()), new HttpRequestManager.GetTopicMemberListCallback<ImTopic_new>() {
             @Override
             public void onGetTopicMembers(ImTopic_new topicWithMembers) {
+                Log.i(TAG, "onGetTopicMembers: ");
                 final TopicItemBean dbTopic = DatabaseManager.updateDbTopicWithImTopic(topicWithMembers);
                 uiHandler.post(new Runnable() {
                     @Override
@@ -361,6 +373,7 @@ public class TopicsReponsery {
 
             @Override
             public void onGetFailure() {
+                Log.i(TAG, "topic memberonGetFailure: ");
                 uiHandler.post(new Runnable() {
                     @Override
                     public void run() {
@@ -375,12 +388,16 @@ public class TopicsReponsery {
         return false;
     }
 
+    /**
+     * 获取最新一页 msg
+     */
     public void requestLastestMsgPageFromServer(final TopicItemBean itemBean, final GetTopicItemBeanCallback callback) {
         if (checkShouldUpdateMsg(itemBean, callback)) return;
-
-        mHttpRequestManager.requestTopicMsgList(Constants.imToken, itemBean.getTopicId(), new HttpRequestManager.GetTopicMsgListCallback<ImMsg_new>() {
+        //请求最新一页  直接设置 最大 Long.value
+        mHttpRequestManager.requestTopicMsgList(Constants.imToken, Long.MAX_VALUE,itemBean.getTopicId(), new HttpRequestManager.GetTopicMsgListCallback<ImMsg_new>() {
             @Override
             public void onGetTopicMsgList(List<ImMsg_new> msgList) {
+                Log.i(TAG, "onGetTopicMsgList: ");
                 ArrayList<MsgItemBean> msgPages = new ArrayList<>();
                 for (ImMsg_new imMsgNew : msgList) {
                     //获取 msglist 后  首先  保存数据库
@@ -404,8 +421,8 @@ public class TopicsReponsery {
             }
 
             @Override
-            public void onGetFailure( String msg) {
-                Log.i(TAG, "onGetFailure: "+msg);
+            public void onGetFailure(String msg) {
+                Log.i(TAG, "onGetLatestMsgPageFailure: " + msg);
                 uiHandler.post(new Runnable() {
                     @Override
                     public void run() {
@@ -456,6 +473,7 @@ public class TopicsReponsery {
         //删除步骤 1、请求服务器删除 topic成功后  2、 删除数据库 3、同步内存（删除内存中的实例）
         //服务器删除成功
         DatabaseManager.deleteLocalMsgByTopicId(topicItemBean);
+
         callback.onTopicDeleted();
         TopicInMemoryUtils.removeTopicFromListById(topicItemBean.getTopicId(), topicInMemory);
 
@@ -473,42 +491,17 @@ public class TopicsReponsery {
 
     /**
      * 加载一页
+     * 下拉加载
      */
-    public void loadPageMsg(TopicItemBean targetTopic, GetMsgPageCallback callback) {
+    public void loadPageMsg(final TopicItemBean targetTopic, final long startId, final GetMsgPageCallback callback) {
+        Log.i(TAG, "loadPageMsg: ");
         //首先有网络获取
-        requestMsgListFromServer(targetTopic, callback);
-    }
-
-
-    private void requestMsgListFromServer(final TopicItemBean targetTopic, final GetMsgPageCallback callback) {
-        GetTopicMsgsRequest_new getMsgsRequest = new GetTopicMsgsRequest_new();
-        getMsgsRequest.imToken = Constants.imToken;
-        final long startId = TopicInMemoryUtils.getMinMsgBeanRealIdInList(targetTopic.getMsgList());
-        getMsgsRequest.startId = String.valueOf(startId);
-        getMsgsRequest.topicId = targetTopic.getTopicId() + "";
-
-        getMsgsRequest.startRequest(GetTopicMsgsResponse_new.class, new IYXHttpCallback<GetTopicMsgsResponse_new>() {
+        mHttpRequestManager.requestTopicMsgList(Constants.imToken, startId, targetTopic.getTopicId(), new HttpRequestManager.GetTopicMsgListCallback<ImMsg_new>() {
             @Override
-            public void onRequestCreated(Request request) {
-            }
-
-            @Override
-            public void onSuccess(YXRequestBase request, GetTopicMsgsResponse_new ret) {
-                //请求异常
-                if (ret == null || ret.code != 0 || ret.data == null || ret.data.topicMsg == null) {
-                    final ArrayList<MsgItemBean> topicMsgs = DatabaseManager.getTopicMsgs(targetTopic.getTopicId(), startId, DatabaseManager.pagesize);
-                    TopicInMemoryUtils.duplicateRemoval(topicMsgs, targetTopic.getMsgList());
-                    targetTopic.getMsgList().addAll(topicMsgs);
-                    uiHandler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            callback.onGetPage(topicMsgs);
-                        }
-                    });
-                    return;
-                }
+            public void onGetTopicMsgList(List<ImMsg_new> msgList) {
+                Log.i(TAG, "onGetTopicMsgList: ");
                 //保存入数据库
-                for (ImMsg_new msgNew : ret.data.topicMsg) {
+                for (ImMsg_new msgNew : msgList) {
                     /*检查 有服务器返回的msg 数据格式 防止空指针*/
                     if (ImServerDataChecker.imMsgCheck(msgNew)) {
                         DatabaseManager.updateDbMsgWithImMsg(msgNew, Constants.imId);
@@ -526,16 +519,8 @@ public class TopicsReponsery {
             }
 
             @Override
-            public void onFail(YXRequestBase request, Error error) {
-                final ArrayList<MsgItemBean> topicMsgs = DatabaseManager.getTopicMsgs(targetTopic.getTopicId(), startId, DatabaseManager.pagesize);
-                TopicInMemoryUtils.duplicateRemoval(topicMsgs, targetTopic.getMsgList());
-                targetTopic.getMsgList().addAll(topicMsgs);
-                uiHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        callback.onGetPage(topicMsgs);
-                    }
-                });
+            public void onGetFailure(String msg) {
+                Log.i(TAG, "onGetMsgListFailure: " + msg);
             }
         });
     }
@@ -548,6 +533,7 @@ public class TopicsReponsery {
      * 创建一个 mocktopic
      */
     public TopicItemBean createMockTopic(long fromId, long memberId) {
+        Log.i(TAG, "createMockTopic: ");
         final TopicItemBean mockTopic = DatabaseManager.createMockTopic(memberId, fromId);
         addToMemory(mockTopic);
         ImTopicSorter.sortByLatestTime(topicInMemory);
@@ -560,11 +546,69 @@ public class TopicsReponsery {
         void onTopicCreateFailed();
     }
 
+    /**
+     * 获取 member 信息 1、网络获取 2、本地获取
+     */
+    public void getImMemberInfo(long memberId, final GetMemberInfoCallback<DbMember> callback) {
+        Log.i(TAG, "getImMemberInfo: ");
+        //首先从 db 获取
+        final DbMember memberById = DatabaseManager.getMemberById(memberId);
+        if (memberById != null) {
+            //本地有数据
+            callback.onGetMemberInfo(memberById);
+        } else {
+            //本地没有数据 网络获取
+            mHttpRequestManager.requestMemberInfo(memberId, new HttpRequestManager.RequestMemberInfoCallback<ImMember_new>() {
+                @Override
+                public void onGetMemberInfo(ImMember_new info) {
+                    //服务器获取了 member
+                    Log.i(TAG, "onGetMemberInfo: ");
+                    //更新数据库
+                    final DbMember dbMember = DatabaseManager.updateDbMemberWithImMember(info);
+                    if (callback != null) {
+                        uiHandler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                callback.onGetMemberInfo(dbMember);
+                            }
+                        });
+                    }
+                }
+
+                @Override
+                public void onGetMemberInfoFailure(String msg) {
+                    //服务器获取 member 信息失败
+                    Log.i(TAG, "onGetMemberInfoFailure: ");
+                    if (callback != null) {
+                        uiHandler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (memberById != null) {
+                                    callback.onGetMemberInfo(memberById);
+                                } else {
+                                    callback.onGetMemberInfoFailure("没有找到 member 信息");
+                                }
+                            }
+                        });
+                    }
+                }
+            });
+        }
+
+    }
+
+    public interface GetMemberInfoCallback<E> {
+        void onGetMemberInfo(E data);
+
+        void onGetMemberInfoFailure(String msg);
+    }
+
 
     /**
      * 向服务器请求创建一个新的聊天 topic
      */
     public void createNewTopic(final TopicItemBean mockTopic, String fromTopicId, final CreateTopicCallback callback) {
+        Log.i(TAG, "createNewTopic: ");
         //获取 member 信息
         long memberId = -1;
         for (DbMember memberNew : mockTopic.getMembers()) {
@@ -577,9 +621,11 @@ public class TopicsReponsery {
     }
 
     private void requestCreateTopic(final TopicItemBean mockTopic, String fromTopicId, long memberId, final CreateTopicCallback callback) {
+        Log.i(TAG, "requestCreateTopic: ");
         mHttpRequestManager.requestCreateNewPrivateTopic(Constants.imToken, fromTopicId, memberId, Constants.imId, new HttpRequestManager.CreatePrivateTopicCallback<ImTopic_new>() {
             @Override
             public void onCreated(ImTopic_new topic) {
+                Log.i(TAG, "onCreated: ");
                 DatabaseManager.migrateMockTopicToRealTopic(mockTopic, topic);
                 //回调给上层
                 uiHandler.post(new Runnable() {
@@ -592,6 +638,7 @@ public class TopicsReponsery {
 
             @Override
             public void onFailure() {
+
                 //创建失败 修改数据库状态
                 DatabaseManager.topicCreateFailed(mockTopic);
                 if (callback != null) {
@@ -608,6 +655,7 @@ public class TopicsReponsery {
      */
 
     public void updatePublicConfig(final TopicItemBean bean, int speak, final UpdateConfigCallback<TopicItemBean> callback) {
+        Log.i(TAG, "updatePublicConfig: ");
         mHttpRequestManager.requestUpdatePublicConfig(bean.getTopicId(), speak, new HttpRequestManager.UpdateTopicConfigCallback<ImTopic_new>() {
             @Override
             public void onUpdated(ImTopic_new imTopic) {
@@ -616,13 +664,13 @@ public class TopicsReponsery {
                 //更新数据库
                 final TopicItemBean infoBean = DatabaseManager.updateDbTopicWithImTopic(imTopic);
                 //更新内存
-                updateBeanInfo(bean,infoBean);
+                updateBeanInfo(bean, infoBean);
                 callback.onTopicConfigUpdated(bean);
             }
 
             @Override
             public void onFilure(String msg) {
-                Log.i(TAG, "onFilure: ");
+                Log.i(TAG, "onUpdatePublicConfigFilure: ");
             }
         });
     }
@@ -640,13 +688,13 @@ public class TopicsReponsery {
                 //更新数据库
                 final TopicItemBean infoBean = DatabaseManager.updateDbTopicWithImTopic(imTopic);
                 //更新内存
-                updateBeanInfo(bean,infoBean);
+                updateBeanInfo(bean, infoBean);
                 callback.onTopicConfigUpdated(bean);
             }
 
             @Override
             public void onFilure(String msg) {
-                Log.i(TAG, "onFilure: "+msg);
+                Log.i(TAG, "onUpdatePersonalConfigFilure: " + msg);
             }
         });
     }

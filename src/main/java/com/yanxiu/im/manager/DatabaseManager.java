@@ -5,7 +5,6 @@ import android.support.annotation.NonNull;
 import android.util.Log;
 
 import com.orhanobut.logger.Logger;
-import com.test.yanxiu.common_base.utils.SharedSingleton;
 import com.yanxiu.im.Constants;
 import com.yanxiu.im.bean.MsgItemBean;
 import com.yanxiu.im.bean.TopicItemBean;
@@ -992,7 +991,7 @@ public class DatabaseManager {
      *
      * @return
      */
-    public static void checkAndMigrateMockTopic() {
+    public static void checkAndMigrateMockTopic(List<TopicItemBean> topicList) {
         List<DbTopic> mockTopicList = getMockTopic();
 
         if (mockTopicList != null && !mockTopicList.isEmpty()) {
@@ -1030,7 +1029,7 @@ public class DatabaseManager {
                     long realMemberId2 = realMember2.getImId();
                     if ((mockMemberId1 == realMemberId1 && mockMemberId2 == realMemberId2) || (mockMemberId1 == realMemberId2 && mockMemberId2 == realMemberId1)) {
                         //只要私聊人员相同，那么就是同一个私聊topic
-                        migrateMockTopicToRealTopic(mockTopic, privateRealTopic);
+                        migrateMockTopicToRealTopic(mockTopic, privateRealTopic,topicList);
                         break;
                     }
 
@@ -1047,12 +1046,12 @@ public class DatabaseManager {
      * @param mockTopic
      * @param realTopic
      */
-    private static void migrateMockTopicToRealTopic(@NonNull DbTopic mockTopic, @NonNull DbTopic realTopic) {
+    private static void migrateMockTopicToRealTopic(@NonNull DbTopic mockTopic, @NonNull DbTopic realTopic,List<TopicItemBean> topicList) {
         //1.保留mockTopicId,在修改msg时使用
         long mockTopicId = mockTopic.getTopicId();
 
         //2.通过mockTopicId，在map中找到内存中的topic，
-        List<TopicItemBean> topicList = SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST);
+//        List<TopicItemBean> topicList = SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST);
         TopicItemBean mockTopicItemBean = null;//该对象就是在UI里显示的bean对象， migrate的本质目的就是修改该对象里的数据，保证对象不变。
         for (int i = 0; i < topicList.size(); i++) {
             if (mockTopicId == topicList.get(i).getTopicId()) { //找到对应的topic

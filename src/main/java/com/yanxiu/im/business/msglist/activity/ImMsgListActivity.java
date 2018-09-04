@@ -119,11 +119,11 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
      * @param memberId
      * @param requestCode
      */
-    public static void invoke(Activity activity, long memberId, long fromTopicId, String topicName, int requestCode) {
+    public static void invoke(Activity activity, long memberId, long fromTopicId, String groupName, int requestCode) {
         Intent intent = new Intent(activity, ImMsgListActivity.class);
         intent.putExtra("memberId", memberId);
         intent.putExtra("fromTopicId", fromTopicId);
-        intent.putExtra("topicName", topicName);
+        intent.putExtra("groupName", groupName);
         intent.putExtra("requestCode", requestCode);
         activity.startActivityForResult(intent, requestCode);
     }

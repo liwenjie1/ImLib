@@ -178,7 +178,8 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
     }
 
     private void sortInsertTopics(long topicId) {
-        List<TopicItemBean> topics = SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST);
+
+        List<TopicItemBean> topics = TopicsReponsery.getInstance().getTopicInMemory();
         if (topics == null) {
             return;
         }
@@ -273,7 +274,7 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
         }
         //检查是否已经建立了 相同的私聊
         if (DatabaseManager.isMockTopic(currentTopic)) {
-            DatabaseManager.checkAndMigrateMockTopic();
+            DatabaseManager.checkAndMigrateMockTopic(TopicsReponsery.getInstance().getTopicInMemory());
         }
         if (DatabaseManager.isMockTopic(currentTopic)) {
 
@@ -310,10 +311,16 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
 
     @Override
     public void doLoadMore(final TopicItemBean currentTopic) {
-        TopicsReponsery.getInstance().loadPageMsg(currentTopic, new TopicsReponsery.GetMsgPageCallback() {
+        //获取起始 msgid
+        final long startId = TopicInMemoryUtils.getMinImMsgIdInList(currentTopic.getMsgList());
+        TopicsReponsery.getInstance().loadPageMsg(currentTopic, startId, new TopicsReponsery.GetMsgPageCallback() {
             @Override
             public void onGetPage(ArrayList<MsgItemBean> msgs) {
-                view.onLoadMoreFromDb(msgs.size());
+                if (msgs == null) {
+                    view.onLoadMoreFromDb(0);
+                } else {
+                    view.onLoadMoreFromDb(msgs.size());
+                }
             }
         });
     }
@@ -373,17 +380,37 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
      * 1、私聊已经存在  2、私聊不存在
      */
     @Override
-    public void openPrivateTopicByMember(long memberId, long fromTopicId) {
+    public void openPrivateTopicByMember(final long memberId, final long fromTopicId) {
         Log.i(TAG, "openPrivateTopicByMember: ");
+        //首先检查 member 信息是否完整
+        TopicsReponsery.getInstance().getImMemberInfo(memberId, new TopicsReponsery.GetMemberInfoCallback<DbMember>() {
+            @Override
+            public void onGetMemberInfo(DbMember data) {
+                Log.i(TAG, "onGetMemberInfo: ");
+                //执行打开操作
+                openPrivateTopic(memberId, fromTopicId);
+            }
+
+            @Override
+            public void onGetMemberInfoFailure(String msg) {
+                Log.i(TAG, "onGetMemberInfoFailure: ");
+                //这情况比较少  怎么处理没想好
+            }
+        });
+    }
+
+    private void openPrivateTopic(long memberId, long fromTopicId) {
         TopicsReponsery.getInstance().getPrivateTopicByMemberid(memberId, fromTopicId, new TopicsReponsery.GetPrivateTopicCallback<TopicItemBean>() {
             @Override
             public void onFindRealPrivateTopic(TopicItemBean bean) {
+                Log.i(TAG, "onFindRealPrivateTopic: ");
                 //本地有 这个私聊 直接显示
                 view.onRealTopicOpened(bean);
             }
 
             @Override
             public void onNoTargetTopic(String memberName) {
+                Log.i(TAG, "onNoTargetTopic: ");
                 //本地没有这个私聊  进行 title 设置  等待下一步操作
                 view.onNewPrivateTopicOpened(memberName);
             }
@@ -482,7 +509,7 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
     }
 
     public TopicItemBean getTargetTopic(long topicId) {
-        List<TopicItemBean> topics = SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST);
+        List<TopicItemBean> topics = TopicsReponsery.getInstance().getTopicInMemory();
         return TopicInMemoryUtils.findTopicByTopicId(topicId, topics);
     }
 
