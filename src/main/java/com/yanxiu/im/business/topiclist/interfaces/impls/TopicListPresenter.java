@@ -9,17 +9,13 @@ import com.yanxiu.im.Constants;
 import com.yanxiu.im.TopicsReponsery;
 import com.yanxiu.im.bean.MsgItemBean;
 import com.yanxiu.im.bean.TopicItemBean;
-import com.yanxiu.im.bean.net_bean.ImMsg_new;
 import com.yanxiu.im.bean.net_bean.ImTopic_new;
 import com.yanxiu.im.business.topiclist.interfaces.TopicListContract;
 import com.yanxiu.im.business.topiclist.sorter.ImTopicSorter;
-import com.yanxiu.im.business.utils.ImServerDataChecker;
 import com.yanxiu.im.business.utils.TopicInMemoryUtils;
 import com.yanxiu.im.db.DbMember;
 import com.yanxiu.im.manager.DatabaseManager;
 import com.yanxiu.im.manager.RequestQueueManager;
-import com.yanxiu.im.net.GetTopicMsgsRequest_new;
-import com.yanxiu.im.net.GetTopicMsgsResponse_new;
 import com.yanxiu.lib.yx_basic_library.network.IYXHttpCallback;
 import com.yanxiu.lib.yx_basic_library.network.YXRequestBase;
 
@@ -134,9 +130,6 @@ public class TopicListPresenter implements TopicListContract.Presenter {
         });
     }
 
-
-
-
     @Override
     public void doCheckRedDot(List<TopicItemBean> topics) {
         //处理红点
@@ -144,7 +137,6 @@ public class TopicListPresenter implements TopicListContract.Presenter {
         if (topics == null) {
             return;
         }
-
         for (TopicItemBean topic : topics) {
             if (topic.isShowDot()) {
                 hasReddot = true;
@@ -261,21 +253,7 @@ public class TopicListPresenter implements TopicListContract.Presenter {
         ImTopicSorter.sortByLatestTime(topics);
     }
 
-    /**
-     * 跟新topic的最新一页msg
-     *
-     * @param topics
-     */
-    private void updateEachTopicMsgs(List<TopicItemBean> topics) {
-        totalRetryTimes = 10;
-        if (topics == null) {
-            return;
-        }
-        for (TopicItemBean topic : topics) {
-            doGetTopicMsgsRequest(topic);
-        }
-        rqManager.setmCallBack(new RequestQueueCallBack());
-    }
+
 
     /**
      * RequestQueueManager的回调，用来在http拉取数据结束后，合并mockTopic
@@ -292,125 +270,6 @@ public class TopicListPresenter implements TopicListContract.Presenter {
         }
     }
 
-    /**
-     * 获取且仅用于 网路恢复连接后 拉取 最新一页的msglist
-     * 当获取最新一页成功以后 清除已有数据
-     */
-    private void doGetTopicMsgsRequest(final TopicItemBean topicItemBean) {
-        //判断是否需要更新msg
-        if ((topicItemBean.getMsgList() != null) && (topicItemBean.getMsgList().size() > 0)) {
-            MsgItemBean dbMsg = topicItemBean.getMsgList().get(0);
-            if (dbMsg.getMsgId() >= topicItemBean.getLatestMsgId()) {
-                // 数据库中已有最新的msg，不用更新
-                topicItemBean.setLatestMsgId(dbMsg.getMsgId());
-                topicItemBean.setLatestMsgTime(dbMsg.getSendTime());
-                if (view != null) {
-                    mHandler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            view.onTopicUpdate(topicItemBean.getTopicId());
-                        }
-                    });
-                }
-                return;
-            }
-        }
-        //更新msg
-        GetTopicMsgsRequest_new getTopicMsgsRequest = new GetTopicMsgsRequest_new();
-        getTopicMsgsRequest.imToken = Constants.imToken;
-        getTopicMsgsRequest.topicId = Long.toString(topicItemBean.getTopicId());
-        //如果是最新加入的topic 没有消息记录 赋予latestmsgid 为long最大值
-        //由于是获取最新消息 所以 请求startid 采用Long.MAXVALUE
-        getTopicMsgsRequest.startId = String.valueOf(Long.MAX_VALUE);
-
-
-        getTopicMsgsRequest.order = "desc";
-
-        rqManager.addRequest(getTopicMsgsRequest, GetTopicMsgsResponse_new.class, new IYXHttpCallback<GetTopicMsgsResponse_new>() {
-            /**
-             * startRequest()中生成get url，post body以后，调用OkHttp Request之前调用此回调
-             *
-             * @param request OkHttp Request
-             */
-            @Override
-            public void onRequestCreated(Request request) {
-
-            }
-
-            @Override
-            public void onSuccess(YXRequestBase request, GetTopicMsgsResponse_new ret) {
-                // 拉取消息数量为0 获取数据为空
-                if (ret.data.topicMsg == null || ret.data.topicMsg.size() == 0) {
-                    //判断获取的消息数量是否为0 或空  此时 不显示红点
-                    topicItemBean.setShowDot(false);
-                    DatabaseManager.updateTopicWithTopicItemBean(topicItemBean);
-                    //只有 msg list 进行了填充
-                    if (view != null) {
-                        mHandler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                view.onTopicUpdate(topicItemBean.getTopicId());
-                            }
-                        });
-                    }
-                    return;
-                }
-
-                List<MsgItemBean> currentMsgList = topicItemBean.getMsgList();
-                if (currentMsgList == null) {
-                    currentMsgList = new ArrayList<>();
-                    topicItemBean.setMsgList(currentMsgList);
-                }
-
-                //将获取的msg数据写入数据库
-                List<MsgItemBean> newList = new ArrayList<>();
-                for (ImMsg_new imMsgNew : ret.data.topicMsg) {
-                    /*对服务器返回的msg 数据进行格式检查 防止空指针*/
-                    if (ImServerDataChecker.imMsgCheck(imMsgNew)) {
-                        newList.add(DatabaseManager.updateDbMsgWithImMsg(imMsgNew, Constants.imId));
-                    }
-
-                }
-                //判断是否有新消息进来 (显示红点) topic 在上一步的http请求中已经被更新 所以直接比较 topicitembean的latestmsgid
-                boolean showRedDot = TopicInMemoryUtils.checkTopicShouldShowRedDot(topicItemBean, newList);
-                topicItemBean.setShowDot(showRedDot);
-                //将红点信息保存数据库
-                DatabaseManager.updateTopicWithTopicItemBean(topicItemBean);
-                //清空上一次保存的数据
-                currentMsgList.clear();
-
-                //数据库获取最新一页msg
-                ArrayList<MsgItemBean> msgsFromDb =
-                        DatabaseManager.getTopicMsgs(topicItemBean.getTopicId(), DatabaseManager.minMsgId, DatabaseManager.pagesize);
-
-                currentMsgList.addAll(msgsFromDb);
-
-                //设置下次请求的msgid
-//                topicItemBean.setRequestMsgId(TopicInMemoryUtils.getMinMsgBeanIdInList(newList));
-                //处理日期显示
-                processMsgListDateInfo(msgsFromDb);
-
-                if (view != null) {
-                    mHandler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            view.onTopicUpdate(topicItemBean.getTopicId());
-                        }
-                    });
-                }
-            }
-
-            @Override
-            public void onFail(YXRequestBase request, Error error) {
-                // 重试
-                if (totalRetryTimes-- <= 0) {
-                    //重试多次失败 则不对数据进行处理 保存初始化时获取到的db数据最为显示
-                    return;
-                }
-                doGetTopicMsgsRequest(topicItemBean);
-            }
-        });
-    }
 
     /**
      * 检测用户是否被移除

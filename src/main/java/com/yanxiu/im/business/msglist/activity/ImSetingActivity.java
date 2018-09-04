@@ -106,6 +106,7 @@ public class ImSetingActivity extends ImBaseActivity implements ImTitleLayout.Ti
                 mImSettingPresenter.dosetSilent(topicId, isChecked);
             }
         });
+
     }
 
 
@@ -172,7 +173,8 @@ public class ImSetingActivity extends ImBaseActivity implements ImTitleLayout.Ti
         }
         //设置是否显示学院禁言功能
 
-
         //设置 toggle state
+        mImNoticeSettingItem.setSwitchBtnChecked(currentTopic.isBlockNotice());
+        mImTalkSettingItem.setSwitchBtnChecked(currentTopic.isSilence());
     }
 }

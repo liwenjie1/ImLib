@@ -23,8 +23,7 @@ public class ImGroupTopicViewHolder<E extends TopicItemBean> extends ImTopicBase
     private TextView latestMsgTime;
     private ImageView topicImage;
     private CircleView redDot;
-
-
+    private ImageView quiteImageView;
     public ImGroupTopicViewHolder(@NonNull View itemView) {
         super(itemView);
         topicImage = itemView.findViewById(R.id.avatar_imageview);
@@ -32,6 +31,7 @@ public class ImGroupTopicViewHolder<E extends TopicItemBean> extends ImTopicBase
         latestMsgContent = itemView.findViewById(R.id.msg_textview);
         topicNameTv = itemView.findViewById(R.id.sender_textview);
         redDot = itemView.findViewById(R.id.reddot_circleview);
+        quiteImageView=itemView.findViewById(R.id.im_quite_icon);
     }
 
     @Override
@@ -42,7 +42,7 @@ public class ImGroupTopicViewHolder<E extends TopicItemBean> extends ImTopicBase
         MsgItemBean latestMsg = data.getLatestMsg();
         setLatestMsgInfo(latestMsg, true);
         redDot.setVisibility(data.isShowDot() ? View.VISIBLE : View.INVISIBLE);
-
+        quiteImageView.setVisibility(data.isBlockNotice()?View.VISIBLE:View.INVISIBLE);
 
     }
 

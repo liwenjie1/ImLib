@@ -1,5 +1,6 @@
 package com.yanxiu.im.manager;
 
+import com.yanxiu.im.Constants;
 import com.yanxiu.im.bean.net_bean.ImMsg_new;
 import com.yanxiu.im.bean.net_bean.ImTopic_new;
 import com.yanxiu.im.net.GetTopicMsgsRequest_new;
@@ -144,12 +145,19 @@ public class HttpRequestManager {
 
             @Override
             public void onSuccess(YXRequestBase request, GetTopicMsgsResponse_new ret) {
-                if (ret.code != 0 || ret.data == null || ret.data.topicMsg == null) {
+                if (ret.code!=0&&ret.data!=null) {
                     if (callback != null) {
-                        callback.onGetFailure();
+                        callback.onGetFailure(ret.message);
                     }
                     return;
                 }
+                if (ret.data == null || ret.data.topicMsg == null) {
+                    if (callback != null) {
+                        callback.onGetFailure("获取数据错误");
+                    }
+                    return;
+                }
+                //获取正常
                 if (callback != null) {
                     callback.onGetTopicMsgList(ret.data.topicMsg);
                 }
@@ -158,7 +166,7 @@ public class HttpRequestManager {
             @Override
             public void onFail(YXRequestBase request, Error error) {
                 if (callback != null) {
-                    callback.onGetFailure();
+                    callback.onGetFailure(error.getMessage());
                 }
             }
         });
@@ -167,7 +175,7 @@ public class HttpRequestManager {
     public interface GetTopicMsgListCallback<E> {
         void onGetTopicMsgList(List<E> msgList);
 
-        void onGetFailure();
+        void onGetFailure(String msg);
     }
 
 
@@ -234,6 +242,7 @@ public class HttpRequestManager {
         UpdatePersonalConfigRequest request=new UpdatePersonalConfigRequest();
         request.topicId= String.valueOf(topicId);
         request.quite= String.valueOf(quite);
+        request.imToken= Constants.imToken;
         requestQueueManager.addRequest(request, UpdatePersonalConfigResponse.class, new IYXHttpCallback<UpdatePersonalConfigResponse>() {
             @Override
             public void onRequestCreated(Request request) {
@@ -265,6 +274,7 @@ public class HttpRequestManager {
         UpdatePublicConfigRequest request=new UpdatePublicConfigRequest();
         request.topicId= String.valueOf(topicId);
         request.speak= String.valueOf(speak);
+        request.imToken= Constants.imToken;
         requestQueueManager.addRequest(request, UpdatePublicConfigResponse.class, new IYXHttpCallback<UpdatePublicConfigResponse>() {
             @Override
             public void onRequestCreated(Request request) {

@@ -4,7 +4,6 @@ import android.content.Context;
 import android.support.annotation.UiThread;
 import android.util.Log;
 
-import com.test.yanxiu.common_base.utils.SharedSingleton;
 import com.yanxiu.im.bean.MsgItemBean;
 import com.yanxiu.im.bean.TopicItemBean;
 import com.yanxiu.im.bean.net_bean.ImMsg_new;
@@ -405,7 +404,8 @@ public class TopicsReponsery {
             }
 
             @Override
-            public void onGetFailure() {
+            public void onGetFailure( String msg) {
+                Log.i(TAG, "onGetFailure: "+msg);
                 uiHandler.post(new Runnable() {
                     @Override
                     public void run() {
