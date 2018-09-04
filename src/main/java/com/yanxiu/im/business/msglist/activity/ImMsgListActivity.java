@@ -109,6 +109,26 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
     }
 
     /**
+     * 这个方法一般为 由通讯录、群聊进入私聊界面
+     * <p>
+     * 传入点击的memberId
+     * 查找对应的用户，并获取对应的私聊topic 如果没有私聊 需要创建本地临时topic 并由底层进行http创建后进行
+     * 内容更新
+     *
+     * @param activity
+     * @param memberId
+     * @param requestCode
+     */
+    public static void invoke(Activity activity, long memberId, long fromTopicId, String topicName, int requestCode) {
+        Intent intent = new Intent(activity, ImMsgListActivity.class);
+        intent.putExtra("memberId", memberId);
+        intent.putExtra("fromTopicId", fromTopicId);
+        intent.putExtra("topicName", topicName);
+        intent.putExtra("requestCode", requestCode);
+        activity.startActivityForResult(intent, requestCode);
+    }
+
+    /**
      * 这个方法为 在topic列表界面进入聊天界面 目标一定是已经存在的topic所以直接传topicid 进行查找
      *
      * @param fragment
@@ -928,7 +948,6 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
             return 0;
         }
     }
-
 
 
     private boolean isSoftShowing() {
