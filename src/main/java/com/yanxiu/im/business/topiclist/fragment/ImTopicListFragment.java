@@ -48,6 +48,8 @@ import com.yanxiu.im.event.MsgListTopicUpdateEvent;
 import com.yanxiu.im.event.NewMsgEvent;
 import com.yanxiu.im.event.TopicChangEvent;
 import com.yanxiu.im.manager.MqttProtobufManager;
+import com.yanxiu.lib.yx_basic_library.customize.dialog.CommonDialog;
+import com.yanxiu.lib.yx_basic_library.customize.dialog.CustomBaseDialog;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -164,13 +166,27 @@ public class ImTopicListFragment extends FaceShowBaseFragment
         mRecyclerAdapter.setRecyclerViewItemLongClickListener(new RecyclerViewItemLongClickListener() {
 
             @Override
-            public boolean onItemLongClicked(final int position, TopicItemBean bean) {
-                TopicsReponsery.getInstance().deleteTopicHistory(bean, new TopicsReponsery.DeleteTopicCallback() {
+            public boolean onItemLongClicked(final int position, final TopicItemBean bean) {
+                CommonDialog dialog = new CommonDialog(getActivity());
+                dialog.setTitleText(R.string.clear_topic_tip);
+                dialog.setContentText(R.string.clear_topic);
+                dialog.show();
+                dialog.setOnClickListener(new CustomBaseDialog.CustomDialogOnClickListener() {
+                    @Override
+                    public void customDialogConfirm() {
+                        TopicsReponsery.getInstance().deleteTopicHistory(bean, new TopicsReponsery.DeleteTopicCallback() {
+
+                            @Override
+                            public void onTopicDeleted() {
+                                mRecyclerAdapter.notifyItemRemoved(position);
+                                mRecyclerAdapter.notifyItemRangeChanged(position, mRecyclerAdapter.getItemCount() - position - 1);
+                            }
+                        });
+                    }
 
                     @Override
-                    public void onTopicDeleted() {
-                        mRecyclerAdapter.notifyItemRemoved(position);
-                        mRecyclerAdapter.notifyItemRangeChanged(position, mRecyclerAdapter.getItemCount() - position - 1);
+                    public void customDialogCancel() {
+
                     }
                 });
                 return true;
