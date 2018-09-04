@@ -1,6 +1,6 @@
 package com.yanxiu.im.business.interfaces;
 
-import android.view.View;
+import com.yanxiu.im.bean.TopicItemBean;
 
 /**
  * Created by 朱晓龙 on 2018/5/29 12:24.
@@ -8,5 +8,5 @@ import android.view.View;
 
 public interface RecyclerViewItemLongClickListener {
 
-    boolean onItemLongClicked(View view, int p);
+    boolean onItemLongClicked(int position,TopicItemBean bean);
 }

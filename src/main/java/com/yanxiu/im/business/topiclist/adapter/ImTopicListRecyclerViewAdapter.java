@@ -72,6 +72,7 @@ public final class ImTopicListRecyclerViewAdapter<E extends TopicItemBean> exten
         this.dataList = dataList;
     }
 
+
     public List<E> getDataList() {
         return dataList;
 //
@@ -125,7 +126,7 @@ public final class ImTopicListRecyclerViewAdapter<E extends TopicItemBean> exten
                     @Override
                     public boolean onLongClick(View v) {
                         //长按删除
-                        return mRecyclerViewItemLongClickListener.onItemLongClicked(v, position);
+                        return mRecyclerViewItemLongClickListener.onItemLongClicked(position, dataList.get(position));
                     }
                 });
             }

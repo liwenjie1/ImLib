@@ -452,37 +452,18 @@ public class TopicsReponsery {
     /**
      * 执行删除 topic 操作
      */
-    public void deleteTopicHistory(final long topicId, final DeleteTopicCallback callback) {
+    public void deleteTopicHistory(TopicItemBean topicItemBean, final DeleteTopicCallback callback) {
         //删除步骤 1、请求服务器删除 topic成功后  2、 删除数据库 3、同步内存（删除内存中的实例）
-        requestDeletedTopic(topicId, new DeleteTopicCallback() {
-            @Override
-            public void onTopicDeleted(boolean success, String msg) {
-                if (success) {
-                    //服务器删除成功
-                    DatabaseManager.deleteTopicById(topicId);
-                    final ArrayList<TopicItemBean> topicItemBeans = SharedSingleton.getInstance().<ArrayList<TopicItemBean>>get(SharedSingleton.KEY_TOPIC_LIST);
-                    TopicInMemoryUtils.removeTopicFromListById(topicId, topicItemBeans);
-                    callback.onTopicDeleted(true, "移除成功");
+        //服务器删除成功
+        DatabaseManager.deleteLocalMsgByTopicId(topicItemBean);
+        callback.onTopicDeleted();
+        TopicInMemoryUtils.removeTopicFromListById(topicItemBean.getTopicId(), topicInMemory);
 
-                } else {
-                    //失败 服务器清空失败
-                    final ArrayList<TopicItemBean> topicItemBeans = SharedSingleton.getInstance().<ArrayList<TopicItemBean>>get(SharedSingleton.KEY_TOPIC_LIST);
-                    TopicInMemoryUtils.removeTopicFromListById(topicId, topicItemBeans);
-                    callback.onTopicDeleted(true, "本地移除成功");
-                }
-
-            }
-        });
-
-    }
-
-    private void requestDeletedTopic(long topicId, DeleteTopicCallback callback) {
-        callback.onTopicDeleted(true, "删除成功");
     }
 
     public interface DeleteTopicCallback {
         @UiThread
-        void onTopicDeleted(boolean success, String msg);
+        void onTopicDeleted();
     }
 
     public interface GetTopicItemBeanCallback {
