@@ -110,6 +110,11 @@ public class RequestQueueManager {
         doNextRequest();
     }
 
+
+
+
+
+
     public interface RequestQueueCallBack {
         /**
          * 队列里请求全部结束
@@ -124,4 +129,10 @@ public class RequestQueueManager {
     public void setmCallBack(RequestQueueCallBack mCallBack) {
         this.mCallBack = mCallBack;
     }
+
+
+
+
+
+
 }

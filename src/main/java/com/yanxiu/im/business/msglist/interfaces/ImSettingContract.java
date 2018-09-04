@@ -21,12 +21,12 @@ public interface ImSettingContract {
         /**
          * 执行禁言设置
          * */
-        void dosetSilent(boolean silent);
+        void dosetSilent(long topicId,boolean silent);
         /**
          * 执行 免打扰设置
          *
          */
-        void dosetNotice(boolean shouldNotice);
+        void dosetNotice(long topicId,boolean shouldNotice);
 
 
         void doGetTopicInfo(long topicId);

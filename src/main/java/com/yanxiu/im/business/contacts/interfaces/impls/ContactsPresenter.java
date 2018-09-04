@@ -28,6 +28,14 @@ public class ContactsPresenter implements ContactsContract.IPresenter {
 
     private int mCurrentGroupIndex = 0;
 
+    public int getCurrentGroupIndex() {
+        return mCurrentGroupIndex;
+    }
+
+    public List<ContactsGroupBean> getGroupsBeans() {
+        return mGroupsBeans;
+    }
+
     public ContactsPresenter(ContactsContract.IView view) {
         this.mView = view;
     }
@@ -135,5 +143,30 @@ public class ContactsPresenter implements ContactsContract.IPresenter {
             return true;
         }
         return false;
+    }
+    /**
+     * 如果 member 不存在 先进行数据库保存 防止在 私聊部分造成的空指针
+     * */
+    public void checkMemberDbInfo(ContactsGroupBean groupBean, ImMember_new memberInfo) {
+        //检查 topic 是否存在
+        final Long targetTopicId = groupBean.getGroupId();
+        //检查 member 是否存在
+        final DbMember memberById = DatabaseManager.getMemberById(memberInfo.imId);
+        if (memberById == null) {
+            //插入新的 member 信息
+            DbMember newMember = new DbMember();
+            newMember.setRole(memberInfo.memberType);
+            newMember.setName(memberInfo.memberName);
+            newMember.setAvatar(memberInfo.avatar);
+            newMember.save();
+        } else {
+            //如果信息有变化
+            if (isChange(memberById, memberInfo)) {
+                memberById.setName(memberInfo.memberName);
+                memberById.setAvatar(memberInfo.avatar);
+                memberById.setRole(memberInfo.memberType);
+                memberById.save();
+            }
+        }
     }
 }

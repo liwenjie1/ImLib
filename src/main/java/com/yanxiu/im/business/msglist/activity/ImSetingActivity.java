@@ -72,13 +72,13 @@ public class ImSetingActivity extends ImBaseActivity implements ImTitleLayout.Ti
     protected void initData() {
         mImTitleLayout.setTitle("聊聊设置");
         long topicId = getIntent().getLongExtra("topicId", -1);
-        mImSettingPresenter.doGetTopicInfo(topicId);
         if (!Constants.showTopicSilent) {
             mImTalkSettingItem.setVisibility(View.GONE);
         } else {
             boolean isManagerMember = mImSettingPresenter.checkCurrentUserRole(topicId);
             mImTalkSettingItem.setVisibility(isManagerMember ? View.VISIBLE : View.GONE);
         }
+        mImSettingPresenter.doGetTopicInfo(topicId);
     }
 
     protected void initListener() {
@@ -91,7 +91,8 @@ public class ImSetingActivity extends ImBaseActivity implements ImTitleLayout.Ti
                 if (currentTopic != null) {
                     currentTopic.setBlockNotice(isChecked);
                 }
-                mImSettingPresenter.dosetNotice(isChecked);
+                long topicId = getIntent().getLongExtra("topicId", -1);
+                mImSettingPresenter.dosetNotice(topicId, isChecked);
             }
         });
         // 禁言设置按钮
@@ -101,7 +102,8 @@ public class ImSetingActivity extends ImBaseActivity implements ImTitleLayout.Ti
                 if (currentTopic != null) {
                     currentTopic.setSilence(isChecked);
                 }
-                mImSettingPresenter.dosetSilent(isChecked);
+                long topicId = getIntent().getLongExtra("topicId", -1);
+                mImSettingPresenter.dosetSilent(topicId, isChecked);
             }
         });
     }
@@ -138,11 +140,12 @@ public class ImSetingActivity extends ImBaseActivity implements ImTitleLayout.Ti
         if (TextUtils.equals("2", topicBean.getType())) {
             im_setting_group_info_layout.setVisibility(View.VISIBLE);
             im_setting_private_info_layout.setVisibility(View.GONE);
-
             //设置 群聊信息 名称
             TextView groupName = findViewById(R.id.im_setting_activity_classname_tv);
             groupName.setText(topicBean.getGroup() + "");
             //根据 topic 禁言字段显示 toggle禁言状态
+            //判断当前 im 是否是 topic 的管理员
+            mImTalkSettingItem.setVisibility(View.GONE);
 
         } else {
             im_setting_group_info_layout.setVisibility(View.GONE);
@@ -164,9 +167,12 @@ public class ImSetingActivity extends ImBaseActivity implements ImTitleLayout.Ti
                     break;
                 }
             }
+            //私聊不存在 禁言
+            mImTalkSettingItem.setVisibility(View.GONE);
         }
+        //设置是否显示学院禁言功能
+
 
         //设置 toggle state
-
     }
 }

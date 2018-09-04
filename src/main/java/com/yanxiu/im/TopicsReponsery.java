@@ -24,12 +24,9 @@ import com.yanxiu.im.net.GetTopicMsgsResponse_new;
 import com.yanxiu.lib.yx_basic_library.network.IYXHttpCallback;
 import com.yanxiu.lib.yx_basic_library.network.YXRequestBase;
 
-import org.greenrobot.eventbus.Subscribe;
-
 import java.util.ArrayList;
 import java.util.List;
 
-import de.greenrobot.event.EventBus;
 import okhttp3.Request;
 
 /**
@@ -337,6 +334,8 @@ public class TopicsReponsery {
         target.setType(infoBean.getType());
         target.setLatestMsgTime(infoBean.getLatestMsgTime());
         target.setLatestMsgId(infoBean.getLatestMsgId());
+        target.setSilence(infoBean.isSilence());
+        target.setBlockNotice(infoBean.isBlockNotice());
     }
 
 
@@ -600,6 +599,60 @@ public class TopicsReponsery {
                 }
             }
         });
+    }
+
+
+    /**
+     * 请求更改 topic 的 配置
+     * 禁言
+     */
+
+    public void updatePublicConfig(final TopicItemBean bean, int speak, final UpdateConfigCallback<TopicItemBean> callback) {
+        mHttpRequestManager.requestUpdatePublicConfig(bean.getTopicId(), speak, new HttpRequestManager.UpdateTopicConfigCallback<ImTopic_new>() {
+            @Override
+            public void onUpdated(ImTopic_new imTopic) {
+                //请求成功返回 imtopic 的最新 info
+                Log.i(TAG, "onUpdated: ");
+                //更新数据库
+                final TopicItemBean infoBean = DatabaseManager.updateDbTopicWithImTopic(imTopic);
+                //更新内存
+                updateBeanInfo(bean,infoBean);
+                callback.onTopicConfigUpdated(bean);
+            }
+
+            @Override
+            public void onFilure(String msg) {
+                Log.i(TAG, "onFilure: ");
+            }
+        });
+    }
+
+    /**
+     * 请求更改 topic 个人设置
+     * 免打扰
+     */
+    public void updatePersonalConfig(final TopicItemBean bean, int quite, final UpdateConfigCallback<TopicItemBean> callback) {
+        mHttpRequestManager.requestUpdatePersonalConfig(bean.getTopicId(), quite, new HttpRequestManager.UpdateTopicConfigCallback<ImTopic_new>() {
+            @Override
+            public void onUpdated(ImTopic_new imTopic) {
+                //请求成功返回 imtopic 的最新 info
+                Log.i(TAG, "onUpdated: ");
+                //更新数据库
+                final TopicItemBean infoBean = DatabaseManager.updateDbTopicWithImTopic(imTopic);
+                //更新内存
+                updateBeanInfo(bean,infoBean);
+                callback.onTopicConfigUpdated(bean);
+            }
+
+            @Override
+            public void onFilure(String msg) {
+                Log.i(TAG, "onFilure: "+msg);
+            }
+        });
+    }
+
+    public interface UpdateConfigCallback<E> {
+        void onTopicConfigUpdated(E topicBean);
     }
 
 

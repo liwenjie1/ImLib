@@ -24,6 +24,7 @@ import com.yanxiu.im.Constants;
 import com.yanxiu.im.R;
 import com.yanxiu.im.bean.ContactsGroupBean;
 import com.yanxiu.im.bean.ContactsMemberBean;
+import com.yanxiu.im.bean.net_bean.ImMember_new;
 import com.yanxiu.im.business.contacts.adapter.ContactsGroupAdapter;
 import com.yanxiu.im.business.contacts.adapter.ContactsMemberAdapter;
 import com.yanxiu.im.business.contacts.interfaces.ContactsContract;
@@ -168,8 +169,12 @@ public class ContactsActivity extends ImBaseActivity implements ContactsContract
                     // 不能给自己发消息
                     return;
                 }
+                //检查数据库
+                final ImMember_new memberInfo = mMemberAdapter.getDatas().get(position).getMemberInfo();
+                final ContactsGroupBean contactsGroupBean = mContactsPresenter.getGroupsBeans().get(mContactsPresenter.getCurrentGroupIndex());
+                mContactsPresenter.checkMemberDbInfo(contactsGroupBean,memberInfo);
                 ImMsgListActivity.invoke(ContactsActivity.this,
-                        mMemberAdapter.getDatas().get(position).getMemberInfo().imId, -1, ImMsgListActivity.REQUEST_CODE_MEMBERID);
+                       memberInfo.imId, -1, ImMsgListActivity.REQUEST_CODE_MEMBERID);
             }
         });
     }
