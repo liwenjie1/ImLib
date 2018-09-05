@@ -9,11 +9,11 @@
         android:id="@+id/avatar_imageview"
         android:layout_width="50dp"
         android:layout_height="50dp"
-        android:src="@drawable/im_chat_default"
         android:layout_alignParentLeft="true"
         android:layout_centerVertical="true"
         android:layout_marginLeft="15dp"
-        android:scaleType="centerCrop" />
+        android:scaleType="centerCrop"
+        android:src="@drawable/im_chat_default" />
 
     <com.yanxiu.im.business.view.RoundCornerMaskView_new
         android:layout_width="50dp"
@@ -27,17 +27,16 @@
 
     <com.yanxiu.im.business.view.CircleView
         android:id="@+id/reddot_circleview"
-        android:visibility="invisible"
         android:layout_width="9dp"
         android:layout_height="9dp"
         android:layout_alignRight="@id/avatar_imageview"
         android:layout_alignTop="@id/avatar_imageview"
         android:layout_marginRight="-4.5dp"
         android:layout_marginTop="-4.5dp"
+        android:visibility="invisible"
         im:circle_color="#ffff0000" />
 
     <LinearLayout
-        android:background="@null"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentRight="true"
@@ -46,16 +45,17 @@
         android:layout_marginRight="15dp"
         android:layout_marginTop="16dp"
         android:layout_toRightOf="@id/avatar_imageview"
+        android:background="@null"
         android:orientation="horizontal">
 
         <TextView
-            android:background="@null"
             android:id="@+id/sender_textview"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
             android:layout_marginRight="10dp"
             android:layout_weight="1"
+            android:background="@null"
             android:ellipsize="end"
             android:lines="1"
             android:textColor="#333333"
@@ -63,12 +63,12 @@
             android:textStyle="bold" />
 
         <TextView
-            android:background="@null"
             android:id="@+id/time_textView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
             android:layout_weight="0"
+            android:background="@null"
             android:lines="1"
             android:textColor="#999999"
             android:textSize="12dp"
@@ -77,21 +77,31 @@
     </LinearLayout>
 
     <TextView
-        android:background="@null"
         android:id="@+id/msg_textview"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:layout_alignParentRight="true"
         android:layout_marginBottom="16dp"
         android:layout_marginLeft="10dp"
         android:layout_marginRight="15dp"
         android:layout_toRightOf="@id/avatar_imageview"
+        android:background="@null"
         android:ellipsize="end"
         android:lines="1"
+        android:layout_toLeftOf="@+id/im_quite_icon"
         android:textColor="#999999"
         android:textSize="13dp"
         android:textStyle="normal" />
+
+    <ImageView
+        android:layout_alignParentBottom="true"
+        android:id="@+id/im_quite_icon"
+        android:layout_width="15dp"
+        android:layout_height="15dp"
+        android:layout_alignParentRight="true"
+        android:layout_marginRight="15dp"
+        android:layout_marginBottom="16dp"
+        android:src="@drawable/im_quite_icon" />
 
     <View
         android:layout_width="match_parent"

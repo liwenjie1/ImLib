@@ -22,14 +22,16 @@ import com.yanxiu.im.business.view.ImSwitchButton;
 import com.yanxiu.im.business.view.ImTitleLayout;
 import com.yanxiu.im.db.DbMember;
 
-public class ImSetingActivity extends ImBaseActivity implements ImTitleLayout.TitlebarActionClickListener, ImSettingContract.IView {
+import java.util.List;
+
+public class ImSettingActivity extends ImBaseActivity implements ImTitleLayout.TitlebarActionClickListener, ImSettingContract.IView {
 
     private final String TAG = getClass().getSimpleName();
 
-    public static void invoke(Activity activity, long topicId) {
-        Intent intent = new Intent(activity, ImSetingActivity.class);
+    public static void invoke(Activity activity, long topicId,int requestCode) {
+        Intent intent = new Intent(activity, ImSettingActivity.class);
         intent.putExtra("topicId", topicId);
-        activity.startActivityForResult(intent, 0);
+        activity.startActivityForResult(intent, requestCode);
     }
 
 
@@ -46,6 +48,8 @@ public class ImSetingActivity extends ImBaseActivity implements ImTitleLayout.Ti
     /*私聊 成员信息 */
     private LinearLayout im_setting_private_info_layout;
     private LinearLayout im_setting_group_info_layout;
+
+    private TextView im_member_from_textview;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,6 +70,8 @@ public class ImSetingActivity extends ImBaseActivity implements ImTitleLayout.Ti
 
         im_setting_private_info_layout = findViewById(R.id.ll_im_setting_private_topic_info);
         im_setting_group_info_layout = findViewById(R.id.ll_group_info);
+
+        im_member_from_textview = findViewById(R.id.im_setting_member_from);
     }
 
 
@@ -106,6 +112,7 @@ public class ImSetingActivity extends ImBaseActivity implements ImTitleLayout.Ti
                 mImSettingPresenter.dosetSilent(topicId, isChecked);
             }
         });
+
     }
 
 
@@ -138,41 +145,74 @@ public class ImSetingActivity extends ImBaseActivity implements ImTitleLayout.Ti
         mImTalkSettingItem.setSwitchBtnChecked(mImSettingPresenter.getSilentSetting());
         //如果是群聊
         if (TextUtils.equals("2", topicBean.getType())) {
-            im_setting_group_info_layout.setVisibility(View.VISIBLE);
-            im_setting_private_info_layout.setVisibility(View.GONE);
-            //设置 群聊信息 名称
-            TextView groupName = findViewById(R.id.im_setting_activity_classname_tv);
-            groupName.setText(topicBean.getGroup() + "");
-            //根据 topic 禁言字段显示 toggle禁言状态
-            //判断当前 im 是否是 topic 的管理员
-            mImTalkSettingItem.setVisibility(View.GONE);
-
+            setGroupTopicInfo(topicBean);
         } else {
-            im_setting_group_info_layout.setVisibility(View.GONE);
-            im_setting_private_info_layout.setVisibility(View.VISIBLE);
-            //设置私聊 对象信息
-            for (DbMember dbMember : topicBean.getMembers()) {
-                if (dbMember.getImId() != Constants.imId) {
-                    ImageView memberAvaral = findViewById(R.id.im_setting_member_avaral);
-
-                    Glide.with(this)
-                            .load(dbMember.getAvatar())
-                            .dontAnimate()
-                            .dontTransform()
-                            .placeholder(R.drawable.im_chat_default)
-                            .into(memberAvaral);
-
-                    TextView memberName = findViewById(R.id.im_setting_member_name);
-                    memberName.setText(dbMember.getName() + "");
-                    break;
-                }
-            }
-            //私聊不存在 禁言
-            mImTalkSettingItem.setVisibility(View.GONE);
+            setPrivateTopicInfo(topicBean);
         }
         //设置是否显示学院禁言功能
-
-
         //设置 toggle state
+        mImNoticeSettingItem.setSwitchBtnChecked(currentTopic.isBlockNotice());
+        mImTalkSettingItem.setSwitchBtnChecked(currentTopic.isSilence());
     }
+
+    @Override
+    public void onFromTopicFound(TopicItemBean fromTopicBean) {
+        if (fromTopicBean != null) {
+            im_member_from_textview.setText(fromTopicBean.getName() + "");
+        }
+    }
+
+    /**
+     * 设置私聊 内容显示
+     */
+    private void setPrivateTopicInfo(TopicItemBean topicBean) {
+        im_setting_group_info_layout.setVisibility(View.GONE);
+        im_setting_private_info_layout.setVisibility(View.VISIBLE);
+        //设置私聊 对象信息
+        for (DbMember dbMember : topicBean.getMembers()) {
+            if (dbMember.getImId() != Constants.imId) {
+                ImageView memberAvaral = findViewById(R.id.im_setting_member_avaral);
+                Glide.with(this)
+                        .load(dbMember.getAvatar())
+                        .dontAnimate()
+                        .dontTransform()
+                        .placeholder(R.drawable.im_chat_default)
+                        .into(memberAvaral);
+
+                TextView memberName = findViewById(R.id.im_setting_member_name);
+                memberName.setText(dbMember.getName() + "");
+                break;
+            }
+        }
+        //私聊没有 禁言功能
+        mImTalkSettingItem.setVisibility(View.GONE);
+        //获取  来自
+        im_member_from_textview.setText(topicBean.getGroup() + "");
+    }
+
+    /**
+     * 设置群聊内容显示
+     */
+    private void setGroupTopicInfo(TopicItemBean topicBean) {
+        im_setting_group_info_layout.setVisibility(View.VISIBLE);
+        im_setting_private_info_layout.setVisibility(View.GONE);
+        //设置 群聊信息 名称
+        TextView groupName = findViewById(R.id.im_setting_activity_classname_tv);
+        groupName.setText(topicBean.getGroup() + "");
+
+        //判断当前 im 是否是 topic 的管理员
+        mImTalkSettingItem.setVisibility(View.GONE);
+        final List<Long> managers = topicBean.getManagers();
+        if (managers != null) {
+            for (Long id : managers) {
+                if (id== Constants.imId) {
+                    //根据 topic 禁言字段显示 toggle禁言状态
+                }
+                    mImTalkSettingItem.setVisibility(View.VISIBLE);
+                    break;
+                }
+        }
+
+    }
+
 }

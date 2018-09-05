@@ -141,7 +141,6 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
         sortInsertTopics(currentTopic.getTopicId());
         //内存 topic 处理完毕 回调 ui 进行显示
         view.onNewMsg();
-
         //判断当前 topic 是否为 mocktopic
         if (DatabaseManager.isMockTopic(currentTopic)) {
             //如果是 mocktopic 先请求创建 realtopic
@@ -178,7 +177,8 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
     }
 
     private void sortInsertTopics(long topicId) {
-        List<TopicItemBean> topics = SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST);
+
+        List<TopicItemBean> topics = TopicsReponsery.getInstance().getTopicInMemory();
         if (topics == null) {
             return;
         }
@@ -273,7 +273,7 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
         }
         //检查是否已经建立了 相同的私聊
         if (DatabaseManager.isMockTopic(currentTopic)) {
-            DatabaseManager.checkAndMigrateMockTopic();
+            DatabaseManager.checkAndMigrateMockTopic(TopicsReponsery.getInstance().getTopicInMemory());
         }
         if (DatabaseManager.isMockTopic(currentTopic)) {
 
@@ -310,10 +310,18 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
 
     @Override
     public void doLoadMore(final TopicItemBean currentTopic) {
-        TopicsReponsery.getInstance().loadPageMsg(currentTopic, new TopicsReponsery.GetMsgPageCallback() {
+        //获取起始 msgid
+        final long startId = TopicInMemoryUtils.getMinImMsgIdInList(currentTopic.getMsgList());
+        TopicsReponsery.getInstance().loadPageMsg(currentTopic, startId, new TopicsReponsery.GetMsgPageCallback() {
             @Override
             public void onGetPage(ArrayList<MsgItemBean> msgs) {
-                view.onLoadMoreFromDb(msgs.size());
+                if (msgs == null) {
+                    view.onLoadMoreFromDb(0);
+                } else {
+                    //TODO 这里进行 业务处理
+                    //TODO 首先判断 topic 是否清楚历史记录标记
+                    view.onLoadMoreFromDb(msgs.size());
+                }
             }
         });
     }
@@ -373,18 +381,29 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
      * 1、私聊已经存在  2、私聊不存在
      */
     @Override
-    public void openPrivateTopicByMember(long memberId, long fromTopicId) {
+    public void openPrivateTopicByMember(final long memberId, String mName, final long fromTopicId) {
         Log.i(TAG, "openPrivateTopicByMember: ");
+        //
+        openPrivateTopic(memberId, mName, fromTopicId);
+
+    }
+
+    private void openPrivateTopic(long memberId, final String mName, long fromTopicId) {
         TopicsReponsery.getInstance().getPrivateTopicByMemberid(memberId, fromTopicId, new TopicsReponsery.GetPrivateTopicCallback<TopicItemBean>() {
             @Override
             public void onFindRealPrivateTopic(TopicItemBean bean) {
+                Log.i(TAG, "onFindRealPrivateTopic: ");
                 //本地有 这个私聊 直接显示
                 view.onRealTopicOpened(bean);
             }
 
             @Override
             public void onNoTargetTopic(String memberName) {
+                Log.i(TAG, "onNoTargetTopic: ");
                 //本地没有这个私聊  进行 title 设置  等待下一步操作
+                if (TextUtils.isEmpty(memberName)) {
+                    memberName = mName;
+                }
                 view.onNewPrivateTopicOpened(memberName);
             }
         });
@@ -449,8 +468,8 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
      * 用于保存 临时对话的 msglist
      */
     @Override
-    public TopicItemBean createMockTopicForMsg(long memberId, long fromTopic) {
-        return TopicsReponsery.getInstance().createMockTopic(fromTopic, memberId);
+    public TopicItemBean createMockTopicForMsg(long memberId, long fromTopic,String memberName) {
+        return TopicsReponsery.getInstance().createMockTopic(fromTopic, memberId,memberName);
     }
 
     /**
@@ -482,7 +501,7 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
     }
 
     public TopicItemBean getTargetTopic(long topicId) {
-        List<TopicItemBean> topics = SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST);
+        List<TopicItemBean> topics = TopicsReponsery.getInstance().getTopicInMemory();
         return TopicInMemoryUtils.findTopicByTopicId(topicId, topics);
     }
 

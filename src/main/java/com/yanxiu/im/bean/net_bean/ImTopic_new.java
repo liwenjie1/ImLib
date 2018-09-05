@@ -132,6 +132,10 @@ public class ImTopic_new {
         // 其余字段暂时不用
         public long memberId;   // 就是imId
         public ImMember_new memberInfo;
+        // topicID
+        public long topicId;
+        //
+        public int memberRole;
     }
 
     public static class PersonalConfigInfoBean {

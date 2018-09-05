@@ -69,11 +69,13 @@ public class RequestQueueManager {
     }
 
     private void removeFromQueue(YXRequestBase request) {
-        for (Object item : items) {
-            final Item<Object> i = (Item<Object>) item;
-            if (i.request == request) {
-                items.remove(i);
-                break;
+        synchronized (items) {
+            for (Object item : items) {
+                final Item<Object> i = (Item<Object>) item;
+                if (i.request == request) {
+                    items.remove(i);
+                    break;
+                }
             }
         }
     }

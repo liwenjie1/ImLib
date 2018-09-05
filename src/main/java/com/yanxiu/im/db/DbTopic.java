@@ -31,6 +31,15 @@ public class DbTopic extends DataSupport {
     private long latestMsgIdWhenDeletedLocalTopic = -1;//本地删除了对话时，最后的消息id
 
     private List<DbMember> members = new ArrayList<>();
+    private List<Long> managers = new ArrayList<>();
+
+    public List<Long> getManagers() {
+        return managers;
+    }
+
+    public void setManagers(List<Long> managers) {
+        this.managers = managers;
+    }
 
     // 只为UI显示用，不做数据库存储用
     @Column(ignore = true)

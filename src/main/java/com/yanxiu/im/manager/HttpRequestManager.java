@@ -1,9 +1,14 @@
 package com.yanxiu.im.manager;
 
+import com.yanxiu.im.Constants;
+import com.yanxiu.im.bean.net_bean.ImMember_new;
 import com.yanxiu.im.bean.net_bean.ImMsg_new;
 import com.yanxiu.im.bean.net_bean.ImTopic_new;
 import com.yanxiu.im.net.GetTopicMsgsRequest_new;
 import com.yanxiu.im.net.GetTopicMsgsResponse_new;
+import com.yanxiu.im.net.ImResponseBase_new;
+import com.yanxiu.im.net.MemberGetMembersRequest_new;
+import com.yanxiu.im.net.MemberGetMembersResponse_new;
 import com.yanxiu.im.net.TopicCreateTopicRequest_new;
 import com.yanxiu.im.net.TopicCreateTopicResponse_new;
 import com.yanxiu.im.net.TopicGetMemberTopicsRequest_new;
@@ -39,6 +44,16 @@ public class HttpRequestManager {
 
             }
         }
+    }
+
+    private boolean retChecker(ImResponseBase_new ret) {
+        if (ret == null) {
+            return false;
+        }
+        if (ret.code != 0) {
+            return false;
+        }
+        return true;
     }
 
     /**
@@ -127,14 +142,13 @@ public class HttpRequestManager {
     /**
      * 获取 topic 的 msg、列表
      */
-    public void requestTopicMsgList(String imToken, long topicId, final GetTopicMsgListCallback<ImMsg_new> callback) {
+    public void requestTopicMsgList(String imToken, long startId, long topicId, final GetTopicMsgListCallback<ImMsg_new> callback) {
         //更新msg
         GetTopicMsgsRequest_new getTopicMsgsRequest = new GetTopicMsgsRequest_new();
         getTopicMsgsRequest.imToken = imToken;
         getTopicMsgsRequest.topicId = Long.toString(topicId);
-        //如果是最新加入的topic 没有消息记录 赋予latestmsgid 为long最大值
-        //由于是获取最新消息 所以 请求startid 采用Long.MAXVALUE
-        getTopicMsgsRequest.startId = String.valueOf(Long.MAX_VALUE);
+        //设置 开始位置的 msgid
+        getTopicMsgsRequest.startId = String.valueOf(startId);
         getTopicMsgsRequest.order = "desc";
         requestQueueManager.addRequest(getTopicMsgsRequest, GetTopicMsgsResponse_new.class, new IYXHttpCallback<GetTopicMsgsResponse_new>() {
             @Override
@@ -144,12 +158,19 @@ public class HttpRequestManager {
 
             @Override
             public void onSuccess(YXRequestBase request, GetTopicMsgsResponse_new ret) {
-                if (ret.code != 0 || ret.data == null || ret.data.topicMsg == null) {
+                if (ret.code != 0 && ret.data != null) {
                     if (callback != null) {
-                        callback.onGetFailure();
+                        callback.onGetFailure(ret.message);
                     }
                     return;
                 }
+                if (ret.data == null || ret.data.topicMsg == null) {
+                    if (callback != null) {
+                        callback.onGetFailure("获取数据错误");
+                    }
+                    return;
+                }
+                //获取正常
                 if (callback != null) {
                     callback.onGetTopicMsgList(ret.data.topicMsg);
                 }
@@ -158,7 +179,7 @@ public class HttpRequestManager {
             @Override
             public void onFail(YXRequestBase request, Error error) {
                 if (callback != null) {
-                    callback.onGetFailure();
+                    callback.onGetFailure(error.getMessage());
                 }
             }
         });
@@ -167,7 +188,7 @@ public class HttpRequestManager {
     public interface GetTopicMsgListCallback<E> {
         void onGetTopicMsgList(List<E> msgList);
 
-        void onGetFailure();
+        void onGetFailure(String msg);
     }
 
 
@@ -230,10 +251,11 @@ public class HttpRequestManager {
     /**
      * 个人配置
      */
-    public void requestUpdatePersonalConfig(long topicId, int quite,final UpdateTopicConfigCallback<ImTopic_new> callback) {
-        UpdatePersonalConfigRequest request=new UpdatePersonalConfigRequest();
-        request.topicId= String.valueOf(topicId);
-        request.quite= String.valueOf(quite);
+    public void requestUpdatePersonalConfig(long topicId, int quite, final UpdateTopicConfigCallback<ImTopic_new> callback) {
+        UpdatePersonalConfigRequest request = new UpdatePersonalConfigRequest();
+        request.topicId = String.valueOf(topicId);
+        request.quite = String.valueOf(quite);
+        request.imToken = Constants.imToken;
         requestQueueManager.addRequest(request, UpdatePersonalConfigResponse.class, new IYXHttpCallback<UpdatePersonalConfigResponse>() {
             @Override
             public void onRequestCreated(Request request) {
@@ -242,7 +264,7 @@ public class HttpRequestManager {
 
             @Override
             public void onSuccess(YXRequestBase request, UpdatePersonalConfigResponse ret) {
-                if (ret.code!=0||ret.getData()==null||ret.getData().getTopic()==null||ret.getData().getTopic().size()==0) {
+                if (ret.code != 0 || ret.getData() == null || ret.getData().getTopic() == null || ret.getData().getTopic().size() == 0) {
                     callback.onFilure("请求失败");
                     return;
                 }
@@ -262,9 +284,10 @@ public class HttpRequestManager {
      * 公共配置
      */
     public void requestUpdatePublicConfig(long topicId, int speak, final UpdateTopicConfigCallback<ImTopic_new> callback) {
-        UpdatePublicConfigRequest request=new UpdatePublicConfigRequest();
-        request.topicId= String.valueOf(topicId);
-        request.speak= String.valueOf(speak);
+        UpdatePublicConfigRequest request = new UpdatePublicConfigRequest();
+        request.topicId = String.valueOf(topicId);
+        request.speak = String.valueOf(speak);
+        request.imToken = Constants.imToken;
         requestQueueManager.addRequest(request, UpdatePublicConfigResponse.class, new IYXHttpCallback<UpdatePublicConfigResponse>() {
             @Override
             public void onRequestCreated(Request request) {
@@ -273,7 +296,7 @@ public class HttpRequestManager {
 
             @Override
             public void onSuccess(YXRequestBase request, UpdatePublicConfigResponse ret) {
-                if (ret.code!=0||ret.getData()==null||ret.getData().getTopic()==null||ret.getData().getTopic().size()==0) {
+                if (ret.code != 0 || ret.getData() == null || ret.getData().getTopic() == null || ret.getData().getTopic().size() == 0) {
                     callback.onFilure("请求失败");
                     return;
                 }
@@ -292,6 +315,57 @@ public class HttpRequestManager {
         void onUpdated(E imTopic);
 
         void onFilure(String msg);
+    }
+
+
+    /**
+     * 请求单独的 immember 信息
+     */
+    public void requestMemberInfo(long memberId, final RequestMemberInfoCallback<ImMember_new> callback) {
+        MemberGetMembersRequest_new request = new MemberGetMembersRequest_new();
+        request.imMemberIds = String.valueOf(memberId);
+        requestQueueManager.addRequest(request, MemberGetMembersResponse_new.class, new IYXHttpCallback<MemberGetMembersResponse_new>() {
+            @Override
+            public void onRequestCreated(Request request) {
+
+            }
+
+            @Override
+            public void onSuccess(YXRequestBase request, MemberGetMembersResponse_new ret) {
+                /*请求失败*/
+                if (!retChecker(ret)) {
+                    if (callback != null) {
+                        callback.onGetMemberInfoFailure(" 请求失败");
+                    }
+                    return;
+                }
+                /*请求成功  返回内容为空*/
+                if (ret.data == null || ret.data.members == null || ret.data.members.size() == 0) {
+                    if (callback != null) {
+                        callback.onGetMemberInfoFailure(" 请求失败");
+                    }
+                    return;
+                }
+
+                final ImMember_new memberNew = ret.data.members.get(0);
+                if (callback != null) {
+                    callback.onGetMemberInfo(memberNew);
+                }
+            }
+
+            @Override
+            public void onFail(YXRequestBase request, Error error) {
+                if (callback != null) {
+                    callback.onGetMemberInfoFailure(" 请求失败");
+                }
+            }
+        });
+    }
+
+    public interface RequestMemberInfoCallback<E> {
+        void onGetMemberInfo(E info);
+
+        void onGetMemberInfoFailure(String msg);
     }
 
 

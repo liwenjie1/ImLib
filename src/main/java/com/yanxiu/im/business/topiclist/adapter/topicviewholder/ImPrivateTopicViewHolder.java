@@ -25,6 +25,7 @@ public class ImPrivateTopicViewHolder<E extends TopicItemBean> extends ImTopicBa
     private TextView latestMsgTime;
     private ImageView topicImage;
     private CircleView redDot;
+    private ImageView quiteImageView;
 
 
     public ImPrivateTopicViewHolder(@NonNull View itemView) {
@@ -34,6 +35,7 @@ public class ImPrivateTopicViewHolder<E extends TopicItemBean> extends ImTopicBa
         latestMsgContent = itemView.findViewById(R.id.msg_textview);
         topicNameTv = itemView.findViewById(R.id.sender_textview);
         redDot = itemView.findViewById(R.id.reddot_circleview);
+        quiteImageView=itemView.findViewById(R.id.im_quite_icon);
     }
     @Override
     public void setData(E data) {
@@ -43,6 +45,7 @@ public class ImPrivateTopicViewHolder<E extends TopicItemBean> extends ImTopicBa
         MsgItemBean latestMsg = data.getLatestMsg();
         setLatestMsgInfo(latestMsg, false);
         redDot.setVisibility(data.isShowDot() ? View.VISIBLE : View.INVISIBLE);
+        quiteImageView.setVisibility(data.isBlockNotice()?View.VISIBLE:View.INVISIBLE);
     }
     @Override
     public void setGroupTopicData(E groupData) {
@@ -101,6 +104,7 @@ public class ImPrivateTopicViewHolder<E extends TopicItemBean> extends ImTopicBa
         msgContent.append(isImage ? "[图片]" : latestMsg.getMsg());
         latestMsgContent.setText(msgContent.toString());
     }
+
 
     //目前没有sender信息 重置
     @Override

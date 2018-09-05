@@ -5,7 +5,6 @@ import android.support.annotation.NonNull;
 import android.util.Log;
 
 import com.orhanobut.logger.Logger;
-import com.test.yanxiu.common_base.utils.SharedSingleton;
 import com.yanxiu.im.Constants;
 import com.yanxiu.im.bean.MsgItemBean;
 import com.yanxiu.im.bean.TopicItemBean;
@@ -478,13 +477,17 @@ public class DatabaseManager {
         topicItemBean.setLatestMsgId(dbTopic_.latestMsgId);
         topicItemBean.setLatestMsgTime(dbTopic_.latestMsgTime);
         topicItemBean.setMsgList(dbTopic_.getMergedMsgs());
+        topicItemBean.setManagers(dbTopic_.getManagers());
 
         topicItemBean.setSilence(dbTopic_.speak == 0);// 0开启禁言 1非禁言
         if (dbTopic_.getPersonalConfig() != null) {
             topicItemBean.setBlockNotice(dbTopic_.getPersonalConfig().getQuite() == 1);//1 开启免打扰 0 关闭免打扰
-        }else {
+        } else {
             topicItemBean.setBlockNotice(false);
         }
+
+        topicItemBean.setAlreadyDeletedLocalTopic(dbTopic_.isAlreadyDeletedLocalTopic());
+        topicItemBean.setLatestMsgIdWhenDeletedLocalTopic(dbTopic_.getLatestMsgIdWhenDeletedLocalTopic());
 
         return topicItemBean;
     }
@@ -605,9 +608,21 @@ public class DatabaseManager {
 //        }
         //更新 member 信息
         long start = System.currentTimeMillis();
+        if (topic.members != null) {
+            //保存管理员信息
+            //获取管理员信息
+            ArrayList<Long> managerIds=new ArrayList<>();
+            for (ImTopic_new.Member member : topic.members) {
+                if (member.memberRole==2) {
+                    managerIds.add(member.memberInfo.imId);
+                }
+            }
+            dbTopic.setManagers(managerIds);
+        }
         updateMembers(dbTopic, topic.members);
 //        Log.i("dbupdate", "更新 member 花费  "+(System.currentTimeMillis()-start));
         updateMembersThatNeedUpdate(dbTopic, topic);
+
         dbTopic.save();
         return changeDbTopicToTopicItemBean(dbTopic);
     }
@@ -770,6 +785,17 @@ public class DatabaseManager {
         dbMember.save();
         return dbMember;
     }
+    /**
+     * 创建一个 member 来组成 mocktopic
+     * */
+    public static DbMember createMockMemberForMockTopic(long memberId, String memberName) {
+        DbMember dbMember = new DbMember();
+        dbMember.setImId(memberId);
+        dbMember.setName(memberName);
+        dbMember.setAvatar("");
+        dbMember.save();
+        return dbMember;
+    }
 
 
     /**
@@ -912,7 +938,7 @@ public class DatabaseManager {
                 "topicId = ? ", String.valueOf(topicItemBean.getTopicId()));
 
         DbTopic dbTopic = getTopicById(topicItemBean.getTopicId());
-        if(dbTopic != null){
+        if (dbTopic != null) {
             dbTopic.setAlreadyDeletedLocalTopic(true);
             dbTopic.setLatestMsgIdWhenDeletedLocalTopic(topicItemBean.getLatestMsgId());
             dbTopic.save();
@@ -992,7 +1018,7 @@ public class DatabaseManager {
      *
      * @return
      */
-    public static void checkAndMigrateMockTopic() {
+    public static void checkAndMigrateMockTopic(List<TopicItemBean> topicList) {
         List<DbTopic> mockTopicList = getMockTopic();
 
         if (mockTopicList != null && !mockTopicList.isEmpty()) {
@@ -1030,7 +1056,7 @@ public class DatabaseManager {
                     long realMemberId2 = realMember2.getImId();
                     if ((mockMemberId1 == realMemberId1 && mockMemberId2 == realMemberId2) || (mockMemberId1 == realMemberId2 && mockMemberId2 == realMemberId1)) {
                         //只要私聊人员相同，那么就是同一个私聊topic
-                        migrateMockTopicToRealTopic(mockTopic, privateRealTopic);
+                        migrateMockTopicToRealTopic(mockTopic, privateRealTopic, topicList);
                         break;
                     }
 
@@ -1047,12 +1073,12 @@ public class DatabaseManager {
      * @param mockTopic
      * @param realTopic
      */
-    private static void migrateMockTopicToRealTopic(@NonNull DbTopic mockTopic, @NonNull DbTopic realTopic) {
+    private static void migrateMockTopicToRealTopic(@NonNull DbTopic mockTopic, @NonNull DbTopic realTopic, List<TopicItemBean> topicList) {
         //1.保留mockTopicId,在修改msg时使用
         long mockTopicId = mockTopic.getTopicId();
 
         //2.通过mockTopicId，在map中找到内存中的topic，
-        List<TopicItemBean> topicList = SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST);
+//        List<TopicItemBean> topicList = SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST);
         TopicItemBean mockTopicItemBean = null;//该对象就是在UI里显示的bean对象， migrate的本质目的就是修改该对象里的数据，保证对象不变。
         for (int i = 0; i < topicList.size(); i++) {
             if (mockTopicId == topicList.get(i).getTopicId()) { //找到对应的topic

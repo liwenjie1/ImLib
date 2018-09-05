@@ -16,7 +16,6 @@ import com.bumptech.glide.GlideBuilder;
 import com.bumptech.glide.load.engine.cache.DiskLruCacheFactory;
 import com.test.yanxiu.common_base.ui.FaceShowBaseFragment;
 import com.test.yanxiu.common_base.ui.PublicLoadLayout;
-import com.test.yanxiu.common_base.utils.SharedSingleton;
 import com.test.yanxiu.common_base.utils.talkingdata.EventUpdate;
 import com.yanxiu.ImConfig;
 import com.yanxiu.im.Constants;
@@ -272,7 +271,7 @@ public class ImTopicListFragment extends FaceShowBaseFragment
 
     @Override
     public void onTopicUpdate(long topicId) {
-        mRecyclerAdapter.notifyDataSetChanged();
+        mRecyclerAdapter.notifyItemChangedByTopicId(topicId);
         //检查红点状态
         topicListPresenter.doCheckRedDot(mRecyclerAdapter.getDataList());
         EventBus.getDefault().post(new MsgListTopicUpdateEvent(topicId));
@@ -348,13 +347,7 @@ public class ImTopicListFragment extends FaceShowBaseFragment
      */
     @Override
     public void onNewMsgReceived(long topicId) {
-        if (SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST) == null) {
-            return;
-        }
-        synchronized (SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST)) {
-            mRecyclerAdapter.setDataList((List<TopicItemBean>) SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST));
-            mRecyclerAdapter.notifyDataSetChanged();
-        }
+        mRecyclerAdapter.notifyDataSetChanged();
         //eventbus 通知 activity更新
         EventBus.getDefault().post(new MsgListNewMsgEvent(topicId));
         topicListPresenter.doCheckRedDot(mRecyclerAdapter.getDataList());
@@ -379,7 +372,7 @@ public class ImTopicListFragment extends FaceShowBaseFragment
             topicListPresenter.doAddedToTopic(event.topicId, true);
         } else if (event.type == MqttProtobufManager.TopicChange.RemoveFrom) { //topic删除某个成员
             //检查 是否是自己被移除  两种结果  1、自己被移除 2、其他成员被移除 通过不同的方法回调
-            topicListPresenter.checkUserRemove(event.topicId, mRecyclerAdapter.getDataList());
+            topicListPresenter.checkUserRemove(event.topicId);
         }
     }
 
@@ -400,18 +393,9 @@ public class ImTopicListFragment extends FaceShowBaseFragment
         mqttConnectPresenter.unsubScribeTopic(topicId);
         /*学员端 刷新界面*/
         if (Constants.APP_TYPE == Constants.APP_TYPE_STUDENT) {
-            if (SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST) == null) {
-                return;
-            }
-
-            synchronized (SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST)) {
-                mRecyclerAdapter.setDataList((List<TopicItemBean>) SharedSingleton.getInstance().get(SharedSingleton.KEY_TOPIC_LIST));
-                mRecyclerAdapter.notifyDataSetChanged();
-            }
+            mRecyclerAdapter.notifyDataSetChanged();
             final TopicItemBean topic = TopicInMemoryUtils.findTopicByTopicId(topicId, mRecyclerAdapter.getDataList());
             Toast.makeText(getActivity(), "【已被移出" + topicName + "】", Toast.LENGTH_SHORT).show();
-
-
         }
         //eventbus 通知 MsgListActivity 如果被删除的topic正在展示，关闭topic对应的聊天界面
         //这里学员端和管理端有区别 学员端需要 退出 msglist 界面 管理端 只需要需要更新 member 信息
