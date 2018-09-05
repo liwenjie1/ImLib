@@ -351,8 +351,12 @@ public class TopicsReponsery {
         target.setType(infoBean.getType());
         target.setLatestMsgTime(infoBean.getLatestMsgTime());
         target.setLatestMsgId(infoBean.getLatestMsgId());
+        //免打扰和禁言
         target.setSilence(infoBean.isSilence());
         target.setBlockNotice(infoBean.isBlockNotice());
+        //删除历史记录标志
+        target.setLatestMsgIdWhenDeletedLocalTopic(infoBean.getLatestMsgIdWhenDeletedLocalTopic());
+        target.setAlreadyDeletedLocalTopic(infoBean.isAlreadyDeletedLocalTopic());
     }
 
 

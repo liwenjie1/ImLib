@@ -478,12 +478,16 @@ public class DatabaseManager {
         topicItemBean.setLatestMsgTime(dbTopic_.latestMsgTime);
         topicItemBean.setMsgList(dbTopic_.getMergedMsgs());
         topicItemBean.setManagers(dbTopic_.getManagers());
+
         topicItemBean.setSilence(dbTopic_.speak == 0);// 0开启禁言 1非禁言
         if (dbTopic_.getPersonalConfig() != null) {
             topicItemBean.setBlockNotice(dbTopic_.getPersonalConfig().getQuite() == 1);//1 开启免打扰 0 关闭免打扰
         } else {
             topicItemBean.setBlockNotice(false);
         }
+
+        topicItemBean.setAlreadyDeletedLocalTopic(dbTopic_.isAlreadyDeletedLocalTopic());
+        topicItemBean.setLatestMsgIdWhenDeletedLocalTopic(dbTopic_.getLatestMsgIdWhenDeletedLocalTopic());
 
         return topicItemBean;
     }

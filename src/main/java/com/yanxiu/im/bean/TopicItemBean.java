@@ -25,6 +25,9 @@ public class TopicItemBean extends YXBaseBean {
 
     private List<DbMember> members = new ArrayList<>();
 
+    /*删除历史记录*/
+    private boolean alreadyDeletedLocalTopic = false;//本地删除了对话,默认为false
+    private long latestMsgIdWhenDeletedLocalTopic = -1;//本地删除了对话时，最后的消息id
 
     private long latestMsgId;
     private long latestMsgTime;
@@ -33,6 +36,22 @@ public class TopicItemBean extends YXBaseBean {
     /*禁言和免打扰*/
     private boolean silence;//禁言
     private boolean blockNotice;//免打扰
+
+    public boolean isAlreadyDeletedLocalTopic() {
+        return alreadyDeletedLocalTopic;
+    }
+
+    public void setAlreadyDeletedLocalTopic(boolean alreadyDeletedLocalTopic) {
+        this.alreadyDeletedLocalTopic = alreadyDeletedLocalTopic;
+    }
+
+    public long getLatestMsgIdWhenDeletedLocalTopic() {
+        return latestMsgIdWhenDeletedLocalTopic;
+    }
+
+    public void setLatestMsgIdWhenDeletedLocalTopic(long latestMsgIdWhenDeletedLocalTopic) {
+        this.latestMsgIdWhenDeletedLocalTopic = latestMsgIdWhenDeletedLocalTopic;
+    }
 
     //管理员
     private List<Long> managers = new ArrayList<>();
