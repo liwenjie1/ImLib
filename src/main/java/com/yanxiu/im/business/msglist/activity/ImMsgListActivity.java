@@ -71,27 +71,6 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
     public final static int REQUEST_CODE_MEMBERID = 0X12;
     public final static int REQUEST_CODE_TOPICID = 0X13;
 
-
-    /**
-     * 这个方法一般为 由通讯录、群聊进入私聊界面
-     * <p>
-     * 传入点击的memberId
-     * 查找对应的用户，并获取对应的私聊topic 如果没有私聊 需要创建本地临时topic 并由底层进行http创建后进行
-     * 内容更新
-     *
-     * @param activity
-     * @param memberId
-     * @param requestCode
-     * @deprecated
-     */
-    public static void invoke(Activity activity, long memberId, long fromTopicId, int requestCode) {
-        Intent intent = new Intent(activity, ImMsgListActivity.class);
-        intent.putExtra("memberId", memberId);
-        intent.putExtra("fromTopicId", fromTopicId);
-        intent.putExtra("requestCode", requestCode);
-        activity.startActivityForResult(intent, requestCode);
-    }
-
     /**
      * 由 app 通讯录 或 IM 通讯录 点击用户头像进入 对话页面
      * {@link com.yanxiu.im.business.contacts.activity.ContactsActivity}

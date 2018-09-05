@@ -141,7 +141,6 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
         sortInsertTopics(currentTopic.getTopicId());
         //内存 topic 处理完毕 回调 ui 进行显示
         view.onNewMsg();
-
         //判断当前 topic 是否为 mocktopic
         if (DatabaseManager.isMockTopic(currentTopic)) {
             //如果是 mocktopic 先请求创建 realtopic
