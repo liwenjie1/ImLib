@@ -191,7 +191,14 @@ public class TopicsReponsery {
                 }
                 deleteFromMemory(toBeDel);
                 Log.i(TAG, "onSuccess: 完成列表内删除 -" + toBeDel.size());
+                /*合并可以 合并的 mocktopic */
+                Log.i(TAG, "onGetTopicList: 检查本地 mocktopic ");
+                synchronized (topicInMemory) {
+                    DatabaseManager.checkAndMigrateMockTopic(topicInMemory);
+                }
+
                 /*对列表的长度以及 信息 更新已经完成 可以回调 给 ui 列表更新完毕*/
+                Log.i(TAG, "onGetTopicList: 回调 UI 更新列表显示");
                 uiHandler.post(new Runnable() {
                     @Override
                     public void run() {
@@ -361,6 +368,7 @@ public class TopicsReponsery {
             @Override
             public void onGetTopicMembers(ImTopic_new topicWithMembers) {
                 Log.i(TAG, "onGetTopicMembers: ");
+
                 final TopicItemBean dbTopic = DatabaseManager.updateDbTopicWithImTopic(topicWithMembers);
                 uiHandler.post(new Runnable() {
                     @Override

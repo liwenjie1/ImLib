@@ -35,13 +35,13 @@ public class TopicItemBean extends YXBaseBean {
     private boolean blockNotice;//免打扰
 
     //管理员
-    private List<DbMember> managers = new ArrayList<>();
+    private List<Long> managers = new ArrayList<>();
 
-    public List<DbMember> getManagers() {
+    public List<Long> getManagers() {
         return managers;
     }
 
-    public void setManagers(List<DbMember> managers) {
+    public void setManagers(List<Long> managers) {
         this.managers = managers;
     }
 

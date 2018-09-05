@@ -141,6 +141,8 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
     }
 
 
+
+
     private RecyclerView im_msglist_recyclerview;
     private ImMsgListDecorateAdapter<MsgItemBean> msgRecyclerAdapter;
     private ImageView cameraView;
@@ -160,7 +162,6 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
         initListener();
         initImagePicker();
         EventBus.getDefault().register(this);
-
     }
 
 
@@ -501,6 +502,7 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
     private static final int IMAGE_PICKER = 0x03;
     private static final int REQUEST_CODE_SELECT = 0x04;
     private static final int REQUEST_CODE_LOAD_BIG_IMG = 0x05;
+    private static final int REQUEST_CODE_SETTING = 0x06;
     private boolean shouldScrollToBottom = true;
 
     @Override
@@ -508,6 +510,11 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
         super.onActivityResult(requestCode, resultCode, data);
         Log.i(TAG, "onActivityResult: ");
         switch (requestCode) {
+            case REQUEST_CODE_SETTING:
+                if (currentTopic != null) {
+                    showSlientNotice(currentTopic.isSilence());
+                }
+                break;
             case REQUEST_CODE_MEMBERID:
                 msgRecyclerAdapter.notifyDataSetChanged();
             case REQUEST_CODE_LOAD_BIG_IMG:
@@ -848,10 +855,13 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
      */
     @Override
     public void onRightComponpentClicked() {
-        // TODO mockTopic 与 空 topic 的处理
+        // TODO mockTopic 与 空 topic 的处理 如果是空 和 mock topic 也可以进行设置
+
+        //跳转到设置界面
         if (currentTopic != null) {
-            //跳转到设置界面
-            ImSettingActivity.invoke(ImMsgListActivity.this, currentTopic.getTopicId());
+            ImSettingActivity.invoke(ImMsgListActivity.this, currentTopic.getTopicId(),REQUEST_CODE_SETTING);
+        } else {
+            ImSettingActivity.invoke(ImMsgListActivity.this, -1,REQUEST_CODE_SETTING);
         }
     }
 

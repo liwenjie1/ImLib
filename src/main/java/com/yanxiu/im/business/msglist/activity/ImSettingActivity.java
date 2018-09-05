@@ -22,14 +22,16 @@ import com.yanxiu.im.business.view.ImSwitchButton;
 import com.yanxiu.im.business.view.ImTitleLayout;
 import com.yanxiu.im.db.DbMember;
 
+import java.util.List;
+
 public class ImSettingActivity extends ImBaseActivity implements ImTitleLayout.TitlebarActionClickListener, ImSettingContract.IView {
 
     private final String TAG = getClass().getSimpleName();
 
-    public static void invoke(Activity activity, long topicId) {
+    public static void invoke(Activity activity, long topicId,int requestCode) {
         Intent intent = new Intent(activity, ImSettingActivity.class);
         intent.putExtra("topicId", topicId);
-        activity.startActivityForResult(intent, 0);
+        activity.startActivityForResult(intent, requestCode);
     }
 
 
@@ -185,7 +187,7 @@ public class ImSettingActivity extends ImBaseActivity implements ImTitleLayout.T
         //私聊没有 禁言功能
         mImTalkSettingItem.setVisibility(View.GONE);
         //获取  来自
-        mImSettingPresenter.getFromTopicInfo(topicBean.getFromGroup());
+        im_member_from_textview.setText(topicBean.getGroup() + "");
     }
 
     /**
@@ -197,9 +199,20 @@ public class ImSettingActivity extends ImBaseActivity implements ImTitleLayout.T
         //设置 群聊信息 名称
         TextView groupName = findViewById(R.id.im_setting_activity_classname_tv);
         groupName.setText(topicBean.getGroup() + "");
-        //根据 topic 禁言字段显示 toggle禁言状态
+
         //判断当前 im 是否是 topic 的管理员
         mImTalkSettingItem.setVisibility(View.GONE);
+        final List<Long> managers = topicBean.getManagers();
+        if (managers != null) {
+            for (Long id : managers) {
+                if (id== Constants.imId) {
+                    //根据 topic 禁言字段显示 toggle禁言状态
+                }
+                    mImTalkSettingItem.setVisibility(View.VISIBLE);
+                    break;
+                }
+        }
+
     }
 
 }

@@ -477,7 +477,7 @@ public class DatabaseManager {
         topicItemBean.setLatestMsgId(dbTopic_.latestMsgId);
         topicItemBean.setLatestMsgTime(dbTopic_.latestMsgTime);
         topicItemBean.setMsgList(dbTopic_.getMergedMsgs());
-
+        topicItemBean.setManagers(dbTopic_.getManagers());
         topicItemBean.setSilence(dbTopic_.speak == 0);// 0开启禁言 1非禁言
         if (dbTopic_.getPersonalConfig() != null) {
             topicItemBean.setBlockNotice(dbTopic_.getPersonalConfig().getQuite() == 1);//1 开启免打扰 0 关闭免打扰
@@ -604,9 +604,21 @@ public class DatabaseManager {
 //        }
         //更新 member 信息
         long start = System.currentTimeMillis();
+        if (topic.members != null) {
+            //保存管理员信息
+            //获取管理员信息
+            ArrayList<Long> managerIds=new ArrayList<>();
+            for (ImTopic_new.Member member : topic.members) {
+                if (member.memberRole==2) {
+                    managerIds.add(member.memberInfo.imId);
+                }
+            }
+            dbTopic.setManagers(managerIds);
+        }
         updateMembers(dbTopic, topic.members);
 //        Log.i("dbupdate", "更新 member 花费  "+(System.currentTimeMillis()-start));
         updateMembersThatNeedUpdate(dbTopic, topic);
+
         dbTopic.save();
         return changeDbTopicToTopicItemBean(dbTopic);
     }
