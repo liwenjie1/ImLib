@@ -25,10 +25,13 @@ public interface MsgListContract {
          */
         @MainThread
         void onLoadMoreWithMerge(int start, int end);
+
         @MainThread
         void onTopicInfoUpdate();
+
         @MainThread
         void onLoadMoreFromDb(int size);
+
         @MainThread
         void onLoadMoreFromHttp(int size);
 
@@ -59,12 +62,13 @@ public interface MsgListContract {
         void onPushTopicOpend(TopicItemBean tempBean);
 
 
-
         /**
          * 创建新topic失败
          */
         @MainThread
         void onCreateTopicFail();
+
+        void onMockTopicCreated(TopicItemBean mockTopic);
 
     }
 
@@ -106,7 +110,7 @@ public interface MsgListContract {
          *
          * @param memberId 私聊对象 的 memberId
          */
-        void openPrivateTopicByMember(long memberId, long fromTopicId);
+        void openPrivateTopicByMember(long memberId, String memberName, long fromTopicId);
 
         /**
          * 根据topicid 打开topic
@@ -121,7 +125,7 @@ public interface MsgListContract {
         /**
          * 创建mocktopic
          */
-        TopicItemBean createMockTopicForMsg(long memberId, long fromTopic);
+        TopicItemBean createMockTopicForMsg(long memberId, long fromTopic, String memberName);
     }
 
 }

@@ -98,7 +98,7 @@ public class ImSettingPresetner implements ImSettingContract.IPresenter {
                     @Override
                     public void onTopicConfigUpdated(TopicItemBean topicBean) {
                         if (mIView != null) {
-                            mIView.onSetSilent(shouldNotice);
+                            mIView.onSetNotice(shouldNotice);
                         }
                     }
                 });
@@ -106,6 +106,18 @@ public class ImSettingPresetner implements ImSettingContract.IPresenter {
         });
 
 
+    }
+
+    /**
+     * 获取来自 信息
+     */
+    public void getFromTopicInfo(long fromTopicId) {
+        TopicsReponsery.getInstance().getLocalTopic(fromTopicId, new TopicsReponsery.GetTopicItemBeanCallback() {
+            @Override
+            public void onGetTopicItemBean(TopicItemBean bean) {
+                mIView.onFromTopicFound(bean);
+            }
+        });
     }
 
     @Override

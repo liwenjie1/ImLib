@@ -394,7 +394,7 @@ public class TopicsReponsery {
     public void requestLastestMsgPageFromServer(final TopicItemBean itemBean, final GetTopicItemBeanCallback callback) {
         if (checkShouldUpdateMsg(itemBean, callback)) return;
         //请求最新一页  直接设置 最大 Long.value
-        mHttpRequestManager.requestTopicMsgList(Constants.imToken, Long.MAX_VALUE,itemBean.getTopicId(), new HttpRequestManager.GetTopicMsgListCallback<ImMsg_new>() {
+        mHttpRequestManager.requestTopicMsgList(Constants.imToken, Long.MAX_VALUE, itemBean.getTopicId(), new HttpRequestManager.GetTopicMsgListCallback<ImMsg_new>() {
             @Override
             public void onGetTopicMsgList(List<ImMsg_new> msgList) {
                 Log.i(TAG, "onGetTopicMsgList: ");
@@ -451,9 +451,13 @@ public class TopicsReponsery {
         }
         if (resultBean == null) {
             //创建 mocktopic 设计是在发送消息的时候才会进行 mocktopic 的创建 所以这里不能创建
-            //没有找到目标私聊  为了显示 ui 获取 member 信息
+            //没有找到目标私聊  为了显示 ui 获取 member 信息 本地可能没有 member 信息
             final DbMember memberById = DatabaseManager.getMemberById(memberId);
-            callback.onNoTargetTopic(memberById.getName());
+            if (memberById != null) {
+                callback.onNoTargetTopic(memberById.getName());
+            } else {
+                callback.onNoTargetTopic(null);
+            }
         } else {
             callback.onFindRealPrivateTopic(resultBean);
         }
@@ -532,9 +536,16 @@ public class TopicsReponsery {
     /**
      * 创建一个 mocktopic
      */
-    public TopicItemBean createMockTopic(long fromId, long memberId) {
+    public TopicItemBean createMockTopic(long fromId, long memberId, String memberName) {
         Log.i(TAG, "createMockTopic: ");
+        //首先 检查目标 member 是否存在数据库中
+        DbMember mockMember = DatabaseManager.getMemberById(memberId);
+        if (mockMember == null) {
+            DatabaseManager.createMockMemberForMockTopic(memberId, memberName);
+        }
         final TopicItemBean mockTopic = DatabaseManager.createMockTopic(memberId, fromId);
+        mockTopic.setMsgList(new ArrayList<MsgItemBean>());
+
         addToMemory(mockTopic);
         ImTopicSorter.sortByLatestTime(topicInMemory);
         return mockTopic;

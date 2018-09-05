@@ -481,7 +481,7 @@ public class DatabaseManager {
         topicItemBean.setSilence(dbTopic_.speak == 0);// 0开启禁言 1非禁言
         if (dbTopic_.getPersonalConfig() != null) {
             topicItemBean.setBlockNotice(dbTopic_.getPersonalConfig().getQuite() == 1);//1 开启免打扰 0 关闭免打扰
-        }else {
+        } else {
             topicItemBean.setBlockNotice(false);
         }
 
@@ -769,6 +769,17 @@ public class DatabaseManager {
         dbMember.save();
         return dbMember;
     }
+    /**
+     * 创建一个 member 来组成 mocktopic
+     * */
+    public static DbMember createMockMemberForMockTopic(long memberId, String memberName) {
+        DbMember dbMember = new DbMember();
+        dbMember.setImId(memberId);
+        dbMember.setName(memberName);
+        dbMember.setAvatar("");
+        dbMember.save();
+        return dbMember;
+    }
 
 
     /**
@@ -911,7 +922,7 @@ public class DatabaseManager {
                 "topicId = ? ", String.valueOf(topicItemBean.getTopicId()));
 
         DbTopic dbTopic = getTopicById(topicItemBean.getTopicId());
-        if(dbTopic != null){
+        if (dbTopic != null) {
             dbTopic.setAlreadyDeletedLocalTopic(true);
             dbTopic.setLatestMsgIdWhenDeletedLocalTopic(topicItemBean.getLatestMsgId());
             dbTopic.save();
@@ -1029,7 +1040,7 @@ public class DatabaseManager {
                     long realMemberId2 = realMember2.getImId();
                     if ((mockMemberId1 == realMemberId1 && mockMemberId2 == realMemberId2) || (mockMemberId1 == realMemberId2 && mockMemberId2 == realMemberId1)) {
                         //只要私聊人员相同，那么就是同一个私聊topic
-                        migrateMockTopicToRealTopic(mockTopic, privateRealTopic,topicList);
+                        migrateMockTopicToRealTopic(mockTopic, privateRealTopic, topicList);
                         break;
                     }
 
@@ -1046,7 +1057,7 @@ public class DatabaseManager {
      * @param mockTopic
      * @param realTopic
      */
-    private static void migrateMockTopicToRealTopic(@NonNull DbTopic mockTopic, @NonNull DbTopic realTopic,List<TopicItemBean> topicList) {
+    private static void migrateMockTopicToRealTopic(@NonNull DbTopic mockTopic, @NonNull DbTopic realTopic, List<TopicItemBean> topicList) {
         //1.保留mockTopicId,在修改msg时使用
         long mockTopicId = mockTopic.getTopicId();
 

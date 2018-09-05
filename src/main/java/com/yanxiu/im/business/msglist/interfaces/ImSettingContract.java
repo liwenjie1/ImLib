@@ -9,24 +9,27 @@ import com.yanxiu.im.bean.TopicItemBean;
 public interface ImSettingContract {
 
 
-    interface IView{
+    interface IView {
         void onSetSilent(boolean silent);
+
         void onSetNotice(boolean notice);
 
         void onTopicFound(TopicItemBean topicBean);
+
+        void onFromTopicFound(TopicItemBean fromTopicBean);
     }
 
 
-    interface IPresenter{
+    interface IPresenter {
         /**
          * 执行禁言设置
-         * */
-        void dosetSilent(long topicId,boolean silent);
+         */
+        void dosetSilent(long topicId, boolean silent);
+
         /**
          * 执行 免打扰设置
-         *
          */
-        void dosetNotice(long topicId,boolean shouldNotice);
+        void dosetNotice(long topicId, boolean shouldNotice);
 
 
         void doGetTopicInfo(long topicId);

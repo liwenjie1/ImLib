@@ -25,6 +25,7 @@ public class TopicItemBean extends YXBaseBean {
 
     private List<DbMember> members = new ArrayList<>();
 
+
     private long latestMsgId;
     private long latestMsgTime;
     private List<MsgItemBean> msgList = new ArrayList<>();
@@ -32,6 +33,17 @@ public class TopicItemBean extends YXBaseBean {
     /*禁言和免打扰*/
     private boolean silence;//禁言
     private boolean blockNotice;//免打扰
+
+    //管理员
+    private List<DbMember> managers = new ArrayList<>();
+
+    public List<DbMember> getManagers() {
+        return managers;
+    }
+
+    public void setManagers(List<DbMember> managers) {
+        this.managers = managers;
+    }
 
     public boolean isSilence() {
         return silence;

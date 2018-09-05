@@ -319,6 +319,8 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
                 if (msgs == null) {
                     view.onLoadMoreFromDb(0);
                 } else {
+                    //TODO 这里进行 业务处理
+                    //TODO 首先判断 topic 是否清楚历史记录标记
                     view.onLoadMoreFromDb(msgs.size());
                 }
             }
@@ -380,26 +382,14 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
      * 1、私聊已经存在  2、私聊不存在
      */
     @Override
-    public void openPrivateTopicByMember(final long memberId, final long fromTopicId) {
+    public void openPrivateTopicByMember(final long memberId, String mName, final long fromTopicId) {
         Log.i(TAG, "openPrivateTopicByMember: ");
-        //首先检查 member 信息是否完整
-        TopicsReponsery.getInstance().getImMemberInfo(memberId, new TopicsReponsery.GetMemberInfoCallback<DbMember>() {
-            @Override
-            public void onGetMemberInfo(DbMember data) {
-                Log.i(TAG, "onGetMemberInfo: ");
-                //执行打开操作
-                openPrivateTopic(memberId, fromTopicId);
-            }
+        //
+        openPrivateTopic(memberId, mName, fromTopicId);
 
-            @Override
-            public void onGetMemberInfoFailure(String msg) {
-                Log.i(TAG, "onGetMemberInfoFailure: ");
-                //这情况比较少  怎么处理没想好
-            }
-        });
     }
 
-    private void openPrivateTopic(long memberId, long fromTopicId) {
+    private void openPrivateTopic(long memberId, final String mName, long fromTopicId) {
         TopicsReponsery.getInstance().getPrivateTopicByMemberid(memberId, fromTopicId, new TopicsReponsery.GetPrivateTopicCallback<TopicItemBean>() {
             @Override
             public void onFindRealPrivateTopic(TopicItemBean bean) {
@@ -412,6 +402,9 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
             public void onNoTargetTopic(String memberName) {
                 Log.i(TAG, "onNoTargetTopic: ");
                 //本地没有这个私聊  进行 title 设置  等待下一步操作
+                if (TextUtils.isEmpty(memberName)) {
+                    memberName = mName;
+                }
                 view.onNewPrivateTopicOpened(memberName);
             }
         });
@@ -476,8 +469,8 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
      * 用于保存 临时对话的 msglist
      */
     @Override
-    public TopicItemBean createMockTopicForMsg(long memberId, long fromTopic) {
-        return TopicsReponsery.getInstance().createMockTopic(fromTopic, memberId);
+    public TopicItemBean createMockTopicForMsg(long memberId, long fromTopic,String memberName) {
+        return TopicsReponsery.getInstance().createMockTopic(fromTopic, memberId,memberName);
     }
 
     /**

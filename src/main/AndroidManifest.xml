@@ -15,7 +15,7 @@
         <activity
             android:name=".business.contacts.activity.ContactsActivity"
             android:screenOrientation="portrait" />
-        <activity android:name=".business.msglist.activity.ImSetingActivity"></activity>
+        <activity android:name=".business.msglist.activity.ImSettingActivity"></activity>
     </application>
 
 </manifest>

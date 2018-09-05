@@ -7,7 +7,7 @@
     xmlns:item="http://schemas.android.com/apk/res-auto"
     android:background="@color/color_dbdbdb"
     android:orientation="vertical"
-    tools:context="com.yanxiu.im.business.msglist.activity.ImSetingActivity">
+    tools:context="com.yanxiu.im.business.msglist.activity.ImSettingActivity">
 
 
     <com.yanxiu.im.business.view.ImTitleLayout
