@@ -143,8 +143,8 @@ public class ImSettingActivity extends ImBaseActivity implements ImTitleLayout.T
         currentTopic = topicBean;
         im_setting_activity_classname_tv.setText(topicBean.getGroup());
 
-        mImNoticeSettingItem.setSwitchBtnChecked(mImSettingPresenter.getNoticeSetting());
-        mImTalkSettingItem.setSwitchBtnChecked(mImSettingPresenter.getSilentSetting());
+        mImNoticeSettingItem.setSwitchBtnChecked(currentTopic.isBlockNotice());
+        mImTalkSettingItem.setSwitchBtnChecked(currentTopic.isSilence());
         //如果是群聊
         if (TextUtils.equals("2", topicBean.getType())) {
             setGroupTopicInfo(topicBean);
