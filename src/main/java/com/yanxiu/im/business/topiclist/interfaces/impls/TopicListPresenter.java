@@ -114,7 +114,7 @@ public class TopicListPresenter implements TopicListContract.Presenter {
      * 更新每一个 topic 的信息
      * 1、member 2、msglist
      */
-    public void doUpdateTopicInfo() {
+    public void doUpdateAllTopicInfo() {
         TopicsReponsery.getInstance().updateAllTopicInfo(new TopicsReponsery.GetTopicItemBeanCallback() {
             @Override
             public void onGetTopicItemBean(TopicItemBean bean) {
@@ -125,6 +125,23 @@ public class TopicListPresenter implements TopicListContract.Presenter {
             }
         });
     }
+    public void doUpdateTopicInfo(long topicId){
+        TopicsReponsery.getInstance().getLocalTopic(topicId, new TopicsReponsery.GetTopicItemBeanCallback() {
+            @Override
+            public void onGetTopicItemBean(TopicItemBean bean) {
+                //
+                if (bean != null) {
+                    TopicsReponsery.getInstance().updateTopicInfo(bean, new TopicsReponsery.GetTopicItemBeanCallback() {
+                        @Override
+                        public void onGetTopicItemBean(TopicItemBean bean) {
+                            view.onTopicUpdate(bean.getTopicId());
+                        }
+                    });
+                }
+            }
+        });
+    }
+
 
     @Override
     public void doCheckRedDot(List<TopicItemBean> topics) {

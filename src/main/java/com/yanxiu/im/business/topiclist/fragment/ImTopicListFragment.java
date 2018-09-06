@@ -263,7 +263,7 @@ public class ImTopicListFragment extends FaceShowBaseFragment
 
         mRecyclerAdapter.notifyDataSetChanged();
         //检查红点状态
-        topicListPresenter.doUpdateTopicInfo();
+        topicListPresenter.doUpdateAllTopicInfo();
         topicListPresenter.doCheckRedDot(mRecyclerAdapter.getDataList());
         Toast.makeText(getActivity(), "topic 列表更新", Toast.LENGTH_SHORT).show();
 
@@ -368,6 +368,20 @@ public class ImTopicListFragment extends FaceShowBaseFragment
      */
     @Subscribe
     public void onMqttTopicChange(TopicChangEvent event) {
+        switch (event.type) {
+            case AddTo: {
+                topicListPresenter.doAddedToTopic(event.topicId, true);
+            }
+            break;
+            case RemoveFrom: {
+                topicListPresenter.checkUserRemove(event.topicId);
+            }
+            break;
+            case TopicChange: {
+                topicListPresenter.doUpdateTopicInfo(event.topicId);
+            }
+            break;
+        }
         if (event.type == MqttProtobufManager.TopicChange.AddTo) { //有新topic或者topic添加新成员
             topicListPresenter.doAddedToTopic(event.topicId, true);
         } else if (event.type == MqttProtobufManager.TopicChange.RemoveFrom) { //topic删除某个成员
