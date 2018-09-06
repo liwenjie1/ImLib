@@ -160,6 +160,10 @@ public class MqttConnectManager {
             topics[i] = constructTopicStr(topicId[i]);
             qoss[i] = 1;
         }
+
+        if (topicId.length==0) {
+            return;
+        }
         try {
             mMqttClient.subscribe(topics, qoss, applicationContext, new IMqttActionListener() {
                 @Override
