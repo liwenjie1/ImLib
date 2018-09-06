@@ -590,6 +590,7 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
         if (currentTopic != null && event.topicId != currentTopic.getTopicId()) {
             return;
         }
+        showSlientNotice(currentTopic.isSilence());
     }
 
     @Subscribe
