@@ -42,11 +42,11 @@ import com.yanxiu.im.event.MigrateMockTopicEvent;
 import com.yanxiu.im.event.MqttConnectedEvent;
 import com.yanxiu.im.event.MsgListMigrateMockTopicEvent;
 import com.yanxiu.im.event.MsgListNewMsgEvent;
+import com.yanxiu.im.event.MsgListTopicChangeEvent;
 import com.yanxiu.im.event.MsgListTopicRemovedEvent;
 import com.yanxiu.im.event.MsgListTopicUpdateEvent;
 import com.yanxiu.im.event.NewMsgEvent;
 import com.yanxiu.im.event.TopicChangEvent;
-import com.yanxiu.im.manager.MqttProtobufManager;
 import com.yanxiu.lib.yx_basic_library.customize.dialog.CommonDialog;
 import com.yanxiu.lib.yx_basic_library.customize.dialog.CustomBaseDialog;
 
@@ -277,6 +277,12 @@ public class ImTopicListFragment extends FaceShowBaseFragment
         EventBus.getDefault().post(new MsgListTopicUpdateEvent(topicId));
     }
 
+    @Override
+    public void onTopicInfoUpdate(long topicId) {
+        mRecyclerAdapter.notifyItemChangedByTopicId(topicId);
+        EventBus.getDefault().post(new MsgListTopicChangeEvent(topicId));
+    }
+
     /**
      * 执行红点检查 结果回调
      *
@@ -381,12 +387,6 @@ public class ImTopicListFragment extends FaceShowBaseFragment
                 topicListPresenter.doUpdateTopicInfo(event.topicId);
             }
             break;
-        }
-        if (event.type == MqttProtobufManager.TopicChange.AddTo) { //有新topic或者topic添加新成员
-            topicListPresenter.doAddedToTopic(event.topicId, true);
-        } else if (event.type == MqttProtobufManager.TopicChange.RemoveFrom) { //topic删除某个成员
-            //检查 是否是自己被移除  两种结果  1、自己被移除 2、其他成员被移除 通过不同的方法回调
-            topicListPresenter.checkUserRemove(event.topicId);
         }
     }
 

@@ -125,7 +125,8 @@ public class TopicListPresenter implements TopicListContract.Presenter {
             }
         });
     }
-    public void doUpdateTopicInfo(long topicId){
+
+    public void doUpdateTopicInfo(long topicId) {
         TopicsReponsery.getInstance().getLocalTopic(topicId, new TopicsReponsery.GetTopicItemBeanCallback() {
             @Override
             public void onGetTopicItemBean(TopicItemBean bean) {
@@ -134,7 +135,7 @@ public class TopicListPresenter implements TopicListContract.Presenter {
                     TopicsReponsery.getInstance().updateTopicInfo(bean, new TopicsReponsery.GetTopicItemBeanCallback() {
                         @Override
                         public void onGetTopicItemBean(TopicItemBean bean) {
-                            view.onTopicUpdate(bean.getTopicId());
+                            view.onTopicInfoUpdate(bean.getTopicId());
                         }
                     });
                 }
@@ -244,7 +245,7 @@ public class TopicListPresenter implements TopicListContract.Presenter {
             @Override
             public void onFailure(String msg) {
                 //add to 失败
-                Log.i(TAG, "onFailure: "+msg);
+                Log.i(TAG, "onFailure: " + msg);
             }
         });
     }
