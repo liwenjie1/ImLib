@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -28,7 +29,7 @@ public class ImSettingActivity extends ImBaseActivity implements ImTitleLayout.T
 
     private final String TAG = getClass().getSimpleName();
 
-    public static void invoke(Activity activity, long topicId,int requestCode) {
+    public static void invoke(Activity activity, long topicId, int requestCode) {
         Intent intent = new Intent(activity, ImSettingActivity.class);
         intent.putExtra("topicId", topicId);
         activity.startActivityForResult(intent, requestCode);
@@ -138,6 +139,7 @@ public class ImSettingActivity extends ImBaseActivity implements ImTitleLayout.T
 
     @Override
     public void onTopicFound(TopicItemBean topicBean) {
+        Log.i(TAG, "onTopicFound: ");
         currentTopic = topicBean;
         im_setting_activity_classname_tv.setText(topicBean.getGroup());
 
@@ -149,14 +151,11 @@ public class ImSettingActivity extends ImBaseActivity implements ImTitleLayout.T
         } else {
             setPrivateTopicInfo(topicBean);
         }
-        //设置是否显示学院禁言功能
-        //设置 toggle state
-        mImNoticeSettingItem.setSwitchBtnChecked(currentTopic.isBlockNotice());
-        mImTalkSettingItem.setSwitchBtnChecked(currentTopic.isSilence());
     }
 
     @Override
     public void onFromTopicFound(TopicItemBean fromTopicBean) {
+        Log.i(TAG, "onFromTopicFound: ");
         if (fromTopicBean != null) {
             im_member_from_textview.setText(fromTopicBean.getName() + "");
         }
@@ -166,6 +165,7 @@ public class ImSettingActivity extends ImBaseActivity implements ImTitleLayout.T
      * 设置私聊 内容显示
      */
     private void setPrivateTopicInfo(TopicItemBean topicBean) {
+        Log.i(TAG, "setPrivateTopicInfo: ");
         im_setting_group_info_layout.setVisibility(View.GONE);
         im_setting_private_info_layout.setVisibility(View.VISIBLE);
         //设置私聊 对象信息
@@ -194,6 +194,7 @@ public class ImSettingActivity extends ImBaseActivity implements ImTitleLayout.T
      * 设置群聊内容显示
      */
     private void setGroupTopicInfo(TopicItemBean topicBean) {
+        Log.i(TAG, "setGroupTopicInfo: ");
         im_setting_group_info_layout.setVisibility(View.VISIBLE);
         im_setting_private_info_layout.setVisibility(View.GONE);
         //设置 群聊信息 名称
@@ -205,13 +206,15 @@ public class ImSettingActivity extends ImBaseActivity implements ImTitleLayout.T
         final List<Long> managers = topicBean.getManagers();
         if (managers != null) {
             for (Long id : managers) {
-                if (id== Constants.imId) {
+                if (id == Constants.imId) {
                     //根据 topic 禁言字段显示 toggle禁言状态
-                }
                     mImTalkSettingItem.setVisibility(View.VISIBLE);
                     break;
                 }
+            }
         }
+        //外 不设置是否显示 禁言功能
+        mImTalkSettingItem.setVisibility(Constants.showTopicSilent?View.VISIBLE:View.GONE);
 
     }
 

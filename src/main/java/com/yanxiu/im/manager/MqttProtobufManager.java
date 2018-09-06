@@ -49,6 +49,7 @@ public class MqttProtobufManager {
         ImMqttProto.ImMqtt imMqtt = ImMqttProto.ImMqtt.parseFrom(mqttMsg.getData());
 
         switch (imMqtt.getImEvent()) {
+            //topic 有新成员加入
             case EVENT_TOPIC_ADD_MEMBER: {
                 for (ByteString item : imMqtt.getBodyList()) {
                     TopicGetProto.TopicGet topicProto = TopicGetProto.TopicGet.parseFrom(item);
@@ -58,6 +59,7 @@ public class MqttProtobufManager {
                 }
             }
             break;
+            //topic 有成员被移除
             case EVENT_TOPIC_REMOVE_MEMBER: {
                 for (ByteString item : imMqtt.getBodyList()) {
                     TopicGetProto.TopicGet topicProto = TopicGetProto.TopicGet.parseFrom(item);
@@ -67,6 +69,7 @@ public class MqttProtobufManager {
                 }
             }
             break;
+            //topic 收到新消息
             case EVENT_TOPIC_NEWMSG_ARRAVED: {
                 for (ByteString item : imMqtt.getBodyList()) {
                     TopicMsgProto.TopicMsg msgProto = TopicMsgProto.TopicMsg.parseFrom(item);
@@ -87,6 +90,7 @@ public class MqttProtobufManager {
                 }
             }
             break;
+            //topic 信息有更新
             case EVENT_TOPIC_REQUEST_FULLINFO: {
                 for (ByteString item : imMqtt.getBodyList()) {
                     TopicGetProto.TopicGet topicProto = TopicGetProto.TopicGet.parseFrom(item);

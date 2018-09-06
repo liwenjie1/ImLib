@@ -349,7 +349,7 @@ public class MqttConnectManager {
             mMqttClient.connect(options, new IMqttActionListener() {
                 @Override
                 public void onSuccess(IMqttToken asyncActionToken) {
-                    if (isReconnecting) {
+                    if (mReconnectManager != null) {
                         mReconnectManager.cancel();
                     }
                     YXLogger.d(TAG, "connect success");
