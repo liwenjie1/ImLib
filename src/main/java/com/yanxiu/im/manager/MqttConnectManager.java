@@ -354,17 +354,17 @@ public class MqttConnectManager {
                     }
                     YXLogger.d(TAG, "connect success");
                     //连接成功
+                    onlineOrOfflinePublish(1);
+                    if(mQttHeartBeatManager != null ){
+                        mQttHeartBeatManager.cancel();
+                    }
+                    mQttHeartBeatManager = new MqttHeartBeatManager();
+                    mQttHeartBeatManager.start();
+                    //发送 eventbus 通知 mqtt 连接成功
+                    EventBus.getDefault().post(new MqttConnectedEvent());
+                    subscribeMember(Constants.imId);
                     if (connectCallback != null) {
                         connectCallback.onSuccess();
-                        onlineOrOfflinePublish(1);
-                        if(mQttHeartBeatManager != null ){
-                            mQttHeartBeatManager.cancel();
-                        }
-                        mQttHeartBeatManager = new MqttHeartBeatManager();
-                        mQttHeartBeatManager.start();
-                        //发送 eventbus 通知 mqtt 连接成功
-                        EventBus.getDefault().post(new MqttConnectedEvent());
-                        subscribeMember(Constants.imId);
                     }
                 }
 
