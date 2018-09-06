@@ -95,6 +95,49 @@ public class HttpRequestManager {
         void onGetFailure();
     }
 
+    /**
+     * 获取 topic 的详细信息
+     */
+    public void requestTopicInfo(String imToken, String topicId, final GetTopicInfoCallback<ImTopic_new> callback) {
+        com.yanxiu.im.net.TopicGetTopicsRequest_new getTopicsRequest = new com.yanxiu.im.net.TopicGetTopicsRequest_new();
+        getTopicsRequest.imToken = imToken;
+        getTopicsRequest.topicIds = topicId;
+        requestQueueManager.addRequest(getTopicsRequest, com.yanxiu.im.net.TopicGetTopicsResponse_new.class, new IYXHttpCallback<TopicGetTopicsResponse_new>() {
+            @Override
+            public void onRequestCreated(Request request) {
+            }
+
+            @Override
+            public void onSuccess(YXRequestBase request, com.yanxiu.im.net.TopicGetTopicsResponse_new ret) {
+                /*没有 topic 信息*/
+                if (ret.code != 0 || ret.data == null || ret.data.topic == null || ret.data.topic.size() == 0) {
+                    if (callback != null) {
+                        callback.onRequestFailure("请求失败");
+                    }
+                    return;
+                }
+                ImTopic_new imTopic = ret.data.topic.get(0);
+                //将服务器返回的结果保存到数据库 并生成 topicitembean
+                if (callback != null) {
+                    callback.onGetTopicInfo(imTopic);
+                }
+            }
+
+            @Override
+            public void onFail(YXRequestBase request, Error error) {
+                if (callback != null) {
+                    callback.onRequestFailure(error.getMessage() + "");
+                }
+            }
+        });
+
+    }
+
+    public interface GetTopicInfoCallback<E> {
+        void onGetTopicInfo(E data);
+
+        void onRequestFailure(String msg);
+    }
 
     /**
      * 获取 topic 的 member 列表

@@ -114,6 +114,7 @@ public class TopicsReponsery {
                 topicInMemory = new ArrayList<>();
             }
             topicInMemory.add(bean);
+            ImTopicSorter.sortByLatestTime(topicInMemory);
         }
     }
 
@@ -217,6 +218,66 @@ public class TopicsReponsery {
                 });
             }
         });
+    }
+
+
+    /**
+     * 新加入 topic
+     * 首先本地 检查是否已经加入目标 topic
+     * 然后 向服务器请求 topic 信息
+     */
+    public void addToTopic(long topicId, final AddToTopicCallback<TopicItemBean> callback) {
+        //首先检查本地是否已经存在 realtopic
+        TopicItemBean targetTopic = getTopicFromMemory(topicId);
+        if (targetTopic != null) {
+            //本地已经有了 说明已经添加过
+            return;
+        }
+        mHttpRequestManager.requestTopicInfo(Constants.imToken, topicId + "", new HttpRequestManager.GetTopicInfoCallback<ImTopic_new>() {
+            @Override
+            public void onGetTopicInfo(ImTopic_new data) {
+                //获取到 imTopic 信息  with members
+                //保存数据库
+                final TopicItemBean topicItemBean = DatabaseManager.updateDbTopicWithImTopic(data);
+                //加入到 内存 并排序
+                addToMemory(topicItemBean);
+                // 请求最新一页消息列表？
+                requestLastestMsgPageFromServer(topicItemBean, new GetTopicItemBeanCallback() {
+                    @Override
+                    public void onGetTopicItemBean(final TopicItemBean bean) {
+                        if (callback != null) {
+                            uiHandler.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    callback.onAdded(bean);
+                                }
+                            });
+                        }
+                    }
+                });
+            }
+
+            @Override
+            public void onRequestFailure(final String msg) {
+                if (callback != null) {
+                    uiHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            callback.onFailure(msg);
+                        }
+                    });
+
+                }
+            }
+        });
+
+
+    }
+
+    public interface AddToTopicCallback<E> {
+        void onAdded(E topicBean);
+
+        void onFailure(String msg);
     }
 
 
@@ -479,6 +540,24 @@ public class TopicsReponsery {
         void onFindRealPrivateTopic(E bean);
 
         void onNoTargetTopic(String memberName);
+    }
+
+    /**
+     * 在本地 彻底清除 topic 信息
+     */
+    public TopicItemBean removeTopic(long topicId) {
+        //首先判断是否存在
+        final TopicItemBean topicFromMemory = getTopicFromMemory(topicId);
+        final DbTopic topicById = DatabaseManager.getTopicById(topicId);
+        TopicItemBean removedTopic = null;
+        if (topicFromMemory != null) {
+            removedTopic = topicFromMemory;
+            topicInMemory.remove(topicFromMemory);
+        }
+        if (topicById != null) {
+            DatabaseManager.deleteTopicById(topicId);
+        }
+        return removedTopic;
     }
 
 

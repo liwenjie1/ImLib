@@ -185,7 +185,7 @@ public class MqttConnectManager {
         }
     }
 
-    public void subscribeMember(long imId) {
+    private void subscribeMember(long imId) {
         try {
             mMqttClient.subscribe(constructMemberStr(imId), 1, applicationContext, new IMqttActionListener() {
                 @Override
@@ -348,10 +348,10 @@ public class MqttConnectManager {
                     //连接成功
                     if (connectCallback != null) {
                         connectCallback.onSuccess();
-                        //发送 eventbus 通知 mqtt 连接成功
-                        EventBus.getDefault().post(new MqttConnectedEvent());
-                        subscribeMember(Constants.imId);
                     }
+                    //发送 eventbus 通知 mqtt 连接成功
+                    EventBus.getDefault().post(new MqttConnectedEvent());
+                    subscribeMember(Constants.imId);
                 }
 
                 @Override

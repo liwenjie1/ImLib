@@ -3,6 +3,7 @@ package com.yanxiu.im.business.topiclist.interfaces.impls;
 import android.content.Context;
 import android.os.Handler;
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.yanxiu.im.Constants;
 import com.yanxiu.im.TopicsReponsery;
@@ -146,11 +147,12 @@ public class TopicListPresenter implements TopicListContract.Presenter {
 
     @Override
     public void doReceiveNewMsg(MsgItemBean msg) {
+        //底层处理后 发送接收到的消息  首先找到目标 topic
         List<TopicItemBean> topics = TopicsReponsery.getInstance().getTopicInMemory();
         if (topics == null) {
             return;
         }
-
+        //首先找到 msg 对应的 topic
         final TopicItemBean targetTopic = TopicInMemoryUtils.findTopicByTopicId(msg.getTopicId(), topics);
         if (targetTopic.getMsgList() == null) {
             targetTopic.setMsgList(new ArrayList<MsgItemBean>());
@@ -161,8 +163,10 @@ public class TopicListPresenter implements TopicListContract.Presenter {
                 return;
             }
         }
+        //将新收到的 msg 加入的 msg 列表中
         targetTopic.getMsgList().add(0, msg);
-
+        //重置 信息清空标志位
+        targetTopic.resetDeleteFlag();
         //自己的消息 不显示红点
         targetTopic.setShowDot(msg.getSenderId() != Constants.imId);
         targetTopic.setLatestMsgTime(msg.getSendTime());
@@ -183,30 +187,22 @@ public class TopicListPresenter implements TopicListContract.Presenter {
         }
     }
 
+    /**
+     * 执行 移除操作
+     * 操作 由 mqtt 推送的人员变动消息触发
+     * 在执行topicmember 更新后 检查 member 状态 进行调用
+     */
     @Override
     public void doRemoveFromTopic(long topicId) {
-        List<TopicItemBean> topics = TopicsReponsery.getInstance().getTopicInMemory();
-        if (topics == null) {
-            return;
-        }
-        TopicItemBean removedTopic = null;
-        for (TopicItemBean topicItemBean : topics) {
-            if (topicItemBean.getTopicId() == topicId) {
-                removedTopic = topicItemBean;
-                break;
-            }
-        }
-        // TODO: 2018/5/22 删除数据库 中topic信息
-        topics.remove(removedTopic);
+        //在本地数据中移除 topic
+        final TopicItemBean removedTopic = TopicsReponsery.getInstance().removeTopic(topicId);
         if (view != null) {
-            final TopicItemBean finalRemovedTopic = removedTopic;
             mHandler.post(new Runnable() {
                 @Override
                 public void run() {
-                    view.onRemovedFromTopic(finalRemovedTopic.getTopicId(), finalRemovedTopic.getGroup());
+                    view.onRemovedFromTopic(removedTopic.getTopicId(), removedTopic.getGroup());
                 }
             });
-
         }
     }
 
@@ -217,6 +213,23 @@ public class TopicListPresenter implements TopicListContract.Presenter {
             return;
         }
         //在网络请求结果中回调给UI
+        TopicsReponsery.getInstance().addToTopic(topicId, new TopicsReponsery.AddToTopicCallback<TopicItemBean>() {
+            @Override
+            public void onAdded(TopicItemBean topicBean) {
+                if (view != null) {
+                    //这里进行了订阅操作
+                    view.onAddedToTopic(topicBean.getTopicId());
+                    //通知列表有更新
+                    view.onTopicListUpdate();
+                }
+            }
+
+            @Override
+            public void onFailure(String msg) {
+                //add to 失败
+                Log.i(TAG, "onFailure: "+msg);
+            }
+        });
     }
 
 
@@ -243,11 +256,6 @@ public class TopicListPresenter implements TopicListContract.Presenter {
             }
         }
     }
-
-    public void sortTopics(List<TopicItemBean> topics) {
-        ImTopicSorter.sortByLatestTime(topics);
-    }
-
 
     /**
      * RequestQueueManager的回调，用来在http拉取数据结束后，合并mockTopic
