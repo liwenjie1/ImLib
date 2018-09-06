@@ -6,11 +6,15 @@ import android.support.annotation.Nullable;
 import android.text.TextUtils;
 import android.util.Log;
 
+import com.google.protobuf.ByteString;
 import com.yanxiu.im.Constants;
 import com.yanxiu.im.db.ImSpManager;
 import com.yanxiu.im.event.MqttConnectedEvent;
 import com.yanxiu.im.net.PolicyConfigRequest_new;
 import com.yanxiu.im.net.PolicyConfigResponse_new;
+import com.yanxiu.im.protobuf.ImMqttProto;
+import com.yanxiu.im.protobuf.MemberOnlineProto;
+import com.yanxiu.im.protobuf.MqttMsgProto;
 import com.yanxiu.lib.yx_basic_library.YXApplication;
 import com.yanxiu.lib.yx_basic_library.network.IYXHttpCallback;
 import com.yanxiu.lib.yx_basic_library.network.YXRequestBase;
@@ -224,11 +228,15 @@ public class MqttConnectManager {
     public void disconnectMqttServer() {
         if (mMqttClient != null) {
             try {
+                onlineOrOfflinePublish(0);
+                mQttHeartBeatManager.cancel();
                 mMqttClient.disconnect();
             } catch (MqttException e) {
                 e.printStackTrace();
             } catch (NullPointerException e) {
                 YXLogger.e(TAG, e.getMessage());
+            } catch (Exception e){
+                e.printStackTrace();
             }
             mMqttClient = null;
         }
@@ -270,7 +278,7 @@ public class MqttConnectManager {
     private int retryTime = 999;
     private MqttReconnectManager mReconnectManager;
 
-    private MqttReconnectManager mHeartBeat;
+    private MqttHeartBeatManager mQttHeartBeatManager;
 
     /**
      * 连接到 目标mqtt服务器
@@ -346,6 +354,15 @@ public class MqttConnectManager {
                     }
                     YXLogger.d(TAG, "connect success");
                     //连接成功
+                    onlineOrOfflinePublish(1);
+                    if(mQttHeartBeatManager != null ){
+                        mQttHeartBeatManager.cancel();
+                    }
+                    mQttHeartBeatManager = new MqttHeartBeatManager();
+                    mQttHeartBeatManager.start();
+                    //发送 eventbus 通知 mqtt 连接成功
+                    EventBus.getDefault().post(new MqttConnectedEvent());
+                    subscribeMember(Constants.imId);
                     if (connectCallback != null) {
                         connectCallback.onSuccess();
                     }
@@ -402,7 +419,7 @@ public class MqttConnectManager {
         options.setUserName(userName);
         options.setPassword(passWord.toCharArray());
         //定义遗言
-//        options.setWill();
+        options.setWill("im/v1.0/upstream/online", onlineState(1), 0, false);
         return options;
     }
 
@@ -412,6 +429,64 @@ public class MqttConnectManager {
 
         void onFailure();
     }
+
+    /**
+     * APP端的离线、上线事件信息
+     * wiki :http://wiki.yanxiu.com/pages/viewpage.action?pageId=12326692
+     *
+     * @param onlineState 状态：1-在线 0-离线
+     */
+    private byte[] onlineState(int onlineState) {
+        byte[] result = null;
+        try {
+            ByteString member = MemberOnlineProto.MemberOnline.newBuilder()
+                    .setBizSource(22)
+                    .setMemberId(Constants.imId)
+                    .setToken(Constants.imToken)
+                    .setOnlineType(1)
+                    .setOnlineState(onlineState)
+                    .build()
+                    .toByteString();
+
+            ByteString imMqtt = ImMqttProto.ImMqtt.newBuilder()
+                    .setImEvent(90)
+                    .setReqId("2")
+                    .addBody(member)
+                    .build()
+                    .toByteString();
+
+            result = MqttMsgProto.MqttMsg.newBuilder()
+                    .setVersion("1")
+                    .setCodec("2")
+                    .setSecurity("3")
+                    .setType("4")
+                    .setData(imMqtt)
+                    .build().toByteArray();
+            YXLogger.e("mqtt", result.toString());
+        } catch (Exception e) {
+            YXLogger.e("mqtt", e.getMessage());
+            e.printStackTrace();
+        }
+        return result;
+    }
+
+    /**
+     * APP端的离线、上线事件设置
+     * wiki :http://wiki.yanxiu.com/pages/viewpage.action?pageId=12326692
+     *
+     * @param onlineState 状态：1-在线 0-离线
+     */
+    private void onlineOrOfflinePublish(int onlineState) {
+        try {
+            //连接成功，发送信息
+            mMqttClient.publish("im/v1.0/upstream/online", onlineState(onlineState), 0, false);
+        } catch (MqttException e) {
+            e.printStackTrace();
+        }catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
 
 
 }
