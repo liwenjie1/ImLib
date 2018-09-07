@@ -132,9 +132,9 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
     /**
      * 由推送进入 聊天界面
      */
-    public static void invokeByPush(Context context, long topicId, int requestCode) {
+    public static void invokeByPush(Context context, String topicId, int requestCode) {
         Intent intent = new Intent(context, ImMsgListActivity.class);
-        intent.putExtra("topicId", topicId + "");
+        intent.putExtra("topicId", topicId);
         intent.putExtra("requestCode", requestCode);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         context.startActivity(intent);
