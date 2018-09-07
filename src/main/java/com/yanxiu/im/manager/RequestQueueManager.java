@@ -64,7 +64,9 @@ public class RequestQueueManager {
         item.request = request;
         item.clazz = clazz;
         item.callback = queueCallback;
-        items.add(item);
+        synchronized (items) {
+            items.add(item);
+        }
         doNextRequest();
     }
 

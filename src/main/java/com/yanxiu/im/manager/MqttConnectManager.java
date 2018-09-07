@@ -58,7 +58,7 @@ public class MqttConnectManager {
     private final String TAG = getClass().getSimpleName();
 
     //保存所有本机连接的 mqtt 服务器
-    private HashMap<String, MqttAndroidClient> mqttConnections;
+    private HashMap<String, MqttAndroidClient> mqttConnections=new HashMap<>();
 
 
     private MqttAndroidClient mMqttClient;
@@ -102,13 +102,9 @@ public class MqttConnectManager {
              * @param request OkHttp Request
              */
             @Override
-            public void onRequestCreated(Request request) {
-
-            }
-
+            public void onRequestCreated(Request request) { }
             @Override
             public void onSuccess(YXRequestBase request, PolicyConfigResponse_new ret) {
-                YXLogger.d(TAG, "requestMqtt host onSuccess ");
                 String host = null;
                 if (ret.code == 0 && ret.data != null) {
                     ImSpManager.getInstance().setImHost(ret.data.getMqttServer());
@@ -123,7 +119,6 @@ public class MqttConnectManager {
 
             @Override
             public void onFail(YXRequestBase request, Error error) {
-                YXLogger.d(TAG, "requestMqtt host fail ");
                 String oldHost = ImSpManager.getInstance().getImHost();
                 if (!TextUtils.isEmpty(oldHost)) {
                     callback.onGetHost(oldHost);
@@ -160,18 +155,14 @@ public class MqttConnectManager {
             topics[i] = constructTopicStr(topicId[i]);
             qoss[i] = 1;
         }
-        try {
-            mMqttClient.subscribe(topics, qoss, applicationContext, new IMqttActionListener() {
-                @Override
-                public void onSuccess(IMqttToken asyncActionToken) {
-                    Log.i(TAG, "subscribe topic onSuccess: ");
-                }
 
-                @Override
-                public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-                    Log.i(TAG, "subscribe topic onFailure: ");
-                }
-            });
+        if (topicId.length==0) {
+            return;
+        }
+        try {
+            if (mMqttClient != null&&mMqttClient.isConnected()) {
+                mMqttClient.subscribe(topics, qoss);
+            }
         } catch (MqttException e) {
             e.printStackTrace();
         }
@@ -182,26 +173,23 @@ public class MqttConnectManager {
         for (int i = 0; i < topics.length; i++) {
             topics[i] = constructTopicStr(topicId[i]);
         }
+        if (topics==null||topics.length==0) {
+            return;
+        }
         try {
-            mMqttClient.unsubscribe(topics);
+            if (mMqttClient != null&&mMqttClient.isConnected()) {
+                mMqttClient.unsubscribe(topics);
+            }
         } catch (MqttException e) {
             e.printStackTrace();
         }
     }
 
-    public void subscribeMember(long imId) {
+    private void subscribeMember(long imId) {
         try {
-            mMqttClient.subscribe(constructMemberStr(imId), 1, applicationContext, new IMqttActionListener() {
-                @Override
-                public void onSuccess(IMqttToken asyncActionToken) {
-                    Log.i(TAG, "subscribe member onSuccess: ");
-                }
-
-                @Override
-                public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-                    Log.i(TAG, "subscribe member onFailure: ");
-                }
-            });
+            if (mMqttClient != null&&mMqttClient.isConnected()) {
+                mMqttClient.subscribe(constructMemberStr(imId), 1);
+            }
         } catch (MqttException e) {
             e.printStackTrace();
         }
@@ -209,7 +197,9 @@ public class MqttConnectManager {
 
     public void unsubscribeMember(long imId) {
         try {
-            mMqttClient.unsubscribe(constructMemberStr(imId));
+            if (mMqttClient != null&&mMqttClient.isConnected()) {
+                mMqttClient.unsubscribe(constructMemberStr(imId));
+            }
         } catch (MqttException e) {
             e.printStackTrace();
         }
@@ -226,6 +216,7 @@ public class MqttConnectManager {
 
 
     public void disconnectMqttServer() {
+        Log.i(TAG, "disconnectMqttServer: ");
         if (mMqttClient != null) {
             try {
                 onlineOrOfflinePublish(0);
@@ -239,6 +230,7 @@ public class MqttConnectManager {
                 e.printStackTrace();
             }
             mMqttClient = null;
+            Log.i(TAG, "disconnectMqttServer: set mqttClient null");
         }
     }
 
@@ -285,6 +277,7 @@ public class MqttConnectManager {
      * 哪里需要 mqtt 哪里调用  基本为  ImTopicListFragment 与  MsgListActivity 部分会使用
      */
     public void connectMqttServer(@NonNull String host, final MqttServerConnectCallback connectCallback) {
+        Log.i(TAG, "connectMqttServer: ");
         if (TextUtils.isEmpty(host)) {
             if (connectCallback != null) {
                 connectCallback.onFailure();
@@ -297,7 +290,7 @@ public class MqttConnectManager {
         if (mMqttClient != null && mMqttClient.isConnected()) {
             return;
         }
-        disconnectClientOnExsist();
+        Log.i(TAG, "disconnectMqttServer: connect ");
         mMqttClient = new MqttAndroidClient(applicationContext, "tcp://" + host, createClientId());
         //保存....
         mqttConnections.put(host, mMqttClient);
@@ -349,7 +342,7 @@ public class MqttConnectManager {
             mMqttClient.connect(options, new IMqttActionListener() {
                 @Override
                 public void onSuccess(IMqttToken asyncActionToken) {
-                    if (isReconnecting) {
+                    if (mReconnectManager != null) {
                         mReconnectManager.cancel();
                     }
                     YXLogger.d(TAG, "connect success");
@@ -366,6 +359,9 @@ public class MqttConnectManager {
                     if (connectCallback != null) {
                         connectCallback.onSuccess();
                     }
+                    //发送 eventbus 通知 mqtt 连接成功
+                    EventBus.getDefault().post(new MqttConnectedEvent());
+                    subscribeMember(Constants.imId);
                 }
 
                 @Override

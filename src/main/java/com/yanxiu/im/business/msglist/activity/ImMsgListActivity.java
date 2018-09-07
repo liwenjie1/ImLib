@@ -590,6 +590,7 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
         if (currentTopic != null && event.topicId != currentTopic.getTopicId()) {
             return;
         }
+        showSlientNotice(currentTopic.isSilence());
     }
 
     @Subscribe
@@ -771,6 +772,7 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
         //打开一个 本地存在的 realtopic
         currentTopic = realBean;
         setTitlemsg(realBean);
+        showSlientNotice(currentTopic.isSilence());
     }
 
     @Override

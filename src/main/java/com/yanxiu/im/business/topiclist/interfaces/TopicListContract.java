@@ -14,6 +14,7 @@ public interface TopicListContract {
         void onGetDbTopicList(List<E> dbTopicList);
         void onTopicListUpdate();
         void onTopicUpdate(long topicId);
+        void onTopicInfoUpdate(long topicId);
         void onNewMsgReceived(long topicId);
 
 

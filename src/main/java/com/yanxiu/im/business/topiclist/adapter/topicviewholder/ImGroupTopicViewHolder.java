@@ -53,6 +53,7 @@ public class ImGroupTopicViewHolder<E extends TopicItemBean> extends ImTopicBase
         //设置topic name
         String groupName = groupData.getGroup();
         topicNameTv.setText("班级群聊(" + groupName + ")");
+        setItemVisiable(!groupData.isAlreadyDeletedLocalTopic());
     }
 
     @Override

@@ -42,11 +42,11 @@ import com.yanxiu.im.event.MigrateMockTopicEvent;
 import com.yanxiu.im.event.MqttConnectedEvent;
 import com.yanxiu.im.event.MsgListMigrateMockTopicEvent;
 import com.yanxiu.im.event.MsgListNewMsgEvent;
+import com.yanxiu.im.event.MsgListTopicChangeEvent;
 import com.yanxiu.im.event.MsgListTopicRemovedEvent;
 import com.yanxiu.im.event.MsgListTopicUpdateEvent;
 import com.yanxiu.im.event.NewMsgEvent;
 import com.yanxiu.im.event.TopicChangEvent;
-import com.yanxiu.im.manager.MqttProtobufManager;
 import com.yanxiu.lib.yx_basic_library.customize.dialog.CommonDialog;
 import com.yanxiu.lib.yx_basic_library.customize.dialog.CustomBaseDialog;
 
@@ -208,21 +208,18 @@ public class ImTopicListFragment extends FaceShowBaseFragment
 
     //获取数据库数据进行UI 显示
     private void dataInit() {
-        //glide 缓存设置
-        GlideBuilder builder = new GlideBuilder(getContext());
-        File cacheDir = getContext().getExternalCacheDir();//指定的是数据的缓存地址
-        int diskCacheSize = 1024 * 1024 * 200;//磁盘缓存 200M
-        builder.setDiskCache(new DiskLruCacheFactory(cacheDir.getPath(), "glide", diskCacheSize));
-
-        im_topiclist_fragment_recyclerview.setAdapter(mRecyclerAdapter);
-        mImTitleLayout.setTitle("聊聊");
-
+        glideInit();
+        // 角色设置
         if (Constants.APP_TYPE == Constants.APP_TYPE_UNDEFINE) {
             throw new IllegalStateException("没有设置im模块 调用者的 客户端type （学员端还是管理端）");
         }
         if (Constants.showContacts) {
             mImTitleLayout.setTitleRightText("通讯录");
         }
+
+        im_topiclist_fragment_recyclerview.setAdapter(mRecyclerAdapter);
+        mImTitleLayout.setTitle("聊聊");
+
         //检查 im 部分的 info 情况
         if (ImConfig.isHasInitialazed()) {
             //获取topiclist 在onGetDbTopicList 中回调
@@ -232,6 +229,14 @@ public class ImTopicListFragment extends FaceShowBaseFragment
             mImTitleLayout.enableRightBtn(false);
             mPublicLoadLayout.showOtherErrorView("服务器连接失败，请重新登录");
         }
+    }
+
+    private void glideInit() {
+        //glide 缓存设置
+        GlideBuilder builder = new GlideBuilder(getContext());
+        File cacheDir = getContext().getExternalCacheDir();//指定的是数据的缓存地址
+        int diskCacheSize = 1024 * 1024 * 200;//磁盘缓存 200M
+        builder.setDiskCache(new DiskLruCacheFactory(cacheDir.getPath(), "glide", diskCacheSize));
     }
 
     //region MVP ui层回调
@@ -262,10 +267,10 @@ public class ImTopicListFragment extends FaceShowBaseFragment
         mqttConnectPresenter.subscribeTopics(topicListPresenter.getTopicInMemory());
 
         mRecyclerAdapter.notifyDataSetChanged();
+        //更新所有 topic 的 member 与 msg 信息
+        topicListPresenter.doUpdateAllTopicInfo();
         //检查红点状态
-        topicListPresenter.doUpdateTopicInfo();
         topicListPresenter.doCheckRedDot(mRecyclerAdapter.getDataList());
-        Toast.makeText(getActivity(), "topic 列表更新", Toast.LENGTH_SHORT).show();
 
     }
 
@@ -275,6 +280,12 @@ public class ImTopicListFragment extends FaceShowBaseFragment
         //检查红点状态
         topicListPresenter.doCheckRedDot(mRecyclerAdapter.getDataList());
         EventBus.getDefault().post(new MsgListTopicUpdateEvent(topicId));
+    }
+
+    @Override
+    public void onTopicInfoUpdate(long topicId) {
+        mRecyclerAdapter.notifyItemChangedByTopicId(topicId);
+        EventBus.getDefault().post(new MsgListTopicChangeEvent(topicId));
     }
 
     /**
@@ -335,7 +346,6 @@ public class ImTopicListFragment extends FaceShowBaseFragment
         Log.i("mqtt", "onMqttConnected: ");
         //mqtt 服务器连接通知 通知后 刷新数据列表
         topicListPresenter.doTopicListUpdate();
-        Toast.makeText(getActivity(), "mqtt 连接成功", Toast.LENGTH_SHORT).show();
     }
 
 
@@ -368,11 +378,19 @@ public class ImTopicListFragment extends FaceShowBaseFragment
      */
     @Subscribe
     public void onMqttTopicChange(TopicChangEvent event) {
-        if (event.type == MqttProtobufManager.TopicChange.AddTo) { //有新topic或者topic添加新成员
-            topicListPresenter.doAddedToTopic(event.topicId, true);
-        } else if (event.type == MqttProtobufManager.TopicChange.RemoveFrom) { //topic删除某个成员
-            //检查 是否是自己被移除  两种结果  1、自己被移除 2、其他成员被移除 通过不同的方法回调
-            topicListPresenter.checkUserRemove(event.topicId);
+        switch (event.type) {
+            case AddTo: {
+                topicListPresenter.doAddedToTopic(event.topicId, true);
+            }
+            break;
+            case RemoveFrom: {
+                topicListPresenter.checkUserRemove(event.topicId);
+            }
+            break;
+            case TopicChange: {
+                topicListPresenter.doUpdateTopicInfo(event.topicId);
+            }
+            break;
         }
     }
 

@@ -74,6 +74,7 @@ public class ImPrivateTopicViewHolder<E extends TopicItemBean> extends ImTopicBa
             YXLogger.e(getClass().getSimpleName(), "topic的member信息为空");
             loadTopicAvaral(topicImage, "");
         }
+        setItemVisiable(!privateData.isAlreadyDeletedLocalTopic());
     }
     @Override
     public void setLatestMsgInfo(MsgItemBean latestMsg, boolean showSenderName) {
