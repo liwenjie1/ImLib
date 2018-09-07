@@ -398,25 +398,24 @@ public class TopicsReponsery {
             } else {
                 callback.onGetTopicItemBean(bean);
             }
-            return;
-        }
-        requestTopicMemberInfoFromServer(bean, new GetTopicItemBeanCallback() {
-            @Override
-            public void onGetTopicItemBean(TopicItemBean beanCreateFromDB) {
-                Log.i(TAG, "onGetTopicItemBean: ");
-                if (beanCreateFromDB != null) {
-                    //更新 target 的 info
-                    updateMemberInfo(bean, beanCreateFromDB);
-                    updateBeanInfo(bean, beanCreateFromDB);
-                    //获取最新 member 信息后 通知更新
-//                    callback.onGetTopicItemBean(bean);
-                    //继续请求 msg 信息 之后回调 ui
-                    if (checkShouldUpdateMsg(bean, callback)) {
-                        requestLastestMsgPageFromServer(bean, callback);
+        }else {//需要更新 member
+            requestTopicMemberInfoFromServer(bean, new GetTopicItemBeanCallback() {
+                @Override
+                public void onGetTopicItemBean(TopicItemBean beanCreateFromDB) {
+                    Log.i(TAG, "onGetTopicItemBean: ");
+                    if (beanCreateFromDB != null) {
+                        //更新 target 的 info
+                        updateMemberInfo(bean, beanCreateFromDB);
+                        updateBeanInfo(bean, beanCreateFromDB);
+                        //获取最新 member 信息后 通知更新
+                        //继续请求 msg 信息 之后回调 ui
+                        if (checkShouldUpdateMsg(bean, callback)) {
+                            requestLastestMsgPageFromServer(bean, callback);
+                        }
                     }
                 }
-            }
-        });
+            });
+        }
     }
 
     /**
