@@ -30,6 +30,7 @@ public class MqttProtobufManager {
         RemoveFrom,//112：主题删除成员
         TopicChange//101 topic设置 更新
     }
+    public static final String TAG="mqttProtobuf";
 
     public static final int EVENT_TOPIC_SET_QUITE = 102;
     public static final int EVENT_TOPIC_ADD_MEMBER = 111;
@@ -47,10 +48,11 @@ public class MqttProtobufManager {
         //if (mqttMsg.getType() == "xxx") {
         // 是im的消息
         ImMqttProto.ImMqtt imMqtt = ImMqttProto.ImMqtt.parseFrom(mqttMsg.getData());
-
+        Log.i(TAG, "dealWithData: ");
         switch (imMqtt.getImEvent()) {
             //topic 有新成员加入
             case EVENT_TOPIC_ADD_MEMBER: {
+                Log.i(TAG, "dealWithData: ADD MEMBER");
                 for (ByteString item : imMqtt.getBodyList()) {
                     TopicGetProto.TopicGet topicProto = TopicGetProto.TopicGet.parseFrom(item);
                     long topicId = topicProto.getTopicId();
@@ -61,6 +63,7 @@ public class MqttProtobufManager {
             break;
             //topic 有成员被移除
             case EVENT_TOPIC_REMOVE_MEMBER: {
+                Log.i(TAG, "dealWithData: REMOVE MEMBER");
                 for (ByteString item : imMqtt.getBodyList()) {
                     TopicGetProto.TopicGet topicProto = TopicGetProto.TopicGet.parseFrom(item);
                     long topicId = topicProto.getTopicId();
@@ -71,6 +74,7 @@ public class MqttProtobufManager {
             break;
             //topic 收到新消息
             case EVENT_TOPIC_NEWMSG_ARRAVED: {
+                Log.i(TAG, "dealWithData: NEW MSG ARRAVED");
                 for (ByteString item : imMqtt.getBodyList()) {
                     TopicMsgProto.TopicMsg msgProto = TopicMsgProto.TopicMsg.parseFrom(item);
                     ImMsg_new msg = new ImMsg_new();
@@ -92,6 +96,7 @@ public class MqttProtobufManager {
             break;
             //topic 信息有更新
             case EVENT_TOPIC_REQUEST_FULLINFO: {
+                Log.i(TAG, "dealWithData: UPDATE TOPIC INFO");
                 for (ByteString item : imMqtt.getBodyList()) {
                     TopicGetProto.TopicGet topicProto = TopicGetProto.TopicGet.parseFrom(item);
                     long topicId = topicProto.getTopicId();

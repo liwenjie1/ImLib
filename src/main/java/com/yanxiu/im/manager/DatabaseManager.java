@@ -450,6 +450,9 @@ public class DatabaseManager {
         dbTopic.setMembers(topicItemBean.getMembers());
         dbTopic.setLatestMsgId(topicItemBean.getLatestMsgId());
         dbTopic.setLatestMsgTime(topicItemBean.getLatestMsgTime());
+        //清空历史部分的标志 字段
+        dbTopic.setAlreadyDeletedLocalTopic(topicItemBean.isAlreadyDeletedLocalTopic());
+        dbTopic.setLatestMsgIdWhenDeletedLocalTopic(topicItemBean.getLatestMsgIdWhenDeletedLocalTopic());
 //        dbTopic.setMergedMsgs(topicItemBean.getLatestPageMsgList());//消息不能直接覆盖，否则mymsg排序就不对了
 
         return dbTopic.save();
@@ -597,6 +600,7 @@ public class DatabaseManager {
         dbTopic.setGroup(topic.topicGroup);
         dbTopic.setSpeak(topic.getSpeak());
         dbTopic.setPersonalConfig(topic.getPersonalConfigInfo());
+
 //        dbTopic.getMembers().clear();
 //
 //        for (ImTopic_new.Member member : topic.members) {
@@ -665,6 +669,8 @@ public class DatabaseManager {
 
     private static void updateMembers(DbTopic dbTopic, List<ImTopic_new.Member> members) {
         if (members == null || members.size() == 0) {
+            //清空 member 信息
+            dbTopic.setMembers(new ArrayList<DbMember>());
             return;
         }
         StringBuilder url = new StringBuilder();

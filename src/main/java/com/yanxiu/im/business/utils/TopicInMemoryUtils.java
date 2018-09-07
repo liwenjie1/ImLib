@@ -423,4 +423,15 @@ public class TopicInMemoryUtils {
     }
 
 
+    public static void cutoffMsgListByMsgId(long msgId,List<MsgItemBean> msgs){
+        ArrayList<MsgItemBean> msgToBeRemoved=new ArrayList<>();
+        for (MsgItemBean msg : msgs) {
+            if (msg.getRealMsgId()<=msgId) {
+                msgToBeRemoved.add(msg);
+            }
+        }
+        msgs.removeAll(msgToBeRemoved);
+    }
+
+
 }

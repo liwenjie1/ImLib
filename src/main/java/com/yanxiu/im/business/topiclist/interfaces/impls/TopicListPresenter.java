@@ -83,9 +83,6 @@ public class TopicListPresenter implements TopicListContract.Presenter {
     /**
      * 异步方法 结果在网络请求回调中 返回UI
      * 更新用户的topic list
-     * 判断topic.change 来分为两个数组
-     * 一组 change 有变化的 需要更新member列表
-     * 另一组没有 变化的 直接更新msglist
      */
     @Override
     public void doTopicListUpdate(final List<TopicItemBean> topicsFromDb) {
@@ -126,7 +123,7 @@ public class TopicListPresenter implements TopicListContract.Presenter {
         });
     }
 
-    public void doUpdateTopicInfo(long topicId) {
+    public void doUpdateTopicInfo(final long topicId) {
         TopicsReponsery.getInstance().getLocalTopic(topicId, new TopicsReponsery.GetTopicItemBeanCallback() {
             @Override
             public void onGetTopicItemBean(TopicItemBean bean) {
@@ -138,6 +135,10 @@ public class TopicListPresenter implements TopicListContract.Presenter {
                             view.onTopicInfoUpdate(bean.getTopicId());
                         }
                     });
+                }else {
+                    Log.i(TAG, "onGetTopicItemBean: topic 事件  新加入 topic");
+                    //如果 本地没有这个 topic 而又收到了 update 通知 说明是 自己被添加到这个 topic 中
+                    doAddedToTopic(topicId,true);
                 }
             }
         });
@@ -170,8 +171,23 @@ public class TopicListPresenter implements TopicListContract.Presenter {
         if (topics == null) {
             return;
         }
-        //首先找到 msg 对应的 topic
-        final TopicItemBean targetTopic = TopicInMemoryUtils.findTopicByTopicId(msg.getTopicId(), topics);
+        //首先找到 msg 对应的 topic topic list 中可能没有 对应的 topic 因为是被清空历史记录的 topic
+        TopicItemBean targetTopic = TopicInMemoryUtils.findTopicByTopicId(msg.getTopicId(), topics);
+        //在数据库中查找 如果执行了数据查找 可以认为 这是一个被清空历史的topic
+        if (targetTopic == null) {
+            targetTopic = TopicsReponsery.getInstance().getTopicFromDb(msg.getTopicId());
+            if (targetTopic == null) {
+                return;
+            }
+            //重新加入列表
+            topics.add(targetTopic);
+            if (targetTopic.isAlreadyDeletedLocalTopic()) {
+                // todo 是一个清空历史消息的 topic
+            }else {
+                //不是呢？
+            }
+        }
+
         if (targetTopic.getMsgList() == null) {
             targetTopic.setMsgList(new ArrayList<MsgItemBean>());
         }
@@ -183,8 +199,8 @@ public class TopicListPresenter implements TopicListContract.Presenter {
         }
         //将新收到的 msg 加入的 msg 列表中
         targetTopic.getMsgList().add(0, msg);
-        //重置 信息清空标志位
-        targetTopic.resetDeleteFlag();
+        //重置 信息清空标志位 只清空标志位
+        targetTopic.setAlreadyDeletedLocalTopic(false);
         //自己的消息 不显示红点
         targetTopic.setShowDot(msg.getSenderId() != Constants.imId);
         targetTopic.setLatestMsgTime(msg.getSendTime());
@@ -194,15 +210,17 @@ public class TopicListPresenter implements TopicListContract.Presenter {
         //收到新消息后 进行日期处理
         processMsgListDateInfo(targetTopic.getMsgList());
         //通知Ui更新
+        final long topicId=targetTopic.getTopicId();
         if (view != null) {
             mHandler.post(new Runnable() {
                 @Override
                 public void run() {
-                    view.onNewMsgReceived(targetTopic.getTopicId());
+                    view.onNewMsgReceived(topicId);
                 }
             });
 
         }
+
     }
 
     /**
@@ -288,6 +306,7 @@ public class TopicListPresenter implements TopicListContract.Presenter {
         public void requestAllFinish() {
             DatabaseManager.checkAndMigrateMockTopic(TopicsReponsery.getInstance().getTopicInMemory());
         }
+
     }
 
 
@@ -327,7 +346,11 @@ public class TopicListPresenter implements TopicListContract.Presenter {
                         if (bean != null) {
                             //遍历查找 是否自己还在 member 列表中
                             final boolean remain = TopicInMemoryUtils.checkMemberInTopic(Constants.imId, bean);
-                            if (remain) {
+                            if (!remain) {
+                                //自己不再列表中了
+                                //删除
+                                TopicsReponsery.getInstance().removeTopic(topicId);
+                                //回调
                                 view.onRemovedFromTopic(topicId, bean.getName());
                             } else {
                                 view.onOtherMemberRemoveFromTopic(topicId);

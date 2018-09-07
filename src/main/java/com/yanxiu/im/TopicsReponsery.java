@@ -150,31 +150,13 @@ public class TopicsReponsery {
      * 新的 topic list 需要的信息 为 最新的 member 信息  + 最新的 msg 信息
      */
     public void getServerTopicList(final String imToken, final TopicListUpdateCallback<TopicItemBean> callback) {
+        //清空 更新对象列表
         needUpdateMemberTopics.clear();
         needUpdateMsgTopics.clear();
+
         mHttpRequestManager.requestUserTopicList(imToken, new HttpRequestManager.GetTopicListCallback<ImTopic_new>() {
             @Override
             public void onGetTopicList(List<ImTopic_new> topicList) {
-                //查找新的 和需要更新的
-                for (ImTopic_new imTopicNew : topicList) {
-                    final TopicItemBean savedBean = DatabaseManager.updateDbTopicWithImTopic(imTopicNew);
-                    boolean has = false;
-                    for (TopicItemBean localTopic : topicInMemory) {
-                        if (localTopic.getTopicId() == imTopicNew.topicId) {
-                            has = true;
-                            //更新已有的
-                            updateBeanInfo(localTopic, savedBean);
-                            break;
-                        }
-                    }
-                    if (!has) {
-                        //添加新增的
-                        addToMemory(savedBean);
-                        needUpdateMsgTopics.add(savedBean);
-                        needUpdateMemberTopics.add(savedBean);
-                    }
-                }
-                Log.i(TAG, "onSuccess: 完成列表内新增和更新 ");
                 //查找已经删除的
                 ArrayList<TopicItemBean> toBeDel = new ArrayList<>();
                 for (TopicItemBean localBean : topicInMemory) {
@@ -192,6 +174,37 @@ public class TopicsReponsery {
                 }
                 deleteFromMemory(toBeDel);
                 Log.i(TAG, "onSuccess: 完成列表内删除 -" + toBeDel.size());
+
+                //查找新的 和需要更新的
+                for (ImTopic_new imTopicNew : topicList) {
+                    final TopicItemBean savedBean = DatabaseManager.updateDbTopicWithImTopic(imTopicNew);
+                    boolean has = false;
+                    for (TopicItemBean localTopic : topicInMemory) {
+                        if (localTopic.getTopicId() == imTopicNew.topicId) {
+                            has = true;
+                            //是否有 member 更新
+                            if (isMemberUpdate(imTopicNew, localTopic)) {
+                                needUpdateMemberTopics.add(localTopic);
+                            }
+                            //检查是否有 msg 更新
+                            if (isMsgUpdate(imTopicNew, localTopic)) {
+                                needUpdateMsgTopics.add(localTopic);
+                            }
+                            //更新已有的
+                            updateBeanInfo(localTopic, savedBean);
+                            break;
+                        }
+                    }
+                    if (!has) {
+                        //添加新增的
+                        addToMemory(savedBean);
+                        //新的 topic member 与 msg 都需要更新
+                        needUpdateMsgTopics.add(savedBean);
+                        needUpdateMemberTopics.add(savedBean);
+                    }
+                }
+                Log.i(TAG, "onSuccess: 完成列表内新增和更新 ");
+
                 /*合并可以 合并的 mocktopic */
                 Log.i(TAG, "onGetTopicList: 检查本地 mocktopic ");
                 synchronized (topicInMemory) {
@@ -220,6 +233,26 @@ public class TopicsReponsery {
         });
     }
 
+    private boolean isMsgUpdate(ImTopic_new imTopicNew, TopicItemBean localTopic) {
+        final long lid = localTopic.getLatestMsgId();
+        final long sid = imTopicNew.latestMsgId;
+        return lid < sid;
+    }
+
+    private boolean isMemberUpdate(ImTopic_new imTopicNew, TopicItemBean localTopic) {
+        if (localTopic.getMembers() == null || localTopic.getMembers().size() < 2) {
+            //如果本地没有 member 信息
+            return true;
+        }
+        final String lc = localTopic.getChange();
+        final String sc = imTopicNew.topicChange;
+
+        final int localChange = Integer.parseInt(lc);
+        final int serverChange = Integer.parseInt(sc);
+
+        return localChange < serverChange;
+    }
+
 
     /**
      * 新加入 topic
@@ -230,7 +263,7 @@ public class TopicsReponsery {
         //首先检查本地是否已经存在 realtopic
         TopicItemBean targetTopic = getTopicFromMemory(topicId);
         if (targetTopic != null) {
-            //本地已经有了 说明已经添加过
+            //本地已经有了 说明已经添加过 那就是  有新的 member 用户被添加 是否需要跟新 member 信息？
             return;
         }
         mHttpRequestManager.requestTopicInfo(Constants.imToken, topicId + "", new HttpRequestManager.GetTopicInfoCallback<ImTopic_new>() {
@@ -312,7 +345,7 @@ public class TopicsReponsery {
     /**
      * 数据库获取指定 topicbean
      */
-    private TopicItemBean getTopicFromDb(long topicId) {
+    public TopicItemBean getTopicFromDb(long topicId) {
         final DbTopic dbTopic = DatabaseManager.getTopicById(topicId);
         if (dbTopic == null) {
             return null;
@@ -356,6 +389,17 @@ public class TopicsReponsery {
             callback.onGetTopicItemBean(null);
             return;
         }
+        //网络请求 指定 topic 的 member 信息
+        if (!checkShouldUpdateMember(bean, callback)) {
+            Log.i(TAG, "requestTopicMemberInfoFromServer: 不需要更新 member");
+            //检查 msg 是否需要更新
+            if (checkShouldUpdateMsg(bean, callback)) {
+                requestLastestMsgPageFromServer(bean, callback);
+            } else {
+                callback.onGetTopicItemBean(bean);
+            }
+            return;
+        }
         requestTopicMemberInfoFromServer(bean, new GetTopicItemBeanCallback() {
             @Override
             public void onGetTopicItemBean(TopicItemBean beanCreateFromDB) {
@@ -363,11 +407,13 @@ public class TopicsReponsery {
                 if (beanCreateFromDB != null) {
                     //更新 target 的 info
                     updateMemberInfo(bean, beanCreateFromDB);
-                    updateBeanInfo(bean,beanCreateFromDB);
+                    updateBeanInfo(bean, beanCreateFromDB);
                     //获取最新 member 信息后 通知更新
 //                    callback.onGetTopicItemBean(bean);
                     //继续请求 msg 信息 之后回调 ui
-                    requestLastestMsgPageFromServer(bean, callback);
+                    if (checkShouldUpdateMsg(bean, callback)) {
+                        requestLastestMsgPageFromServer(bean, callback);
+                    }
                 }
             }
         });
@@ -399,15 +445,6 @@ public class TopicsReponsery {
      * 用 infoBean 对 target 进行内容的更新
      */
     private void updateBeanInfo(TopicItemBean target, TopicItemBean infoBean) {
-        //红点
-        boolean showUpdateMsg = target.getLatestMsgId() < infoBean.getLatestMsgId();
-        if (showUpdateMsg) needUpdateMsgTopics.add(target);
-        final String localChange = target.getChange();
-        final String serverChange = infoBean.getChange();
-        if (Integer.valueOf(localChange) < Integer.valueOf(serverChange) || target.getMembers() == null || target.getMembers().size() < 2) {
-            needUpdateMemberTopics.add(target);
-        }
-        target.setShowDot(showUpdateMsg);
         target.setGroup(infoBean.getGroup());
         target.setChange(infoBean.getChange());
         target.setTopicId(infoBean.getTopicId());
@@ -429,7 +466,9 @@ public class TopicsReponsery {
      * 如果返回了 topic 数据
      */
     private void requestTopicMemberInfoFromServer(final TopicItemBean bean, final GetTopicItemBeanCallback callback) {
-        if (checkShouldUpdateMember(bean, callback)) return;
+        //member 是否有变化？  有变化的 topic 保存在 updatemember 集合中 检查是否在记录中
+
+        Log.i(TAG, "requestTopicMemberInfoFromServer: 需要更新 member");
 
         mHttpRequestManager.requestTopicMemberList(Constants.imToken, Long.toString(bean.getTopicId()), new HttpRequestManager.GetTopicMemberListCallback<ImTopic_new>() {
             @Override
@@ -437,12 +476,16 @@ public class TopicsReponsery {
                 Log.i(TAG, "onGetTopicMembers: ");
 
                 final TopicItemBean dbTopic = DatabaseManager.updateDbTopicWithImTopic(topicWithMembers);
+                synchronized (needUpdateMemberTopics){
+                    needUpdateMemberTopics.remove(bean);
+                }
                 uiHandler.post(new Runnable() {
                     @Override
                     public void run() {
                         callback.onGetTopicItemBean(dbTopic);
                     }
                 });
+
 
             }
 
@@ -460,14 +503,20 @@ public class TopicsReponsery {
     }
 
     private boolean checkShouldUpdateMember(TopicItemBean bean, GetTopicItemBeanCallback callback) {
-        return false;
+        if (needUpdateMemberTopics == null) {
+            return true;
+        }
+        return needUpdateMemberTopics.contains(bean);
     }
 
     /**
      * 获取最新一页 msg
      */
     public void requestLastestMsgPageFromServer(final TopicItemBean itemBean, final GetTopicItemBeanCallback callback) {
-        if (checkShouldUpdateMsg(itemBean, callback)) return;
+        Log.i(TAG, "requestLastestMsgPageFromServer: ");
+
+        Log.i(TAG, "requestLastestMsgPageFromServer: 需要更新 msg");
+
         //请求最新一页  直接设置 最大 Long.value
         mHttpRequestManager.requestTopicMsgList(Constants.imToken, Long.MAX_VALUE, itemBean.getTopicId(), new HttpRequestManager.GetTopicMsgListCallback<ImMsg_new>() {
             @Override
@@ -487,6 +536,15 @@ public class TopicsReponsery {
                 }
                 TopicInMemoryUtils.duplicateRemoval(msgPages, itemBean.getMsgList());
                 itemBean.getMsgList().addAll(msgPages);
+
+                final boolean b = TopicInMemoryUtils.checkTopicShouldShowRedDot(itemBean, msgPages);
+                itemBean.setShowDot(b);
+                //保存红点状态
+                DatabaseManager.updateTopicWithTopicItemBean(itemBean);
+                //在记录列表中移除
+                synchronized (needUpdateMsgTopics) {
+                    needUpdateMsgTopics.remove(itemBean);
+                }
                 uiHandler.post(new Runnable() {
                     @Override
                     public void run() {
@@ -509,7 +567,11 @@ public class TopicsReponsery {
     }
 
     private boolean checkShouldUpdateMsg(TopicItemBean itemBean, GetTopicItemBeanCallback callback) {
-        return false;
+        if (needUpdateMsgTopics == null) {
+            return true;
+        }
+
+        return needUpdateMsgTopics.contains(itemBean);
     }
 
     /**
@@ -570,10 +632,9 @@ public class TopicsReponsery {
         //删除步骤 1、请求服务器删除 topic成功后  2、 删除数据库 3、同步内存（删除内存中的实例）
         //服务器删除成功
         DatabaseManager.deleteLocalMsgByTopicId(topicItemBean);
-
         callback.onTopicDeleted();
+        topicItemBean.setDeleteFlag();
         TopicInMemoryUtils.removeTopicFromListById(topicItemBean.getTopicId(), topicInMemory);
-
     }
 
     public interface DeleteTopicCallback {

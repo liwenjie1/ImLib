@@ -216,8 +216,13 @@ public class TopicItemBean extends YXBaseBean {
         this.msgList = msgList;
     }
 
-    public void resetDeleteFlag(){
-        setLatestMsgIdWhenDeletedLocalTopic(-1);
-        setAlreadyDeletedLocalTopic(false);
+    public void setDeleteFlag(){
+        final MsgItemBean latestMsg = getLatestMsg();
+        long setId=-1;
+        if (latestMsg != null) {
+            setId=Math.max(latestMsgId,latestMsg.getRealMsgId());
+        }
+        setLatestMsgIdWhenDeletedLocalTopic(setId);
+        setAlreadyDeletedLocalTopic(true);
     }
 }

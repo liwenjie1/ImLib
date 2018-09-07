@@ -186,6 +186,9 @@ public class MqttConnectManager {
         for (int i = 0; i < topics.length; i++) {
             topics[i] = constructTopicStr(topicId[i]);
         }
+        if (topics==null||topics.length==0) {
+            return;
+        }
         try {
             mMqttClient.unsubscribe(topics);
         } catch (MqttException e) {
@@ -230,6 +233,7 @@ public class MqttConnectManager {
 
 
     public void disconnectMqttServer() {
+        Log.i(TAG, "disconnectMqttServer: ");
         if (mMqttClient != null) {
             try {
                 onlineOrOfflinePublish(0);
@@ -289,6 +293,7 @@ public class MqttConnectManager {
      * 哪里需要 mqtt 哪里调用  基本为  ImTopicListFragment 与  MsgListActivity 部分会使用
      */
     public void connectMqttServer(@NonNull String host, final MqttServerConnectCallback connectCallback) {
+        Log.i(TAG, "connectMqttServer: ");
         if (TextUtils.isEmpty(host)) {
             if (connectCallback != null) {
                 connectCallback.onFailure();
