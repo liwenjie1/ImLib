@@ -515,7 +515,7 @@ public class TopicsReponsery {
         Log.i(TAG, "requestLastestMsgPageFromServer: ");
 
         Log.i(TAG, "requestLastestMsgPageFromServer: 需要更新 msg");
-
+        itemBean.setShowDot(true);
         //请求最新一页  直接设置 最大 Long.value
         mHttpRequestManager.requestTopicMsgList(Constants.imToken, Long.MAX_VALUE, itemBean.getTopicId(), new HttpRequestManager.GetTopicMsgListCallback<ImMsg_new>() {
             @Override
@@ -536,8 +536,6 @@ public class TopicsReponsery {
                 TopicInMemoryUtils.duplicateRemoval(msgPages, itemBean.getMsgList());
                 itemBean.getMsgList().addAll(msgPages);
 
-                final boolean b = TopicInMemoryUtils.checkTopicShouldShowRedDot(itemBean, msgPages);
-                itemBean.setShowDot(b);
                 //保存红点状态
                 DatabaseManager.updateTopicWithTopicItemBean(itemBean);
                 //在记录列表中移除
