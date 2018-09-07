@@ -367,14 +367,11 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
      */
     public void updateTopicInfo(final TopicItemBean currentTopic) {
         Log.i(TAG, "updateTopicInfo: ");
-        TopicsReponsery.getInstance().updateTopicInfo(currentTopic, new TopicsReponsery.GetTopicItemBeanCallback() {
+
+        TopicsReponsery.getInstance().updateTopicMemberInfoFromServer(currentTopic, new TopicsReponsery.GetTopicItemBeanCallback() {
             @Override
             public void onGetTopicItemBean(TopicItemBean bean) {
-                //判断 deletemsgid 对要展示的数据进行截断
-                long deleteMsgId=bean.getLatestMsgIdWhenDeletedLocalTopic();
-                if (deleteMsgId>0) {
-                    TopicInMemoryUtils.cutoffMsgListByMsgId(deleteMsgId,bean.getMsgList());
-                }
+
                 if (bean != null) {
                     view.onTopicInfoUpdate();
                 }
@@ -443,7 +440,6 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
                 if (deleteMsgId>0) {
                     TopicInMemoryUtils.cutoffMsgListByMsgId(deleteMsgId,targetTopic.getMsgList());
                 }
-
                 if (view != null) {
                     view.onRealTopicOpened(targetTopic);
                 }

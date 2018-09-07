@@ -707,11 +707,15 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
             Toast.makeText(this, "没有更多数据", Toast.LENGTH_SHORT).show();
             return;
         }
-        int startPosition = Math.max(msgRecyclerAdapter.getItemCount() - size - 1, 0);
-        int endPosition = Math.max(msgRecyclerAdapter.getItemCount() - 1, 0);
-        msgRecyclerAdapter.notifyItemRangeInserted(startPosition, endPosition);
-        msgRecyclerAdapter.notifyItemRangeChanged(startPosition, endPosition);
-
+        if (msgRecyclerAdapter.getItemCount()-size<7) {
+            //不满一屏幕 全更新
+            msgRecyclerAdapter.notifyDataSetChanged();
+        }else {
+            int startPosition = Math.max(msgRecyclerAdapter.getItemCount() - size - 1, 0);
+            int endPosition = Math.max(msgRecyclerAdapter.getItemCount() - 1, 0);
+            msgRecyclerAdapter.notifyItemRangeInserted(startPosition, endPosition);
+            msgRecyclerAdapter.notifyItemRangeChanged(startPosition, endPosition);
+        }
     }
 
     /**
