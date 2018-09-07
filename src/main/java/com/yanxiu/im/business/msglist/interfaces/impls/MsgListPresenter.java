@@ -312,6 +312,8 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
     public void doLoadMore(final TopicItemBean currentTopic) {
         //清空 历史数据标志位
         currentTopic.setLatestMsgIdWhenDeletedLocalTopic(-1);
+        //数据库清空标志位
+        DatabaseManager.updateTopicWithTopicItemBean(currentTopic);
         //获取起始 msgid
         final long startId = TopicInMemoryUtils.getMinImMsgIdInList(currentTopic.getMsgList());
         //执行手动刷新
