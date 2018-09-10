@@ -54,6 +54,8 @@ import com.yanxiu.im.event.MsgListNewMsgEvent;
 import com.yanxiu.im.event.MsgListTopicChangeEvent;
 import com.yanxiu.im.event.MsgListTopicRemovedEvent;
 import com.yanxiu.im.event.MsgListTopicUpdateEvent;
+import com.yanxiu.lib.yx_basic_library.util.NotificationUtil;
+import com.yanxiu.lib.yx_basic_library.util.logger.YXLogger;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -139,8 +141,6 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         context.startActivity(intent);
     }
-
-
 
 
     private RecyclerView im_msglist_recyclerview;
@@ -244,12 +244,24 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
                 //通过推送 开启的 msglist 界面 可能是群聊也可能是私聊  但是在服务器上一定存在 所以本地先查找 ，没有直接在服务器上获取
                 //如果 本地没有 在 异步执行 服务器获取的之间，创建本地 tempTopicBean 来容纳消息列表
                 String topicId = getIntent().getStringExtra("topicId");
+                try {
+                    final long id = Long.parseLong(topicId);
+                    NotificationUtil.cancelNotificationById(this, (int) id);
+                } catch (NumberFormatException e) {
+                    YXLogger.e(TAG, "Topic Id 格式转换出错");
+                }
                 msgListPresenter.openPushTopic(Long.valueOf(topicId));
             }
             break;
             case REQUEST_CODE_TOPICID: {
                 //通过 topiclist 界面点击 topic 开启 msglist 界面 topic 一定存在 只需要在内存查找 获取
                 String topicId = getIntent().getStringExtra("topicId");
+                try {
+                    final long id = Long.parseLong(topicId);
+                    NotificationUtil.cancelNotificationById(this, (int) id);
+                } catch (NumberFormatException e) {
+                    YXLogger.e(TAG, "Topic Id 格式转换出错");
+                }
                 msgListPresenter.openTopicByTopicId(Long.valueOf(topicId));
             }
             break;
@@ -707,10 +719,10 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
             Toast.makeText(this, "没有更多数据", Toast.LENGTH_SHORT).show();
             return;
         }
-        if (msgRecyclerAdapter.getItemCount()-size<7) {
+        if (msgRecyclerAdapter.getItemCount() - size < 7) {
             //不满一屏幕 全更新
             msgRecyclerAdapter.notifyDataSetChanged();
-        }else {
+        } else {
             int startPosition = Math.max(msgRecyclerAdapter.getItemCount() - size - 1, 0);
             int endPosition = Math.max(msgRecyclerAdapter.getItemCount() - 1, 0);
             msgRecyclerAdapter.notifyItemRangeInserted(startPosition, endPosition);
@@ -865,9 +877,9 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
 
         //跳转到设置界面
         if (currentTopic != null) {
-            ImSettingActivity.invoke(ImMsgListActivity.this, currentTopic.getTopicId(),REQUEST_CODE_SETTING);
+            ImSettingActivity.invoke(ImMsgListActivity.this, currentTopic.getTopicId(), REQUEST_CODE_SETTING);
         } else {
-            ImSettingActivity.invoke(ImMsgListActivity.this, -1,REQUEST_CODE_SETTING);
+            ImSettingActivity.invoke(ImMsgListActivity.this, -1, REQUEST_CODE_SETTING);
         }
     }
 
