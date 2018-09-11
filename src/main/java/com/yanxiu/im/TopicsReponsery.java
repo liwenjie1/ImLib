@@ -268,6 +268,8 @@ public class TopicsReponsery {
             public void onGetTopicInfo(ImTopic_new data) {
                 //获取到 imTopic 信息  with members
                 TopicItemBean resultTopic = mergeOrInsertTopic(data);
+                //新加入的
+                addToMemory(resultTopic);
                 //请求消息列表
                 requestLastestMsgPageFromServer(resultTopic, new GetTopicItemBeanCallback() {
                     @Override
@@ -337,8 +339,6 @@ public class TopicsReponsery {
         if (!hasMerged) {//如果不是 mocktopic 进行新的 topic 插入操作
             //保存数据库
             resultTopic = DatabaseManager.updateDbTopicWithImTopic(data);
-            //加入到 内存 并排序
-            addToMemory(resultTopic);
         }
         return resultTopic;
     }
@@ -511,19 +511,19 @@ public class TopicsReponsery {
             @Override
             public void onGetTopicMembers(ImTopic_new topicWithMembers) {
                 Log.i(TAG, "onGetTopicMembers: ");
-                //合并或插入 topic
-                TopicItemBean resultTopic = mergeOrInsertTopic(topicWithMembers);
-
+                //本地一定存在 topic 只获取更新的数据载体
+                final TopicItemBean resultTopic = DatabaseManager.updateDbTopicWithImTopic(topicWithMembers);
                 synchronized (needUpdateMemberTopics) {
                     needUpdateMemberTopics.remove(bean);
                 }
-                final TopicItemBean finalResultTopic = resultTopic;
                 uiHandler.post(new Runnable() {
                     @Override
                     public void run() {
-                        callback.onGetTopicItemBean(finalResultTopic);
+                        callback.onGetTopicItemBean(resultTopic);
                     }
                 });
+
+
             }
 
             @Override
@@ -902,6 +902,7 @@ public class TopicsReponsery {
 
     public interface UpdateConfigCallback<E> {
         void onTopicConfigUpdated(E topicBean);
+
     }
 
 
