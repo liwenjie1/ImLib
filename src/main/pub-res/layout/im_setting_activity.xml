@@ -99,13 +99,13 @@
 
         <TextView
             android:id="@+id/im_setting_activity_classname_tv"
-            android:lines="1"
+            android:singleLine="true"
             android:ellipsize="end"
             android:background="@null"
-            android:gravity="left|center_vertical"
+            android:gravity="center_vertical"
             android:textSize="14dp"
             tools:text="周杰伦三年二班"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
 
     </LinearLayout>
@@ -113,7 +113,7 @@
         android:layout_marginTop="5dp"
         android:id="@+id/im_talk_setting"
         titlelayout:setting_name="学员禁言"
-        titlelayout:setting_summery="学员不可以发送消息，只有班主任可以发"
+        titlelayout:setting_summery="开启后，学员不可以发送消息，只有班主任可以发"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"/>
 
