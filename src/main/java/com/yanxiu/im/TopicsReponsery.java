@@ -2,6 +2,7 @@ package com.yanxiu.im;
 
 import android.content.Context;
 import android.support.annotation.UiThread;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.yanxiu.im.bean.MsgItemBean;
@@ -167,7 +168,8 @@ public class TopicsReponsery {
                             break;
                         }
                     }
-                    if (!has) {
+                    //服务器上不存在 并且 也不是 mocktopic
+                    if (!has && !DatabaseManager.isMockTopic(localBean)) {
                         DatabaseManager.deleteTopicById(localBean.getTopicId());
                         toBeDel.add(localBean);
                     }
@@ -175,8 +177,9 @@ public class TopicsReponsery {
                 deleteFromMemory(toBeDel);
                 Log.i(TAG, "onSuccess: 完成列表内删除 -" + toBeDel.size());
 
-                //查找新的 和需要更新的
+                //查找新的 和需要更新的 这里没有 member 信息  没办法进行 mock 合并 所以合并放在 member 信息获取中
                 for (ImTopic_new imTopicNew : topicList) {
+                    //保存到数据库
                     final TopicItemBean savedBean = DatabaseManager.updateDbTopicWithImTopic(imTopicNew);
                     boolean has = false;
                     for (TopicItemBean localTopic : topicInMemory) {
@@ -204,13 +207,6 @@ public class TopicsReponsery {
                     }
                 }
                 Log.i(TAG, "onSuccess: 完成列表内新增和更新 ");
-
-                /*合并可以 合并的 mocktopic */
-                Log.i(TAG, "onGetTopicList: 检查本地 mocktopic ");
-                synchronized (topicInMemory) {
-                    DatabaseManager.checkAndMigrateMockTopic(topicInMemory);
-                }
-
                 /*对列表的长度以及 信息 更新已经完成 可以回调 给 ui 列表更新完毕*/
                 Log.i(TAG, "onGetTopicList: 回调 UI 更新列表显示");
                 uiHandler.post(new Runnable() {
@@ -266,16 +262,14 @@ public class TopicsReponsery {
             //本地已经有了 说明已经添加过 那就是  有新的 member 用户被添加 是否需要跟新 member 信息？
             return;
         }
+        //网络请求 topic 信息  withmembers
         mHttpRequestManager.requestTopicInfo(Constants.imToken, topicId + "", new HttpRequestManager.GetTopicInfoCallback<ImTopic_new>() {
             @Override
             public void onGetTopicInfo(ImTopic_new data) {
                 //获取到 imTopic 信息  with members
-                //保存数据库
-                final TopicItemBean topicItemBean = DatabaseManager.updateDbTopicWithImTopic(data);
-                //加入到 内存 并排序
-                addToMemory(topicItemBean);
-                // 请求最新一页消息列表？
-                requestLastestMsgPageFromServer(topicItemBean, new GetTopicItemBeanCallback() {
+                TopicItemBean resultTopic = mergeOrInsertTopic(data);
+                //请求消息列表
+                requestLastestMsgPageFromServer(resultTopic, new GetTopicItemBeanCallback() {
                     @Override
                     public void onGetTopicItemBean(final TopicItemBean bean) {
                         if (callback != null) {
@@ -305,6 +299,48 @@ public class TopicsReponsery {
         });
 
 
+    }
+
+    /**
+     * 检查 imtopic 是否能与本地的 mocktopic 合并
+     * 能合并 返回 原有 topicBean 不能合并 返回新插入的 topicbean
+     */
+    private TopicItemBean mergeOrInsertTopic(ImTopic_new data) {
+        boolean hasMerged = false;
+        TopicItemBean resultTopic = null;
+        if (TextUtils.equals("1", data.topicType)) {
+            //如果是私聊
+            for (TopicItemBean localTopic : topicInMemory) {
+                if (DatabaseManager.isMockTopic(localTopic)) {
+                    long otherMemberId = -1;
+                    for (DbMember mockMember : localTopic.getMembers()) {
+                        if (mockMember.getImId() != Constants.imId) {
+                            otherMemberId = mockMember.getImId();
+                            break;
+                        }
+                    }
+                    long imMemberId = -2;
+                    for (ImTopic_new.Member imMember : data.members) {
+                        if (imMember.memberId != Constants.imId) {
+                            imMemberId = imMember.memberId;
+                            break;
+                        }
+                    }
+                    if (otherMemberId == imMemberId) {
+                        hasMerged = true;
+                        DatabaseManager.migrateMockTopicToRealTopic(localTopic, data);
+                        resultTopic = localTopic;
+                    }
+                }
+            }
+        }
+        if (!hasMerged) {//如果不是 mocktopic 进行新的 topic 插入操作
+            //保存数据库
+            resultTopic = DatabaseManager.updateDbTopicWithImTopic(data);
+            //加入到 内存 并排序
+            addToMemory(resultTopic);
+        }
+        return resultTopic;
     }
 
     public interface AddToTopicCallback<E> {
@@ -398,7 +434,7 @@ public class TopicsReponsery {
             } else {
                 callback.onGetTopicItemBean(bean);
             }
-        }else {//需要更新 member
+        } else {//需要更新 member
             requestTopicMemberInfoFromServer(bean, new GetTopicItemBeanCallback() {
                 @Override
                 public void onGetTopicItemBean(TopicItemBean beanCreateFromDB) {
@@ -428,7 +464,7 @@ public class TopicsReponsery {
                 if (beanCreateFromDB != null) {
                     //更新 target 的 info
                     updateMemberInfo(bean, beanCreateFromDB);
-                    updateBeanInfo(bean,beanCreateFromDB);
+                    updateBeanInfo(bean, beanCreateFromDB);
                     callback.onGetTopicItemBean(bean);
                 }
             }
@@ -445,6 +481,7 @@ public class TopicsReponsery {
      * 用 infoBean 对 target 进行内容的更新
      */
     private void updateBeanInfo(TopicItemBean target, TopicItemBean infoBean) {
+        target.setTopicId(infoBean.getTopicId());
         target.setGroup(infoBean.getGroup());
         target.setChange(infoBean.getChange());
         target.setTopicId(infoBean.getTopicId());
@@ -474,19 +511,19 @@ public class TopicsReponsery {
             @Override
             public void onGetTopicMembers(ImTopic_new topicWithMembers) {
                 Log.i(TAG, "onGetTopicMembers: ");
+                //合并或插入 topic
+                TopicItemBean resultTopic = mergeOrInsertTopic(topicWithMembers);
 
-                final TopicItemBean dbTopic = DatabaseManager.updateDbTopicWithImTopic(topicWithMembers);
-                synchronized (needUpdateMemberTopics){
+                synchronized (needUpdateMemberTopics) {
                     needUpdateMemberTopics.remove(bean);
                 }
+                final TopicItemBean finalResultTopic = resultTopic;
                 uiHandler.post(new Runnable() {
                     @Override
                     public void run() {
-                        callback.onGetTopicItemBean(dbTopic);
+                        callback.onGetTopicItemBean(finalResultTopic);
                     }
                 });
-
-
             }
 
             @Override
@@ -525,7 +562,7 @@ public class TopicsReponsery {
                     final MsgItemBean msgItemBean = DatabaseManager.updateDbMsgWithImMsg(imMsgNew, Constants.imId);
 //                    msgPages.add(msgItemBean);
                 }
-                final ArrayList<MsgItemBean> dbMsgs = DatabaseManager.getTopicMsgs(itemBean.getTopicId(), Long.MAX_VALUE, 1);
+                final ArrayList<MsgItemBean> dbMsgs = DatabaseManager.getTopicMsgs(itemBean.getTopicId(), DatabaseManager.minMsgId, DatabaseManager.pagesize);
                 msgPages.addAll(dbMsgs);
 
                 List<MsgItemBean> msgBean = itemBean.getMsgList();
@@ -542,6 +579,8 @@ public class TopicsReponsery {
                 synchronized (needUpdateMsgTopics) {
                     needUpdateMsgTopics.remove(itemBean);
                 }
+                /*本地 mock topic 检查 此时 topic 已经被加入到 列表当中了*/
+
                 uiHandler.post(new Runnable() {
                     @Override
                     public void run() {
@@ -788,6 +827,7 @@ public class TopicsReponsery {
             @Override
             public void onCreated(ImTopic_new topic) {
                 Log.i(TAG, "onCreated: ");
+                //创建成功 返回完整的 topic 信息 这里进行 mocktopic 的合并操作 这里的信息不包含 msg 列表  与 获取更新 topic member 信息的接口类似
                 DatabaseManager.migrateMockTopicToRealTopic(mockTopic, topic);
                 //回调给上层
                 uiHandler.post(new Runnable() {
@@ -800,7 +840,6 @@ public class TopicsReponsery {
 
             @Override
             public void onFailure() {
-
                 //创建失败 修改数据库状态
                 DatabaseManager.topicCreateFailed(mockTopic);
                 if (callback != null) {
@@ -865,5 +904,9 @@ public class TopicsReponsery {
         void onTopicConfigUpdated(E topicBean);
     }
 
+
+    private boolean checkAndMergeMockTopic(ImTopic_new imTopicNew) {
+        return false;
+    }
 
 }
