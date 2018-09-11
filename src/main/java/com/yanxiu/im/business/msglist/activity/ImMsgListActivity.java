@@ -213,6 +213,7 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
 
         im_msglist_recyclerview.setAdapter(msgRecyclerAdapter);
         im_msglist_recyclerview.scrollToPosition(0);
+
         //更新member信息
         msgListPresenter.updateTopicInfo(currentTopic);
         if (Constants.showTopicSetting) {

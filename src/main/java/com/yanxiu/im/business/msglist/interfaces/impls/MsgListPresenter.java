@@ -369,7 +369,9 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
      */
     public void updateTopicInfo(final TopicItemBean currentTopic) {
         Log.i(TAG, "updateTopicInfo: ");
-
+        if (currentTopic == null) {
+            return;
+        }
         TopicsReponsery.getInstance().updateTopicMemberInfoFromServer(currentTopic, new TopicsReponsery.GetTopicItemBeanCallback() {
             @Override
             public void onGetTopicItemBean(TopicItemBean bean) {
@@ -438,9 +440,9 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
                 DatabaseManager.updateTopicWithTopicItemBean(targetTopic);
 
                 //判断 deletemsgid 对要展示的数据进行截断
-                long deleteMsgId=targetTopic.getLatestMsgIdWhenDeletedLocalTopic();
-                if (deleteMsgId>0) {
-                    TopicInMemoryUtils.cutoffMsgListByMsgId(deleteMsgId,targetTopic.getMsgList());
+                long deleteMsgId = targetTopic.getLatestMsgIdWhenDeletedLocalTopic();
+                if (deleteMsgId > 0) {
+                    TopicInMemoryUtils.cutoffMsgListByMsgId(deleteMsgId, targetTopic.getMsgList());
                 }
                 if (view != null) {
                     view.onRealTopicOpened(targetTopic);
@@ -479,8 +481,8 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
      * 用于保存 临时对话的 msglist
      */
     @Override
-    public TopicItemBean createMockTopicForMsg(long memberId, long fromTopic,String memberName) {
-        return TopicsReponsery.getInstance().createMockTopic(fromTopic, memberId,memberName);
+    public TopicItemBean createMockTopicForMsg(long memberId, long fromTopic, String memberName) {
+        return TopicsReponsery.getInstance().createMockTopic(fromTopic, memberId, memberName);
     }
 
     /**
