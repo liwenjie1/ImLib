@@ -428,6 +428,7 @@ public class TopicsReponsery {
                 if (beanCreateFromDB != null) {
                     //更新 target 的 info
                     updateMemberInfo(bean, beanCreateFromDB);
+                    updateBeanInfo(bean,beanCreateFromDB);
                     callback.onGetTopicItemBean(bean);
                 }
             }
@@ -512,9 +513,6 @@ public class TopicsReponsery {
      * 获取最新一页 msg
      */
     public void requestLastestMsgPageFromServer(final TopicItemBean itemBean, final GetTopicItemBeanCallback callback) {
-        Log.i(TAG, "requestLastestMsgPageFromServer: ");
-
-        Log.i(TAG, "requestLastestMsgPageFromServer: 需要更新 msg");
         itemBean.setShowDot(true);
         //请求最新一页  直接设置 最大 Long.value
         mHttpRequestManager.requestTopicMsgList(Constants.imToken, Long.MAX_VALUE, itemBean.getTopicId(), new HttpRequestManager.GetTopicMsgListCallback<ImMsg_new>() {
@@ -525,8 +523,10 @@ public class TopicsReponsery {
                 for (ImMsg_new imMsgNew : msgList) {
                     //获取 msglist 后  首先  保存数据库
                     final MsgItemBean msgItemBean = DatabaseManager.updateDbMsgWithImMsg(imMsgNew, Constants.imId);
-                    msgPages.add(msgItemBean);
+//                    msgPages.add(msgItemBean);
                 }
+                final ArrayList<MsgItemBean> dbMsgs = DatabaseManager.getTopicMsgs(itemBean.getTopicId(), Long.MAX_VALUE, 1);
+                msgPages.addAll(dbMsgs);
 
                 List<MsgItemBean> msgBean = itemBean.getMsgList();
                 if (msgBean == null) {

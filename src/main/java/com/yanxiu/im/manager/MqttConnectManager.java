@@ -18,6 +18,7 @@ import com.yanxiu.im.protobuf.MqttMsgProto;
 import com.yanxiu.lib.yx_basic_library.YXApplication;
 import com.yanxiu.lib.yx_basic_library.network.IYXHttpCallback;
 import com.yanxiu.lib.yx_basic_library.network.YXRequestBase;
+import com.yanxiu.lib.yx_basic_library.util.YXToastUtil;
 import com.yanxiu.lib.yx_basic_library.util.logger.YXLogger;
 
 import org.eclipse.paho.android.service.MqttAndroidClient;
@@ -216,14 +217,14 @@ public class MqttConnectManager {
 
 
     public void disconnectMqttServer() {
+        userStop=true;
         Log.i(TAG, "disconnectMqttServer: ");
         if (mMqttClient != null) {
             try {
                 onlineOrOfflinePublish(0);
                 mQttHeartBeatManager.cancel();
-                mMqttClient.disconnect();
-            } catch (MqttException e) {
-                e.printStackTrace();
+                mReconnectManager.cancel();
+                disconnectClientOnExsist();
             } catch (NullPointerException e) {
                 YXLogger.e(TAG, e.getMessage());
             } catch (Exception e){
@@ -239,6 +240,7 @@ public class MqttConnectManager {
      */
     public void connectMqttServer(@Nullable final MqttServerConnectCallback connectCallback) {
         //获取 host
+        userStop=false;
         requestMqttHost(new GetMqttHostCallback() {
             @Override
             public void onGetHost(String host) {
@@ -267,6 +269,7 @@ public class MqttConnectManager {
 
     private boolean isConnectionLost = false;
     private boolean isReconnecting = false;
+    private boolean userStop=false;
     private int retryTime = 999;
     private MqttReconnectManager mReconnectManager;
 
@@ -284,13 +287,11 @@ public class MqttConnectManager {
             }
             return;
         }
+        disconnectClientOnExsist();
         //设置连接参数
         final MqttConnectOptions options = getMqttConnectOptions();
         //检查 是否有其他 mqtt 连接在运行 如果有  断开连接
-        if (mMqttClient != null && mMqttClient.isConnected()) {
-            return;
-        }
-        Log.i(TAG, "disconnectMqttServer: connect ");
+        Log.i(TAG, "connectMqttServer: connect ");
         mMqttClient = new MqttAndroidClient(applicationContext, "tcp://" + host, createClientId());
         //保存....
         mqttConnections.put(host, mMqttClient);
@@ -298,16 +299,22 @@ public class MqttConnectManager {
         mMqttClient.setCallback(new MqttCallback() {
             @Override
             public void connectionLost(Throwable cause) {
+                YXToastUtil.showToast("mqtt 意外断开");
                 synchronized (MqttConnectManager.class) {
+                    if (userStop) {
+                        //如果是用户 进行了断开行为 不重试连接
+                        return;
+                    }
                     //连接丢失
                     isConnectionLost = true;
                     //进行重连 不限次数 30秒间隔
+
                     mReconnectManager = new MqttReconnectManager(-1, 30);
                     isReconnecting = true;
                     mReconnectManager.start(new MqttReconnectManager.AlarmCallback() {
                         @Override
                         public void onTick() {
-                            Log.i(TAG, "onTick: attemp to reconnect");
+                            YXToastUtil.showToast("mqtt 尝试重连");
                             doConnect(connectCallback, options);
                         }
                     });
@@ -391,7 +398,6 @@ public class MqttConnectManager {
             if (client.isConnected()) {
                 try {
                     client.disconnect();
-
                 } catch (MqttException e) {
                     e.printStackTrace();
                 }

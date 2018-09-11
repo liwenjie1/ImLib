@@ -129,16 +129,17 @@ public class TopicListPresenter implements TopicListContract.Presenter {
             public void onGetTopicItemBean(TopicItemBean bean) {
                 //
                 if (bean != null) {
-                    TopicsReponsery.getInstance().updateTopicInfo(bean, new TopicsReponsery.GetTopicItemBeanCallback() {
+                    //更新 member 信息
+                    TopicsReponsery.getInstance().updateTopicMemberInfoFromServer(bean, new TopicsReponsery.GetTopicItemBeanCallback() {
                         @Override
                         public void onGetTopicItemBean(TopicItemBean bean) {
                             view.onTopicInfoUpdate(bean.getTopicId());
                         }
                     });
-                }else {
+                } else {
                     Log.i(TAG, "onGetTopicItemBean: topic 事件  新加入 topic");
                     //如果 本地没有这个 topic 而又收到了 update 通知 说明是 自己被添加到这个 topic 中
-                    doAddedToTopic(topicId,true);
+                    doAddedToTopic(topicId, true);
                 }
             }
         });
@@ -183,7 +184,7 @@ public class TopicListPresenter implements TopicListContract.Presenter {
             topics.add(targetTopic);
             if (targetTopic.isAlreadyDeletedLocalTopic()) {
                 // todo 是一个清空历史消息的 topic
-            }else {
+            } else {
                 //不是呢？
             }
         }
@@ -210,7 +211,7 @@ public class TopicListPresenter implements TopicListContract.Presenter {
         //收到新消息后 进行日期处理
         processMsgListDateInfo(targetTopic.getMsgList());
         //通知Ui更新
-        final long topicId=targetTopic.getTopicId();
+        final long topicId = targetTopic.getTopicId();
         if (view != null) {
             mHandler.post(new Runnable() {
                 @Override

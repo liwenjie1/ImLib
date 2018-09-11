@@ -49,7 +49,7 @@ public class DbTopic extends DataSupport {
     @Column(ignore = true)
     public List<MsgItemBean> mergedMsgs = new ArrayList<>();
     @Column(ignore = true)
-    public int speak;
+    public int speak=1;//默认 显示非禁言状态
     @Column(ignore = true)
     public ImTopic_new.PersonalConfigInfoBean personalConfig;
 
