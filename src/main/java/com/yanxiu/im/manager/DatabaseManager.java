@@ -52,7 +52,7 @@ public class DatabaseManager {
             return;
         }
 
-        LitePalDB db = new LitePalDB("new_db_" + userId, 1);
+        LitePalDB db = new LitePalDB("new_db_" + userId, 2);
         db.addClassName(DbMember.class.getName());
         db.addClassName(DbTopic.class.getName());
         db.addClassName(DbMsg.class.getName());
