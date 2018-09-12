@@ -557,6 +557,8 @@ public class TopicsReponsery {
      */
     public void requestLastestMsgPageFromServer(final TopicItemBean itemBean, final GetTopicItemBeanCallback callback) {
         itemBean.setShowDot(true);
+        itemBean.setAlreadyDeletedLocalTopic(false);
+        itemBean.setLatestMsgIdWhenDeletedLocalTopic(-1);
         //请求最新一页  直接设置 最大 Long.value
         mHttpRequestManager.requestTopicMsgList(Constants.imToken, Long.MAX_VALUE, itemBean.getTopicId(), new HttpRequestManager.GetTopicMsgListCallback<ImMsg_new>() {
             @Override
