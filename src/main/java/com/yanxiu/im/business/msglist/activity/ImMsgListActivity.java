@@ -789,6 +789,9 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
         //打开一个 本地存在的 realtopic
         currentTopic = realBean;
         setTitlemsg(realBean);
+        if (currentTopic != null) {
+            currentTopic.setShowDot(false);
+        }
         showSlientNotice(currentTopic.isSilence());
     }
 
@@ -796,6 +799,9 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
     public void onPushTopicOpend(final TopicItemBean tempBean) {
         //打开一个 push 开启的topic
         currentTopic = tempBean;
+        if (currentTopic != null) {
+            currentTopic.setShowDot(false);
+        }
         runOnUiThread(new Runnable() {
             @Override
             public void run() {

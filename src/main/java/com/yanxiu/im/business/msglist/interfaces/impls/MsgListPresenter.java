@@ -310,6 +310,10 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
 
     @Override
     public void doLoadMore(final TopicItemBean currentTopic) {
+        if (currentTopic == null) {
+            view.onLoadMoreFromDb(0);
+            return;
+        }
         //清空 历史数据标志位
         currentTopic.setLatestMsgIdWhenDeletedLocalTopic(-1);
         //数据库清空标志位
@@ -375,7 +379,9 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
         TopicsReponsery.getInstance().updateTopicMemberInfoFromServer(currentTopic, new TopicsReponsery.GetTopicItemBeanCallback() {
             @Override
             public void onGetTopicItemBean(TopicItemBean bean) {
-
+                if (currentTopic != null) {
+                    currentTopic.setShowDot(false);
+                }
                 if (bean != null) {
                     view.onTopicInfoUpdate();
                 }

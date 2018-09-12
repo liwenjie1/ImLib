@@ -173,8 +173,9 @@ public class ContactsActivity extends ImBaseActivity implements ContactsContract
                 final ImMember_new memberInfo = mMemberAdapter.getDatas().get(position).getMemberInfo();
                 final ContactsGroupBean contactsGroupBean = mContactsPresenter.getGroupsBeans().get(mContactsPresenter.getCurrentGroupIndex());
                 mContactsPresenter.checkMemberDbInfo(contactsGroupBean,memberInfo);
+
                 ImMsgListActivity.invoke(ContactsActivity.this,
-                       memberInfo.imId,memberInfo.memberName, -1, ImMsgListActivity.REQUEST_CODE_MEMBERID);
+                       memberInfo.imId,memberInfo.memberName, mContactsPresenter.getCurrentGroupId(), ImMsgListActivity.REQUEST_CODE_MEMBERID);
             }
         });
     }

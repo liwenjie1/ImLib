@@ -32,6 +32,10 @@ public class ContactsPresenter implements ContactsContract.IPresenter {
         return mCurrentGroupIndex;
     }
 
+    public long getCurrentGroupId() {
+        return mGroupsBeans.get(mCurrentGroupIndex).getGroupId();
+    }
+
     public List<ContactsGroupBean> getGroupsBeans() {
         return mGroupsBeans;
     }
@@ -144,9 +148,10 @@ public class ContactsPresenter implements ContactsContract.IPresenter {
         }
         return false;
     }
+
     /**
      * 如果 member 不存在 先进行数据库保存 防止在 私聊部分造成的空指针
-     * */
+     */
     public void checkMemberDbInfo(ContactsGroupBean groupBean, ImMember_new memberInfo) {
         //检查 topic 是否存在
         final Long targetTopicId = groupBean.getGroupId();

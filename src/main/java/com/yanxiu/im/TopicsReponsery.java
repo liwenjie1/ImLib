@@ -266,6 +266,12 @@ public class TopicsReponsery {
         mHttpRequestManager.requestTopicInfo(Constants.imToken, topicId + "", new HttpRequestManager.GetTopicInfoCallback<ImTopic_new>() {
             @Override
             public void onGetTopicInfo(ImTopic_new data) {
+                //异步返回 检查 重复
+                TopicItemBean targetTopic = getTopicFromMemory(data.topicId);
+                if (targetTopic != null) {
+                    //已经添加过了
+                    return;
+                }
                 //获取到 imTopic 信息  with members
                 TopicItemBean resultTopic = mergeOrInsertTopic(data);
                 //新加入的
@@ -562,6 +568,7 @@ public class TopicsReponsery {
                     final MsgItemBean msgItemBean = DatabaseManager.updateDbMsgWithImMsg(imMsgNew, Constants.imId);
 //                    msgPages.add(msgItemBean);
                 }
+
                 final ArrayList<MsgItemBean> dbMsgs = DatabaseManager.getTopicMsgs(itemBean.getTopicId(), DatabaseManager.minMsgId, DatabaseManager.pagesize);
                 msgPages.addAll(dbMsgs);
 
@@ -569,6 +576,8 @@ public class TopicsReponsery {
                 if (msgBean == null) {
                     msgBean = new ArrayList<>();
                     itemBean.setMsgList(msgBean);
+                }else {
+                    msgBean.clear();
                 }
                 TopicInMemoryUtils.duplicateRemoval(msgPages, itemBean.getMsgList());
                 itemBean.getMsgList().addAll(msgPages);
