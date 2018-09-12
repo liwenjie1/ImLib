@@ -381,6 +381,8 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
             public void onGetTopicItemBean(TopicItemBean bean) {
                 if (currentTopic != null) {
                     currentTopic.setShowDot(false);
+                    //数据库 保存红点取消
+                    DatabaseManager.updateTopicWithTopicItemBean(currentTopic);
                 }
                 if (bean != null) {
                     view.onTopicInfoUpdate();
