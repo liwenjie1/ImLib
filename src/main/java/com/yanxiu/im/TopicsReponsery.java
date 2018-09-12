@@ -431,16 +431,8 @@ public class TopicsReponsery {
             callback.onGetTopicItemBean(null);
             return;
         }
-        //网络请求 指定 topic 的 member 信息
-        if (!checkShouldUpdateMember(bean, callback)) {
-            Log.i(TAG, "requestTopicMemberInfoFromServer: 不需要更新 member");
-            //检查 msg 是否需要更新
-            if (checkShouldUpdateMsg(bean, callback)) {
-                requestLastestMsgPageFromServer(bean, callback);
-            } else {
-                callback.onGetTopicItemBean(bean);
-            }
-        } else {//需要更新 member
+
+        if (checkShouldUpdateMember(bean, callback)) {
             requestTopicMemberInfoFromServer(bean, new GetTopicItemBeanCallback() {
                 @Override
                 public void onGetTopicItemBean(TopicItemBean beanCreateFromDB) {
@@ -457,6 +449,14 @@ public class TopicsReponsery {
                     }
                 }
             });
+        } else {
+            Log.i(TAG, "requestTopicMemberInfoFromServer: 不需要更新 member");
+            //检查 msg 是否需要更新
+            if (checkShouldUpdateMsg(bean, callback)) {
+                requestLastestMsgPageFromServer(bean, callback);
+            } else {
+                callback.onGetTopicItemBean(bean);
+            }
         }
     }
 
@@ -497,7 +497,7 @@ public class TopicsReponsery {
         //免打扰和禁言
         target.setSilence(infoBean.isSilence());
         target.setBlockNotice(infoBean.isBlockNotice());
-        //删除历史记录标志
+        //这是 "删除历史记录" 标志
         target.setLatestMsgIdWhenDeletedLocalTopic(infoBean.getLatestMsgIdWhenDeletedLocalTopic());
         target.setAlreadyDeletedLocalTopic(infoBean.isAlreadyDeletedLocalTopic());
     }
@@ -556,9 +556,7 @@ public class TopicsReponsery {
      * 获取最新一页 msg
      */
     public void requestLastestMsgPageFromServer(final TopicItemBean itemBean, final GetTopicItemBeanCallback callback) {
-        itemBean.setShowDot(true);
-        itemBean.setAlreadyDeletedLocalTopic(false);
-        itemBean.setLatestMsgIdWhenDeletedLocalTopic(-1);
+
         //请求最新一页  直接设置 最大 Long.value
         mHttpRequestManager.requestTopicMsgList(Constants.imToken, Long.MAX_VALUE, itemBean.getTopicId(), new HttpRequestManager.GetTopicMsgListCallback<ImMsg_new>() {
             @Override
@@ -578,13 +576,17 @@ public class TopicsReponsery {
                 if (msgBean == null) {
                     msgBean = new ArrayList<>();
                     itemBean.setMsgList(msgBean);
-                }else {
+                } else {
                     msgBean.clear();
                 }
                 TopicInMemoryUtils.duplicateRemoval(msgPages, itemBean.getMsgList());
                 itemBean.getMsgList().addAll(msgPages);
 
-                //保存红点状态
+                itemBean.setShowDot(true);
+                //执行了请求最新页  说明 本地保存的 latestmsgid 已经过期 有新消息可以显示被清空历史消息的 topic 了
+                itemBean.setAlreadyDeletedLocalTopic(false);
+                itemBean.setLatestMsgIdWhenDeletedLocalTopic(-1);
+                //数据库
                 DatabaseManager.updateTopicWithTopicItemBean(itemBean);
                 //在记录列表中移除
                 synchronized (needUpdateMsgTopics) {
