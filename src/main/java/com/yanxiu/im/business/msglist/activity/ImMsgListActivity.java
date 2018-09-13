@@ -891,7 +891,9 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
         if (currentTopic != null) {
             ImSettingActivity.invoke(ImMsgListActivity.this, currentTopic.getTopicId(), REQUEST_CODE_SETTING);
         } else {
-            ImSettingActivity.invoke(ImMsgListActivity.this, -1, REQUEST_CODE_SETTING);
+            String memberName=getIntent().getStringExtra("memberName");
+            String topicName=getIntent().getStringExtra("groupName");
+            ImSettingActivity.invoke(ImMsgListActivity.this, memberName,topicName, REQUEST_CODE_SETTING);
         }
     }
 

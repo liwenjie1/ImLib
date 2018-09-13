@@ -35,6 +35,14 @@ public class ImSettingActivity extends ImBaseActivity implements ImTitleLayout.T
         activity.startActivityForResult(intent, requestCode);
     }
 
+    public static void invoke(Activity activity, String memberName, String topicName, int requestCode) {
+        Intent intent = new Intent(activity, ImSettingActivity.class);
+        intent.putExtra("topicId", -1);
+        intent.putExtra("memberName", memberName);
+        intent.putExtra("topicName", topicName);
+        activity.startActivityForResult(intent, requestCode);
+    }
+
 
     private TopicItemBean currentTopic;
     private ImTitleLayout mImTitleLayout;
@@ -85,6 +93,30 @@ public class ImSettingActivity extends ImBaseActivity implements ImTitleLayout.T
             boolean isManagerMember = mImSettingPresenter.checkCurrentUserRole(topicId);
             mImTalkSettingItem.setVisibility(isManagerMember ? View.VISIBLE : View.GONE);
         }
+
+        if (topicId == -1) {//预设 数据
+            String memberName = getIntent().getStringExtra("memberName");
+            String topicName = getIntent().getStringExtra("topicName");
+            Log.i(TAG, "setPrivateTopicInfo: ");
+            im_setting_group_info_layout.setVisibility(View.GONE);
+            im_setting_private_info_layout.setVisibility(View.VISIBLE);
+            //设置私聊 对象信息
+            ImageView memberAvaral = findViewById(R.id.im_setting_member_avaral);
+            Glide.with(this)
+                    .load("")
+                    .dontAnimate()
+                    .dontTransform()
+                    .placeholder(R.drawable.im_chat_default)
+                    .into(memberAvaral);
+
+            TextView memberNameTv = findViewById(R.id.im_setting_member_name);
+            memberNameTv.setText(memberName + "");
+            //私聊没有 禁言功能
+            mImTalkSettingItem.setVisibility(View.GONE);
+            //获取  来自
+            im_member_from_textview.setText(topicName + "");
+        }
+
         mImSettingPresenter.doGetTopicInfo(topicId);
     }
 
@@ -214,7 +246,7 @@ public class ImSettingActivity extends ImBaseActivity implements ImTitleLayout.T
             }
         }
         //外 不设置是否显示 禁言功能
-        mImTalkSettingItem.setVisibility(Constants.showTopicSilent?View.VISIBLE:View.GONE);
+        mImTalkSettingItem.setVisibility(Constants.showTopicSilent ? View.VISIBLE : View.GONE);
 
     }
 

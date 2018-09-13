@@ -32,6 +32,10 @@ public class ContactsPresenter implements ContactsContract.IPresenter {
         return mCurrentGroupIndex;
     }
 
+    public String getCurrentGroupName() {
+       return mGroupsBeans.get(mCurrentGroupIndex).getGroupName();
+    }
+
     public long getCurrentGroupId() {
         return mGroupsBeans.get(mCurrentGroupIndex).getGroupId();
     }

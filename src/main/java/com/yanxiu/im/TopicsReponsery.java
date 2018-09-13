@@ -115,7 +115,7 @@ public class TopicsReponsery {
                 topicInMemory = new ArrayList<>();
             }
             for (TopicItemBean memeryBean : topicInMemory) {
-                if (memeryBean.getTopicId()==bean.getTopicId()) {
+                if (memeryBean.getTopicId() == bean.getTopicId()) {
                     return;
                 }
             }
@@ -237,15 +237,17 @@ public class TopicsReponsery {
         });
     }
 
+    /*多次 执行 topiclist update 时有问题 暂时 忽略 （设置为 true）*/
     private boolean isMsgUpdate(ImTopic_new imTopicNew, TopicItemBean localTopic) {
         if (localTopic.getMsgList() == null) {
             return true;
         }
         final long lid = localTopic.getLatestMsgId();
         final long sid = imTopicNew.latestMsgId;
-        return lid < sid || lid <= 0||true;
+        return lid < sid || lid <= 0 || true;
     }
 
+    /*多次 执行 topiclist update 时有问题 暂时 忽略*/
     private boolean isMemberUpdate(ImTopic_new imTopicNew, TopicItemBean localTopic) {
         if (localTopic.getMembers() == null || localTopic.getMembers().size() < 2) {
             //如果本地没有 member 信息
@@ -257,7 +259,7 @@ public class TopicsReponsery {
         final int localChange = Integer.parseInt(lc);
         final int serverChange = Integer.parseInt(sc);
 
-        return localChange < serverChange||true;
+        return localChange < serverChange || true;
     }
 
 

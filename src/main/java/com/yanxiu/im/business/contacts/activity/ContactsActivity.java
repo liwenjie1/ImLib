@@ -175,7 +175,7 @@ public class ContactsActivity extends ImBaseActivity implements ContactsContract
                 mContactsPresenter.checkMemberDbInfo(contactsGroupBean,memberInfo);
 
                 ImMsgListActivity.invoke(ContactsActivity.this,
-                       memberInfo.imId,memberInfo.memberName, mContactsPresenter.getCurrentGroupId(), ImMsgListActivity.REQUEST_CODE_MEMBERID);
+                       memberInfo.imId,memberInfo.memberName, mContactsPresenter.getCurrentGroupId(),mContactsPresenter.getCurrentGroupName(), ImMsgListActivity.REQUEST_CODE_MEMBERID);
             }
         });
     }
