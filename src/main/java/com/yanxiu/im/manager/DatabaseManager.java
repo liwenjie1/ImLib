@@ -205,7 +205,7 @@ public class DatabaseManager {
                             Long.toString(topicId),
                             Long.toString(currentOtherMsgId))
                     .limit(1)
-                    .order("msgid desc")
+                    .order("msgid")
                     .find(DbMsg.class);
             //2.1 通过otherMsgId，查找到 otherMsgId < myMsgId <  previousOtherMsgId 的数据
             if (previousMsgList == null || previousMsgList.isEmpty()) {

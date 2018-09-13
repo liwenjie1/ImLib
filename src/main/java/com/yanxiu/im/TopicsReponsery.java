@@ -562,25 +562,28 @@ public class TopicsReponsery {
             @Override
             public void onGetTopicMsgList(List<ImMsg_new> msgList) {
                 Log.i(TAG, "onGetTopicMsgList: ");
-                ArrayList<MsgItemBean> msgPages = new ArrayList<>();
                 for (ImMsg_new imMsgNew : msgList) {
                     //获取 msglist 后  首先  保存数据库
-                    final MsgItemBean msgItemBean = DatabaseManager.updateDbMsgWithImMsg(imMsgNew, Constants.imId);
-//                    msgPages.add(msgItemBean);
+                    DatabaseManager.updateDbMsgWithImMsg(imMsgNew, Constants.imId);
                 }
-
-                final ArrayList<MsgItemBean> dbMsgs = DatabaseManager.getTopicMsgs(itemBean.getTopicId(), DatabaseManager.minMsgId, DatabaseManager.pagesize);
-                msgPages.addAll(dbMsgs);
-
-                List<MsgItemBean> msgBean = itemBean.getMsgList();
-                if (msgBean == null) {
-                    msgBean = new ArrayList<>();
-                    itemBean.setMsgList(msgBean);
+                /*数据库 的最后一页 20 条*/
+                final ArrayList<MsgItemBean> latestDbPage = DatabaseManager.getTopicMsgs(itemBean.getTopicId(), DatabaseManager.minMsgId, DatabaseManager.pagesize);
+                /*当前持有的 msglist*/
+                List<MsgItemBean> currentMsgList = itemBean.getMsgList();
+                /*此时 有2种情况   1、最新一页与已有页 相差 n 条msg 2、最新一页与已有页 有交叉*/
+                //去重 获得的最新页 进行 重复删除 去除交叉
+                if (currentMsgList == null) {
+                    currentMsgList = new ArrayList<>();
+                    itemBean.setMsgList(currentMsgList);
                 } else {
-                    msgBean.clear();
+//                    itemBean.getMembers().clear();
                 }
-                TopicInMemoryUtils.duplicateRemoval(msgPages, itemBean.getMsgList());
-                itemBean.getMsgList().addAll(msgPages);
+                TopicInMemoryUtils.duplicateRemoval(latestDbPage, currentMsgList);
+                //todo 相差的丢失数据 处理
+                //进行 msg 列表拼接 latestpage 插入到最前
+                latestDbPage.addAll(currentMsgList);
+                currentMsgList.clear();
+                currentMsgList.addAll(latestDbPage);
 
                 itemBean.setShowDot(true);
                 //执行了请求最新页  说明 本地保存的 latestmsgid 已经过期 有新消息可以显示被清空历史消息的 topic 了
@@ -608,7 +611,7 @@ public class TopicsReponsery {
                 uiHandler.post(new Runnable() {
                     @Override
                     public void run() {
-                        callback.onGetTopicItemBean(null);
+                        callback.onGetTopicItemBean(itemBean);
                     }
                 });
             }
@@ -714,6 +717,7 @@ public class TopicsReponsery {
                         DatabaseManager.updateDbMsgWithImMsg(msgNew, Constants.imId);
                     }
                 }
+                /*下来加载最新一页 理论上不能与 当前有的 msglist 发生重复 顺序拼接 msglist*/
                 final ArrayList<MsgItemBean> topicMsgs = DatabaseManager.getTopicMsgs(targetTopic.getTopicId(), startId, DatabaseManager.pagesize);
                 TopicInMemoryUtils.duplicateRemoval(topicMsgs, targetTopic.getMsgList());
                 targetTopic.getMsgList().addAll(topicMsgs);
@@ -728,6 +732,15 @@ public class TopicsReponsery {
             @Override
             public void onGetFailure(String msg) {
                 Log.i(TAG, "onGetMsgListFailure: " + msg);
+                final ArrayList<MsgItemBean> topicMsgs = DatabaseManager.getTopicMsgs(targetTopic.getTopicId(), startId, DatabaseManager.pagesize);
+                TopicInMemoryUtils.duplicateRemoval(topicMsgs, targetTopic.getMsgList());
+                targetTopic.getMsgList().addAll(topicMsgs);
+                uiHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        callback.onGetPage(topicMsgs);
+                    }
+                });
             }
         });
     }

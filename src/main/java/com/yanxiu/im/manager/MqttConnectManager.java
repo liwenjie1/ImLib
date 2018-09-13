@@ -299,6 +299,7 @@ public class MqttConnectManager {
         mMqttClient.setCallback(new MqttCallback() {
             @Override
             public void connectionLost(Throwable cause) {
+
                 YXToastUtil.showToast("mqtt 意外断开");
                 synchronized (MqttConnectManager.class) {
                     if (userStop) {

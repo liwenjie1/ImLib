@@ -319,7 +319,7 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
         //数据库清空标志位
         DatabaseManager.updateTopicWithTopicItemBean(currentTopic);
         //获取起始 msgid
-        final long startId = TopicInMemoryUtils.getMinImMsgIdInList(currentTopic.getMsgList());
+        final long startId = TopicInMemoryUtils.getMinMsgBeanRealIdInList(currentTopic.getMsgList());
         //执行手动刷新
         TopicsReponsery.getInstance().loadPageMsg(currentTopic, startId, new TopicsReponsery.GetMsgPageCallback() {
             @Override

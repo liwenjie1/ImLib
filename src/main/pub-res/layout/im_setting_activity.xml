@@ -103,10 +103,10 @@
             android:singleLine="true"
             android:ellipsize="end"
             android:background="@null"
-            android:gravity="center_vertical"
+            android:gravity="center_vertical|end"
             android:textSize="14dp"
             tools:text="周杰伦三年二班"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content" />
 
     </LinearLayout>
