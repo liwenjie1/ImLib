@@ -114,6 +114,11 @@ public class TopicsReponsery {
             if (topicInMemory == null) {
                 topicInMemory = new ArrayList<>();
             }
+            for (TopicItemBean memeryBean : topicInMemory) {
+                if (memeryBean.getTopicId()==bean.getTopicId()) {
+                    return;
+                }
+            }
             topicInMemory.add(bean);
             ImTopicSorter.sortByLatestTime(topicInMemory);
         }
@@ -187,10 +192,12 @@ public class TopicsReponsery {
                             has = true;
                             //是否有 member 更新
                             if (isMemberUpdate(imTopicNew, localTopic)) {
+                                Log.i(TAG, "onGetTopicList: 加入更新 member 集合");
                                 needUpdateMemberTopics.add(localTopic);
                             }
                             //检查是否有 msg 更新
                             if (isMsgUpdate(imTopicNew, localTopic)) {
+                                Log.i(TAG, "onGetTopicList: 加入 更新消息集合");
                                 needUpdateMsgTopics.add(localTopic);
                             }
                             //更新已有的
@@ -204,6 +211,7 @@ public class TopicsReponsery {
                         //新的 topic member 与 msg 都需要更新
                         needUpdateMsgTopics.add(savedBean);
                         needUpdateMemberTopics.add(savedBean);
+                        Log.i(TAG, "onGetTopicList: 加入更新 member + msg 集合");
                     }
                 }
                 Log.i(TAG, "onSuccess: 完成列表内新增和更新 ");
@@ -230,9 +238,12 @@ public class TopicsReponsery {
     }
 
     private boolean isMsgUpdate(ImTopic_new imTopicNew, TopicItemBean localTopic) {
+        if (localTopic.getMsgList() == null) {
+            return true;
+        }
         final long lid = localTopic.getLatestMsgId();
         final long sid = imTopicNew.latestMsgId;
-        return lid < sid;
+        return lid < sid || lid <= 0||true;
     }
 
     private boolean isMemberUpdate(ImTopic_new imTopicNew, TopicItemBean localTopic) {
@@ -246,7 +257,7 @@ public class TopicsReponsery {
         final int localChange = Integer.parseInt(lc);
         final int serverChange = Integer.parseInt(sc);
 
-        return localChange < serverChange;
+        return localChange < serverChange||true;
     }
 
 
@@ -445,6 +456,8 @@ public class TopicsReponsery {
                         //继续请求 msg 信息 之后回调 ui
                         if (checkShouldUpdateMsg(bean, callback)) {
                             requestLastestMsgPageFromServer(bean, callback);
+                        } else {
+                            Log.i(TAG, "onGetTopicItemBean: 不需要更新 msg");
                         }
                     }
                 }
@@ -455,6 +468,7 @@ public class TopicsReponsery {
             if (checkShouldUpdateMsg(bean, callback)) {
                 requestLastestMsgPageFromServer(bean, callback);
             } else {
+                Log.i(TAG, "onGetTopicItemBean: 不需要更新 msg");
                 callback.onGetTopicItemBean(bean);
             }
         }

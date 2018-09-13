@@ -367,9 +367,6 @@ public class MqttConnectManager {
                     if (connectCallback != null) {
                         connectCallback.onSuccess();
                     }
-                    //发送 eventbus 通知 mqtt 连接成功
-                    EventBus.getDefault().post(new MqttConnectedEvent());
-                    subscribeMember(Constants.imId);
                 }
 
                 @Override
