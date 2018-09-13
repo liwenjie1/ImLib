@@ -157,9 +157,6 @@ public class TopicsReponsery {
      */
     public void getServerTopicList(final String imToken, final TopicListUpdateCallback<TopicItemBean> callback) {
         //清空 更新对象列表
-        needUpdateMemberTopics.clear();
-        needUpdateMsgTopics.clear();
-
         mHttpRequestManager.requestUserTopicList(imToken, new HttpRequestManager.GetTopicListCallback<ImTopic_new>() {
             @Override
             public void onGetTopicList(List<ImTopic_new> topicList) {
@@ -237,17 +234,15 @@ public class TopicsReponsery {
         });
     }
 
-    /*多次 执行 topiclist update 时有问题 暂时 忽略 （设置为 true）*/
     private boolean isMsgUpdate(ImTopic_new imTopicNew, TopicItemBean localTopic) {
         if (localTopic.getMsgList() == null) {
             return true;
         }
         final long lid = localTopic.getLatestMsgId();
         final long sid = imTopicNew.latestMsgId;
-        return lid < sid || lid <= 0 || true;
+        return lid < sid || lid <= 0;
     }
 
-    /*多次 执行 topiclist update 时有问题 暂时 忽略*/
     private boolean isMemberUpdate(ImTopic_new imTopicNew, TopicItemBean localTopic) {
         if (localTopic.getMembers() == null || localTopic.getMembers().size() < 2) {
             //如果本地没有 member 信息
@@ -259,7 +254,7 @@ public class TopicsReponsery {
         final int localChange = Integer.parseInt(lc);
         final int serverChange = Integer.parseInt(sc);
 
-        return localChange < serverChange || true;
+        return localChange < serverChange;
     }
 
 
@@ -544,8 +539,6 @@ public class TopicsReponsery {
                         callback.onGetTopicItemBean(resultTopic);
                     }
                 });
-
-
             }
 
             @Override
@@ -699,6 +692,8 @@ public class TopicsReponsery {
     public void deleteTopicHistory(TopicItemBean topicItemBean, final DeleteTopicCallback callback) {
         //删除步骤 1、请求服务器删除 topic成功后  2、 删除数据库 3、同步内存（删除内存中的实例）
         //服务器删除成功
+        topicItemBean.setShowDot(false);
+        DatabaseManager.updateTopicWithTopicItemBean(topicItemBean);
         DatabaseManager.deleteLocalMsgByTopicId(topicItemBean);
         callback.onTopicDeleted();
         topicItemBean.setDeleteFlag();

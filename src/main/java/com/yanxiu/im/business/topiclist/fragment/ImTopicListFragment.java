@@ -47,6 +47,7 @@ import com.yanxiu.im.event.MsgListTopicRemovedEvent;
 import com.yanxiu.im.event.MsgListTopicUpdateEvent;
 import com.yanxiu.im.event.NewMsgEvent;
 import com.yanxiu.im.event.TopicChangEvent;
+import com.yanxiu.im.manager.MqttConnectManager;
 import com.yanxiu.lib.yx_basic_library.customize.dialog.CommonDialog;
 import com.yanxiu.lib.yx_basic_library.customize.dialog.CustomBaseDialog;
 
@@ -177,6 +178,7 @@ public class ImTopicListFragment extends FaceShowBaseFragment
 
                             @Override
                             public void onTopicDeleted() {
+                                topicListPresenter.doCheckRedDot(topicListPresenter.getTopicInMemory());
                                 mRecyclerAdapter.notifyItemRemoved(position);
                                 mRecyclerAdapter.notifyItemRangeChanged(position, mRecyclerAdapter.getItemCount() - position - 1);
                             }
@@ -253,7 +255,9 @@ public class ImTopicListFragment extends FaceShowBaseFragment
         mRecyclerAdapter.setDataList(dbTopicList);
         mRecyclerAdapter.notifyDataSetChanged();
         topicListPresenter.doCheckRedDot(dbTopicList);
-        topicListPresenter.doTopicListUpdate(dbTopicList);
+        if (MqttConnectManager.getInstance().isConnected()) {
+            topicListPresenter.doTopicListUpdate(dbTopicList);
+        }
     }
 
     /**
