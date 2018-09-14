@@ -297,7 +297,8 @@ public class ImTopicListFragment extends FaceShowBaseFragment
 
     @Override
     public void onTopicInfoUpdate(long topicId) {
-        mRecyclerAdapter.notifyItemChangedByTopicId(topicId);
+//        mRecyclerAdapter.notifyItemChangedByTopicId(topicId);
+        mRecyclerAdapter.notifyDataSetChanged();
         EventBus.getDefault().post(new MsgListTopicChangeEvent(topicId));
     }
 
