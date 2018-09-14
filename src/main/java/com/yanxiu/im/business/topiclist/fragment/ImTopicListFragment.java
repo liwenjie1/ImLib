@@ -179,8 +179,9 @@ public class ImTopicListFragment extends FaceShowBaseFragment
                             @Override
                             public void onTopicDeleted() {
                                 topicListPresenter.doCheckRedDot(topicListPresenter.getTopicInMemory());
-                                mRecyclerAdapter.notifyItemRemoved(position);
-                                mRecyclerAdapter.notifyItemRangeChanged(position, mRecyclerAdapter.getItemCount() - position - 1);
+                                mRecyclerAdapter.notifyItemChanged(position);
+//                                mRecyclerAdapter.notifyItemRemoved(position);
+//                                mRecyclerAdapter.notifyItemRangeChanged(position, mRecyclerAdapter.getItemCount() - position - 1);
                             }
                         });
                     }

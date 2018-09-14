@@ -90,7 +90,7 @@ public class MqttConnectManager {
 
 
     private String createClientId() {
-        return "android" + MqttClient.generateClientId();
+        return "android01" + MqttClient.generateClientId();
 //        return "android" + uuid++ + UUID.randomUUID().toString();
     }
 

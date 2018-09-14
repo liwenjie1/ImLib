@@ -156,6 +156,8 @@ public class TopicsReponsery {
      * 新的 topic list 需要的信息 为 最新的 member 信息  + 最新的 msg 信息
      */
     public void getServerTopicList(final String imToken, final TopicListUpdateCallback<TopicItemBean> callback) {
+        needUpdateMsgTopics.clear();
+        needUpdateMemberTopics.clear();
         //清空 更新对象列表
         mHttpRequestManager.requestUserTopicList(imToken, new HttpRequestManager.GetTopicListCallback<ImTopic_new>() {
             @Override
@@ -235,12 +237,20 @@ public class TopicsReponsery {
     }
 
     private boolean isMsgUpdate(ImTopic_new imTopicNew, TopicItemBean localTopic) {
-        if (localTopic.getMsgList() == null) {
-            return true;
+        long dbLatestMsgID = -1;//找到 topic 本地 msg 库中的最新 msgid
+        if (localTopic.getLatestMsg() != null) {
+            dbLatestMsgID = localTopic.getLatestMsgId();
         }
-        final long lid = localTopic.getLatestMsgId();
+        final long lid = localTopic.isAlreadyDeletedLocalTopic() ? localTopic.getLatestMsgIdWhenDeletedLocalTopic() : dbLatestMsgID;
         final long sid = imTopicNew.latestMsgId;
-        return lid < sid || lid <= 0;
+        //如果 server 上显示有新消息 即 serLatestId>localLatestId 优先级最高
+        if (sid > lid) return true;
+        //检查是否是 清空历史记录的 topic
+        if (localTopic.isAlreadyDeletedLocalTopic()) return false;//清空了历史消息 的不更新
+        //其余情况 没有清空历史消息标志的 如果本地没有消息列表 进行一次请求
+        if (localTopic.getMsgList() == null) return true;
+
+        return false;
     }
 
     private boolean isMemberUpdate(ImTopic_new imTopicNew, TopicItemBean localTopic) {
@@ -693,11 +703,13 @@ public class TopicsReponsery {
         //删除步骤 1、请求服务器删除 topic成功后  2、 删除数据库 3、同步内存（删除内存中的实例）
         //服务器删除成功
         topicItemBean.setShowDot(false);
+        topicItemBean.setDeleteFlag();
+        //清空内存消息列表
+        topicItemBean.getMsgList().clear();
         DatabaseManager.updateTopicWithTopicItemBean(topicItemBean);
         DatabaseManager.deleteLocalMsgByTopicId(topicItemBean);
         callback.onTopicDeleted();
-        topicItemBean.setDeleteFlag();
-        TopicInMemoryUtils.removeTopicFromListById(topicItemBean.getTopicId(), topicInMemory);
+//        TopicInMemoryUtils.removeTopicFromListById(topicItemBean.getTopicId(), topicInMemory);
     }
 
     public interface DeleteTopicCallback {
