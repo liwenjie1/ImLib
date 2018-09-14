@@ -108,10 +108,11 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
         activity.startActivityForResult(intent, requestCode);
     }
 
-    public static void invoke(Activity activity, long memberId, String memberName, long fromTopicId, String groupName, int requestCode) {
+    public static void invoke(Activity activity, long memberId, String memberName, String memberAvaral, long fromTopicId, String groupName, int requestCode) {
         Intent intent = new Intent(activity, ImMsgListActivity.class);
         intent.putExtra("memberId", memberId);
         intent.putExtra("memberName", memberName);
+        intent.putExtra("memberAvaral", memberAvaral);
         intent.putExtra("fromTopicId", fromTopicId);
         intent.putExtra("groupName", groupName);
         intent.putExtra("requestCode", requestCode);
@@ -891,9 +892,16 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
         if (currentTopic != null) {
             ImSettingActivity.invoke(ImMsgListActivity.this, currentTopic.getTopicId(), REQUEST_CODE_SETTING);
         } else {
-            String memberName=getIntent().getStringExtra("memberName");
-            String topicName=getIntent().getStringExtra("groupName");
-            ImSettingActivity.invoke(ImMsgListActivity.this, memberName,topicName, REQUEST_CODE_SETTING);
+            String memberName = getIntent().getStringExtra("memberName");
+            long memberId = getIntent().getLongExtra("memberId", -1);
+            String topicName = getIntent().getStringExtra("groupName");
+            String memberAvaral = getIntent().getStringExtra("memberAvaral");
+            ImSettingActivity.invoke(ImMsgListActivity.this,
+                    memberName,
+                    memberAvaral,
+                    memberId,
+                    topicName,
+                    REQUEST_CODE_SETTING);
         }
     }
 
