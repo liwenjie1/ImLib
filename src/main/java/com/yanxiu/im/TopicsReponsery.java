@@ -239,7 +239,7 @@ public class TopicsReponsery {
     private boolean isMsgUpdate(ImTopic_new imTopicNew, TopicItemBean localTopic) {
         long dbLatestMsgID = -1;//找到 topic 本地 msg 库中的最新 msgid
         if (localTopic.getLatestMsg() != null) {
-            dbLatestMsgID = localTopic.getLatestMsgId();
+            dbLatestMsgID = localTopic.getLatestMsg().getRealMsgId();
         }
         final long lid = localTopic.isAlreadyDeletedLocalTopic() ? localTopic.getLatestMsgIdWhenDeletedLocalTopic() : dbLatestMsgID;
         final long sid = imTopicNew.latestMsgId;
@@ -587,6 +587,12 @@ public class TopicsReponsery {
                 }
                 /*数据库 的最后一页 20 条*/
                 final ArrayList<MsgItemBean> latestDbPage = DatabaseManager.getTopicMsgs(itemBean.getTopicId(), DatabaseManager.minMsgId, DatabaseManager.pagesize);
+                //设置 load 标志 id
+                long startId = Long.MAX_VALUE;
+                if (latestDbPage != null) {
+                    startId = TopicInMemoryUtils.getMinMsgBeanRealIdInList(latestDbPage);
+                }
+                itemBean.setRequestMsgId(startId);
                 /*当前持有的 msglist*/
                 List<MsgItemBean> currentMsgList = itemBean.getMsgList();
                 /*此时 有2种情况   1、最新一页与已有页 相差 n 条msg 2、最新一页与已有页 有交叉*/
@@ -598,7 +604,7 @@ public class TopicsReponsery {
 //                    itemBean.getMembers().clear();
                 }
                 TopicInMemoryUtils.duplicateRemoval(latestDbPage, currentMsgList);
-                //todo 相差的丢失数据 处理
+                //todo 相差的丢失数据 处理 在 loadmore 中进行处理
                 //进行 msg 列表拼接 latestpage 插入到最前
                 latestDbPage.addAll(currentMsgList);
                 currentMsgList.clear();
@@ -615,7 +621,6 @@ public class TopicsReponsery {
                     needUpdateMsgTopics.remove(itemBean);
                 }
                 /*本地 mock topic 检查 此时 topic 已经被加入到 列表当中了*/
-
                 uiHandler.post(new Runnable() {
                     @Override
                     public void run() {
@@ -740,30 +745,39 @@ public class TopicsReponsery {
                         DatabaseManager.updateDbMsgWithImMsg(msgNew, Constants.imId);
                     }
                 }
-                /*下来加载最新一页 理论上不能与 当前有的 msglist 发生重复 顺序拼接 msglist*/
-                final ArrayList<MsgItemBean> topicMsgs = DatabaseManager.getTopicMsgs(targetTopic.getTopicId(), startId, DatabaseManager.pagesize);
-                TopicInMemoryUtils.duplicateRemoval(topicMsgs, targetTopic.getMsgList());
-                targetTopic.getMsgList().addAll(topicMsgs);
-                uiHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        callback.onGetPage(topicMsgs);
-                    }
-                });
+                loadMsgFromDb(targetTopic, startId, callback);
+
             }
 
             @Override
             public void onGetFailure(String msg) {
                 Log.i(TAG, "onGetMsgListFailure: " + msg);
-                final ArrayList<MsgItemBean> topicMsgs = DatabaseManager.getTopicMsgs(targetTopic.getTopicId(), startId, DatabaseManager.pagesize);
-                TopicInMemoryUtils.duplicateRemoval(topicMsgs, targetTopic.getMsgList());
-                targetTopic.getMsgList().addAll(topicMsgs);
-                uiHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        callback.onGetPage(topicMsgs);
-                    }
-                });
+                loadMsgFromDb(targetTopic, startId, callback);
+            }
+        });
+    }
+
+    /**
+     * 从数据库加载最新页
+     */
+    private void loadMsgFromDb(TopicItemBean targetTopic, long startId, final GetMsgPageCallback callback) {
+        /*下来加载最新一页 理论上不能与 当前有的 msglist 发生重复 顺序拼接 msglist*/
+        /*情况 ： 由 startid 获取数据最新一页 msglist
+         * 获取后 设置 requestMsgId 为获取也的最小 realmsgid*/
+        final ArrayList<MsgItemBean> topicMsgs = DatabaseManager.getTopicMsgs(targetTopic.getTopicId(), startId, DatabaseManager.pagesize);
+
+        if (topicMsgs == null || topicMsgs.size() == 0) {//如果数据库已经没有数据可获取
+            //do nothing
+        } else {
+            //如果获取新页 设置 requestid
+            targetTopic.setRequestMsgId(TopicInMemoryUtils.getMinMsgBeanRealIdInList(topicMsgs));
+        }
+        TopicInMemoryUtils.duplicateRemoval(topicMsgs, targetTopic.getMsgList());
+        targetTopic.getMsgList().addAll(topicMsgs);
+        uiHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                callback.onGetPage(topicMsgs);
             }
         });
     }

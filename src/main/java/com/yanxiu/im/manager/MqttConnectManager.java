@@ -18,7 +18,6 @@ import com.yanxiu.im.protobuf.MqttMsgProto;
 import com.yanxiu.lib.yx_basic_library.YXApplication;
 import com.yanxiu.lib.yx_basic_library.network.IYXHttpCallback;
 import com.yanxiu.lib.yx_basic_library.network.YXRequestBase;
-import com.yanxiu.lib.yx_basic_library.util.YXToastUtil;
 import com.yanxiu.lib.yx_basic_library.util.logger.YXLogger;
 
 import org.eclipse.paho.android.service.MqttAndroidClient;
@@ -299,8 +298,8 @@ public class MqttConnectManager {
         mMqttClient.setCallback(new MqttCallback() {
             @Override
             public void connectionLost(Throwable cause) {
+                Log.i(TAG, "connectionLost: ");
                 isConnected = false;
-                YXToastUtil.showToast("mqtt 意外断开");
                 synchronized (MqttConnectManager.class) {
                     if (userStop) {
                         //如果是用户 进行了断开行为 不重试连接
@@ -315,13 +314,11 @@ public class MqttConnectManager {
                     mReconnectManager.start(new MqttReconnectManager.AlarmCallback() {
                         @Override
                         public void onTick() {
-                            YXToastUtil.showToast("mqtt 尝试重连");
                             doConnect(connectCallback, options);
                         }
                     });
-
                 }
-                Log.i(TAG, "connectionLost: ");
+
             }
 
             @Override
@@ -413,7 +410,7 @@ public class MqttConnectManager {
         //连接超时时间
         options.setConnectionTimeout(10);
         //设置 心跳包
-        options.setKeepAliveInterval(60);
+        options.setKeepAliveInterval(30);
         options.setUserName(userName);
         options.setPassword(passWord.toCharArray());
         //定义遗言

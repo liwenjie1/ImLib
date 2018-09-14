@@ -12,6 +12,7 @@ import com.yanxiu.im.bean.TopicItemBean;
 import com.yanxiu.im.bean.net_bean.ImMember_new;
 import com.yanxiu.im.bean.net_bean.ImMsg_new;
 import com.yanxiu.im.bean.net_bean.ImTopic_new;
+import com.yanxiu.im.business.utils.TopicInMemoryUtils;
 import com.yanxiu.im.db.DbGroup;
 import com.yanxiu.im.db.DbMember;
 import com.yanxiu.im.db.DbMsg;
@@ -482,6 +483,11 @@ public class DatabaseManager {
         topicItemBean.setLatestMsgTime(dbTopic_.latestMsgTime);
         topicItemBean.setMsgList(dbTopic_.getMergedMsgs());
         topicItemBean.setManagers(dbTopic_.getManagers());
+        if (dbTopic_.getMergedMsgs() != null) {
+            topicItemBean.setRequestMsgId(TopicInMemoryUtils.getMinMsgBeanRealIdInList(dbTopic_.getMergedMsgs()));
+        }else {
+            topicItemBean.setRequestMsgId(Long.MAX_VALUE);
+        }
 
         if (TextUtils.equals("1", topicItemBean.getType())) {
             topicItemBean.setSilence(false);//私聊没有禁言

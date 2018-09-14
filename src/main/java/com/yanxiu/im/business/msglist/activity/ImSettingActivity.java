@@ -22,6 +22,7 @@ import com.yanxiu.im.business.view.ImSettingItemView;
 import com.yanxiu.im.business.view.ImSwitchButton;
 import com.yanxiu.im.business.view.ImTitleLayout;
 import com.yanxiu.im.db.DbMember;
+import com.yanxiu.lib.yx_basic_library.util.YXToastUtil;
 
 import java.util.List;
 
@@ -35,7 +36,7 @@ public class ImSettingActivity extends ImBaseActivity implements ImTitleLayout.T
         activity.startActivityForResult(intent, requestCode);
     }
 
-    public static void invoke(Activity activity, String memberName,String memberAvaral ,long memberId, String topicName, int requestCode) {
+    public static void invoke(Activity activity, String memberName, String memberAvaral, long memberId, String topicName, int requestCode) {
         Intent intent = new Intent(activity, ImSettingActivity.class);
         intent.putExtra("topicId", -1);
         intent.putExtra("memberId", memberId);
@@ -132,9 +133,11 @@ public class ImSettingActivity extends ImBaseActivity implements ImTitleLayout.T
             public void onCheckedChanged(ImSwitchButton view, boolean isChecked) {
                 if (currentTopic != null) {
                     currentTopic.setBlockNotice(isChecked);
+                    long topicId = getIntent().getLongExtra("topicId", -1);
+                    mImSettingPresenter.dosetNotice(topicId, isChecked);
+                } else {
+                    YXToastUtil.showToast("会话成员不存在");
                 }
-                long topicId = getIntent().getLongExtra("topicId", -1);
-                mImSettingPresenter.dosetNotice(topicId, isChecked);
             }
         });
         // 禁言设置按钮
@@ -143,9 +146,11 @@ public class ImSettingActivity extends ImBaseActivity implements ImTitleLayout.T
             public void onCheckedChanged(ImSwitchButton view, boolean isChecked) {
                 if (currentTopic != null) {
                     currentTopic.setSilence(isChecked);
+                    long topicId = getIntent().getLongExtra("topicId", -1);
+                    mImSettingPresenter.dosetSilent(topicId, isChecked);
+                } else {
+                    YXToastUtil.showToast("会话成员不存在");
                 }
-                long topicId = getIntent().getLongExtra("topicId", -1);
-                mImSettingPresenter.dosetSilent(topicId, isChecked);
             }
         });
 
@@ -222,6 +227,8 @@ public class ImSettingActivity extends ImBaseActivity implements ImTitleLayout.T
         //私聊没有 禁言功能
         mImTalkSettingItem.setVisibility(View.GONE);
         //获取  来自
+
+        findViewById(R.id.im_from_layout).setVisibility(TextUtils.isEmpty(topicBean.getGroup()) ? View.GONE : View.VISIBLE);
         im_member_from_textview.setText(topicBean.getGroup() + "");
     }
 
