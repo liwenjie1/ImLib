@@ -22,6 +22,7 @@ import com.yanxiu.im.business.view.ImSettingItemView;
 import com.yanxiu.im.business.view.ImSwitchButton;
 import com.yanxiu.im.business.view.ImTitleLayout;
 import com.yanxiu.im.db.DbMember;
+import com.yanxiu.lib.yx_basic_library.util.YXToastUtil;
 
 import java.util.List;
 
@@ -32,6 +33,16 @@ public class ImSettingActivity extends ImBaseActivity implements ImTitleLayout.T
     public static void invoke(Activity activity, long topicId, int requestCode) {
         Intent intent = new Intent(activity, ImSettingActivity.class);
         intent.putExtra("topicId", topicId);
+        activity.startActivityForResult(intent, requestCode);
+    }
+
+    public static void invoke(Activity activity, String memberName, String memberAvaral, long memberId, String topicName, int requestCode) {
+        Intent intent = new Intent(activity, ImSettingActivity.class);
+        intent.putExtra("topicId", -1);
+        intent.putExtra("memberId", memberId);
+        intent.putExtra("memberName", memberName);
+        intent.putExtra("memberAvaral", memberAvaral);
+        intent.putExtra("topicName", topicName);
         activity.startActivityForResult(intent, requestCode);
     }
 
@@ -85,6 +96,31 @@ public class ImSettingActivity extends ImBaseActivity implements ImTitleLayout.T
             boolean isManagerMember = mImSettingPresenter.checkCurrentUserRole(topicId);
             mImTalkSettingItem.setVisibility(isManagerMember ? View.VISIBLE : View.GONE);
         }
+
+        if (topicId == -1) {//预设 数据
+            String memberName = getIntent().getStringExtra("memberName");
+            String topicName = getIntent().getStringExtra("topicName");
+            String url = getIntent().getStringExtra("memberAvaral");
+            Log.i(TAG, "setPrivateTopicInfo: ");
+            im_setting_group_info_layout.setVisibility(View.GONE);
+            im_setting_private_info_layout.setVisibility(View.VISIBLE);
+            //设置私聊 对象信息
+            ImageView memberAvaral = findViewById(R.id.im_setting_member_avaral);
+            Glide.with(this)
+                    .load(url)
+                    .dontAnimate()
+                    .dontTransform()
+                    .placeholder(R.drawable.im_chat_default)
+                    .into(memberAvaral);
+
+            TextView memberNameTv = findViewById(R.id.im_setting_member_name);
+            memberNameTv.setText(memberName + "");
+            //私聊没有 禁言功能
+            mImTalkSettingItem.setVisibility(View.GONE);
+            //获取  来自
+            im_member_from_textview.setText(topicName + "");
+        }
+
         mImSettingPresenter.doGetTopicInfo(topicId);
     }
 
@@ -97,9 +133,11 @@ public class ImSettingActivity extends ImBaseActivity implements ImTitleLayout.T
             public void onCheckedChanged(ImSwitchButton view, boolean isChecked) {
                 if (currentTopic != null) {
                     currentTopic.setBlockNotice(isChecked);
+                    long topicId = getIntent().getLongExtra("topicId", -1);
+                    mImSettingPresenter.dosetNotice(topicId, isChecked);
+                } else {
+                    YXToastUtil.showToast("会话成员不存在");
                 }
-                long topicId = getIntent().getLongExtra("topicId", -1);
-                mImSettingPresenter.dosetNotice(topicId, isChecked);
             }
         });
         // 禁言设置按钮
@@ -108,9 +146,11 @@ public class ImSettingActivity extends ImBaseActivity implements ImTitleLayout.T
             public void onCheckedChanged(ImSwitchButton view, boolean isChecked) {
                 if (currentTopic != null) {
                     currentTopic.setSilence(isChecked);
+                    long topicId = getIntent().getLongExtra("topicId", -1);
+                    mImSettingPresenter.dosetSilent(topicId, isChecked);
+                } else {
+                    YXToastUtil.showToast("会话成员不存在");
                 }
-                long topicId = getIntent().getLongExtra("topicId", -1);
-                mImSettingPresenter.dosetSilent(topicId, isChecked);
             }
         });
 
@@ -187,6 +227,8 @@ public class ImSettingActivity extends ImBaseActivity implements ImTitleLayout.T
         //私聊没有 禁言功能
         mImTalkSettingItem.setVisibility(View.GONE);
         //获取  来自
+
+        findViewById(R.id.im_from_layout).setVisibility(TextUtils.isEmpty(topicBean.getGroup()) ? View.GONE : View.VISIBLE);
         im_member_from_textview.setText(topicBean.getGroup() + "");
     }
 
@@ -214,7 +256,7 @@ public class ImSettingActivity extends ImBaseActivity implements ImTitleLayout.T
             }
         }
         //外 不设置是否显示 禁言功能
-        mImTalkSettingItem.setVisibility(Constants.showTopicSilent?View.VISIBLE:View.GONE);
+        mImTalkSettingItem.setVisibility(Constants.showTopicSilent ? View.VISIBLE : View.GONE);
 
     }
 

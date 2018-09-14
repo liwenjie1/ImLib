@@ -310,10 +310,16 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
 
     @Override
     public void doLoadMore(final TopicItemBean currentTopic) {
+        if (currentTopic == null) {
+            view.onLoadMoreFromDb(0);
+            return;
+        }
         //清空 历史数据标志位
         currentTopic.setLatestMsgIdWhenDeletedLocalTopic(-1);
+        //数据库清空标志位
+        DatabaseManager.updateTopicWithTopicItemBean(currentTopic);
         //获取起始 msgid
-        final long startId = TopicInMemoryUtils.getMinImMsgIdInList(currentTopic.getMsgList());
+        final long startId = currentTopic.getRequestMsgId();
         //执行手动刷新
         TopicsReponsery.getInstance().loadPageMsg(currentTopic, startId, new TopicsReponsery.GetMsgPageCallback() {
             @Override
@@ -343,7 +349,7 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
             MsgItemBean curBean = currentTopic.getMsgList().get(20);
             if (curBean.getType() == MsgItemBean.MSG_TYPE_MYSELF) {
                 //继续向上查找
-                for (int i = 20; i < currentTopic.getMsgList().size(); i++) {
+                for (int i = 19; i < currentTopic.getMsgList().size(); i++) {
                     if (currentTopic.getMsgList().get(i).getType() == MsgItemBean.MSG_TYPE_OTHER_PEOPLE) {
                         curBean = currentTopic.getMsgList().get(i);
                         break;
@@ -352,13 +358,13 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
             }
 
             int curIndex = currentTopic.getMsgList().indexOf(curBean);
-
             List<MsgItemBean> remainMsgs = new ArrayList<>();
             for (int i = 0; i <= curIndex; i++) {
                 remainMsgs.add(currentTopic.getMsgList().get(i));
             }
             currentTopic.getMsgList().clear();
             currentTopic.getMsgList().addAll(remainMsgs);
+            currentTopic.setRequestMsgId(TopicInMemoryUtils.getMinMsgBeanRealIdInList(remainMsgs));
         }
     }
 
@@ -367,13 +373,16 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
      */
     public void updateTopicInfo(final TopicItemBean currentTopic) {
         Log.i(TAG, "updateTopicInfo: ");
-        TopicsReponsery.getInstance().updateTopicInfo(currentTopic, new TopicsReponsery.GetTopicItemBeanCallback() {
+        if (currentTopic == null) {
+            return;
+        }
+        TopicsReponsery.getInstance().updateTopicMemberInfoFromServer(currentTopic, new TopicsReponsery.GetTopicItemBeanCallback() {
             @Override
             public void onGetTopicItemBean(TopicItemBean bean) {
-                //判断 deletemsgid 对要展示的数据进行截断
-                long deleteMsgId=bean.getLatestMsgIdWhenDeletedLocalTopic();
-                if (deleteMsgId>0) {
-                    TopicInMemoryUtils.cutoffMsgListByMsgId(deleteMsgId,bean.getMsgList());
+                if (currentTopic != null) {
+                    currentTopic.setShowDot(false);
+                    //数据库 保存红点取消
+                    DatabaseManager.updateTopicWithTopicItemBean(currentTopic);
                 }
                 if (bean != null) {
                     view.onTopicInfoUpdate();
@@ -432,6 +441,7 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
                         DatabaseManager.getTopicMsgs(targetTopic.getTopicId(), DatabaseManager.minMsgId, DatabaseManager.pagesize);
                 targetTopic.getMsgList().clear();
                 targetTopic.getMsgList().addAll(msgsFromDb);
+                targetTopic.setRequestMsgId(TopicInMemoryUtils.getMinMsgBeanRealIdInList(msgsFromDb));
                 //处理
                 TopicInMemoryUtils.processMsgListDateInfo(msgsFromDb);
                 targetTopic.setName(targetTopic.getGroup());
@@ -439,9 +449,9 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
                 DatabaseManager.updateTopicWithTopicItemBean(targetTopic);
 
                 //判断 deletemsgid 对要展示的数据进行截断
-                long deleteMsgId=targetTopic.getLatestMsgIdWhenDeletedLocalTopic();
-                if (deleteMsgId>0) {
-                    TopicInMemoryUtils.cutoffMsgListByMsgId(deleteMsgId,targetTopic.getMsgList());
+                long deleteMsgId = targetTopic.getLatestMsgIdWhenDeletedLocalTopic();
+                if (deleteMsgId > 0) {
+                    TopicInMemoryUtils.cutoffMsgListByMsgId(deleteMsgId, targetTopic.getMsgList());
                 }
 
                 if (view != null) {
@@ -481,8 +491,8 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
      * 用于保存 临时对话的 msglist
      */
     @Override
-    public TopicItemBean createMockTopicForMsg(long memberId, long fromTopic,String memberName) {
-        return TopicsReponsery.getInstance().createMockTopic(fromTopic, memberId,memberName);
+    public TopicItemBean createMockTopicForMsg(long memberId, long fromTopic, String memberName) {
+        return TopicsReponsery.getInstance().createMockTopic(fromTopic, memberId, memberName);
     }
 
     /**

@@ -20,6 +20,7 @@ import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.WindowManager;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
@@ -54,6 +55,8 @@ import com.yanxiu.im.event.MsgListNewMsgEvent;
 import com.yanxiu.im.event.MsgListTopicChangeEvent;
 import com.yanxiu.im.event.MsgListTopicRemovedEvent;
 import com.yanxiu.im.event.MsgListTopicUpdateEvent;
+import com.yanxiu.lib.yx_basic_library.util.NotificationUtil;
+import com.yanxiu.lib.yx_basic_library.util.logger.YXLogger;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -105,10 +108,11 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
         activity.startActivityForResult(intent, requestCode);
     }
 
-    public static void invoke(Activity activity, long memberId, String memberName, long fromTopicId, String groupName, int requestCode) {
+    public static void invoke(Activity activity, long memberId, String memberName, String memberAvaral, long fromTopicId, String groupName, int requestCode) {
         Intent intent = new Intent(activity, ImMsgListActivity.class);
         intent.putExtra("memberId", memberId);
         intent.putExtra("memberName", memberName);
+        intent.putExtra("memberAvaral", memberAvaral);
         intent.putExtra("fromTopicId", fromTopicId);
         intent.putExtra("groupName", groupName);
         intent.putExtra("requestCode", requestCode);
@@ -141,8 +145,6 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
     }
 
 
-
-
     private RecyclerView im_msglist_recyclerview;
     private ImMsgListDecorateAdapter<MsgItemBean> msgRecyclerAdapter;
     private ImageView cameraView;
@@ -156,6 +158,10 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+                | WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
+                | WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
+
         setContentView(R.layout.im_msglist_activity);
         initView();
         initData();
@@ -213,6 +219,7 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
 
         im_msglist_recyclerview.setAdapter(msgRecyclerAdapter);
         im_msglist_recyclerview.scrollToPosition(0);
+
         //更新member信息
         msgListPresenter.updateTopicInfo(currentTopic);
         if (Constants.showTopicSetting) {
@@ -244,12 +251,24 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
                 //通过推送 开启的 msglist 界面 可能是群聊也可能是私聊  但是在服务器上一定存在 所以本地先查找 ，没有直接在服务器上获取
                 //如果 本地没有 在 异步执行 服务器获取的之间，创建本地 tempTopicBean 来容纳消息列表
                 String topicId = getIntent().getStringExtra("topicId");
+                try {
+                    final long id = Long.parseLong(topicId);
+                    NotificationUtil.cancelNotificationById(this, (int) id);
+                } catch (NumberFormatException e) {
+                    YXLogger.e(TAG, "Topic Id 格式转换出错");
+                }
                 msgListPresenter.openPushTopic(Long.valueOf(topicId));
             }
             break;
             case REQUEST_CODE_TOPICID: {
                 //通过 topiclist 界面点击 topic 开启 msglist 界面 topic 一定存在 只需要在内存查找 获取
                 String topicId = getIntent().getStringExtra("topicId");
+                try {
+                    final long id = Long.parseLong(topicId);
+                    NotificationUtil.cancelNotificationById(this, (int) id);
+                } catch (NumberFormatException e) {
+                    YXLogger.e(TAG, "Topic Id 格式转换出错");
+                }
                 msgListPresenter.openTopicByTopicId(Long.valueOf(topicId));
             }
             break;
@@ -707,11 +726,15 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
             Toast.makeText(this, "没有更多数据", Toast.LENGTH_SHORT).show();
             return;
         }
-        int startPosition = Math.max(msgRecyclerAdapter.getItemCount() - size - 1, 0);
-        int endPosition = Math.max(msgRecyclerAdapter.getItemCount() - 1, 0);
-        msgRecyclerAdapter.notifyItemRangeInserted(startPosition, endPosition);
-        msgRecyclerAdapter.notifyItemRangeChanged(startPosition, endPosition);
-
+        if (msgRecyclerAdapter.getItemCount() - size < 7) {
+            //不满一屏幕 全更新
+            msgRecyclerAdapter.notifyDataSetChanged();
+        } else {
+            int startPosition = Math.max(msgRecyclerAdapter.getItemCount() - size - 1, 0);
+            int endPosition = Math.max(msgRecyclerAdapter.getItemCount() - 1, 0);
+            msgRecyclerAdapter.notifyItemRangeInserted(startPosition, endPosition);
+            msgRecyclerAdapter.notifyItemRangeChanged(startPosition, endPosition);
+        }
     }
 
     /**
@@ -772,6 +795,9 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
         //打开一个 本地存在的 realtopic
         currentTopic = realBean;
         setTitlemsg(realBean);
+        if (currentTopic != null) {
+            currentTopic.setShowDot(false);
+        }
         showSlientNotice(currentTopic.isSilence());
     }
 
@@ -779,6 +805,9 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
     public void onPushTopicOpend(final TopicItemBean tempBean) {
         //打开一个 push 开启的topic
         currentTopic = tempBean;
+        if (currentTopic != null) {
+            currentTopic.setShowDot(false);
+        }
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -861,9 +890,18 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
 
         //跳转到设置界面
         if (currentTopic != null) {
-            ImSettingActivity.invoke(ImMsgListActivity.this, currentTopic.getTopicId(),REQUEST_CODE_SETTING);
+            ImSettingActivity.invoke(ImMsgListActivity.this, currentTopic.getTopicId(), REQUEST_CODE_SETTING);
         } else {
-            ImSettingActivity.invoke(ImMsgListActivity.this, -1,REQUEST_CODE_SETTING);
+            String memberName = getIntent().getStringExtra("memberName");
+            long memberId = getIntent().getLongExtra("memberId", -1);
+            String topicName = getIntent().getStringExtra("groupName");
+            String memberAvaral = getIntent().getStringExtra("memberAvaral");
+            ImSettingActivity.invoke(ImMsgListActivity.this,
+                    memberName,
+                    memberAvaral,
+                    memberId,
+                    topicName,
+                    REQUEST_CODE_SETTING);
         }
     }
 

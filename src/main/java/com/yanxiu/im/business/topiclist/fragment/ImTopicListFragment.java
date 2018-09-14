@@ -47,6 +47,7 @@ import com.yanxiu.im.event.MsgListTopicRemovedEvent;
 import com.yanxiu.im.event.MsgListTopicUpdateEvent;
 import com.yanxiu.im.event.NewMsgEvent;
 import com.yanxiu.im.event.TopicChangEvent;
+import com.yanxiu.im.manager.MqttConnectManager;
 import com.yanxiu.lib.yx_basic_library.customize.dialog.CommonDialog;
 import com.yanxiu.lib.yx_basic_library.customize.dialog.CustomBaseDialog;
 
@@ -177,8 +178,10 @@ public class ImTopicListFragment extends FaceShowBaseFragment
 
                             @Override
                             public void onTopicDeleted() {
-                                mRecyclerAdapter.notifyItemRemoved(position);
-                                mRecyclerAdapter.notifyItemRangeChanged(position, mRecyclerAdapter.getItemCount() - position - 1);
+                                topicListPresenter.doCheckRedDot(topicListPresenter.getTopicInMemory());
+                                mRecyclerAdapter.notifyItemChanged(position);
+//                                mRecyclerAdapter.notifyItemRemoved(position);
+//                                mRecyclerAdapter.notifyItemRangeChanged(position, mRecyclerAdapter.getItemCount() - position - 1);
                             }
                         });
                     }
@@ -192,6 +195,14 @@ public class ImTopicListFragment extends FaceShowBaseFragment
             }
         });
         EventBus.getDefault().register(this);
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (topicListPresenter != null) {
+            topicListPresenter.doCheckRedDot(topicListPresenter.getTopicInMemory());
+        }
     }
 
     @Override
@@ -253,7 +264,9 @@ public class ImTopicListFragment extends FaceShowBaseFragment
         mRecyclerAdapter.setDataList(dbTopicList);
         mRecyclerAdapter.notifyDataSetChanged();
         topicListPresenter.doCheckRedDot(dbTopicList);
-        topicListPresenter.doTopicListUpdate(dbTopicList);
+        if (MqttConnectManager.getInstance().isConnected()) {
+            topicListPresenter.doTopicListUpdate(dbTopicList);
+        }
     }
 
     /**
@@ -284,7 +297,8 @@ public class ImTopicListFragment extends FaceShowBaseFragment
 
     @Override
     public void onTopicInfoUpdate(long topicId) {
-        mRecyclerAdapter.notifyItemChangedByTopicId(topicId);
+//        mRecyclerAdapter.notifyItemChangedByTopicId(topicId);
+        mRecyclerAdapter.notifyDataSetChanged();
         EventBus.getDefault().post(new MsgListTopicChangeEvent(topicId));
     }
 

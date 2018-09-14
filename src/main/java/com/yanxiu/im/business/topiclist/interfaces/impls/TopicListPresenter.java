@@ -129,16 +129,17 @@ public class TopicListPresenter implements TopicListContract.Presenter {
             public void onGetTopicItemBean(TopicItemBean bean) {
                 //
                 if (bean != null) {
-                    TopicsReponsery.getInstance().updateTopicInfo(bean, new TopicsReponsery.GetTopicItemBeanCallback() {
+                    //更新 member 信息
+                    TopicsReponsery.getInstance().updateTopicMemberInfoFromServer(bean, new TopicsReponsery.GetTopicItemBeanCallback() {
                         @Override
                         public void onGetTopicItemBean(TopicItemBean bean) {
                             view.onTopicInfoUpdate(bean.getTopicId());
                         }
                     });
-                }else {
+                } else {
                     Log.i(TAG, "onGetTopicItemBean: topic 事件  新加入 topic");
                     //如果 本地没有这个 topic 而又收到了 update 通知 说明是 自己被添加到这个 topic 中
-                    doAddedToTopic(topicId,true);
+                    doAddedToTopic(topicId, true);
                 }
             }
         });
@@ -150,12 +151,13 @@ public class TopicListPresenter implements TopicListContract.Presenter {
         //处理红点
         boolean hasReddot = false;
         if (topics == null) {
-            return;
-        }
-        for (TopicItemBean topic : topics) {
-            if (topic.isShowDot()) {
-                hasReddot = true;
-                break;
+            hasReddot = false;
+        } else {
+            for (TopicItemBean topic : topics) {
+                if (topic.isShowDot()) {
+                    hasReddot = true;
+                    break;
+                }
             }
         }
         final boolean hasReddot2 = hasReddot;
@@ -174,18 +176,13 @@ public class TopicListPresenter implements TopicListContract.Presenter {
         //首先找到 msg 对应的 topic topic list 中可能没有 对应的 topic 因为是被清空历史记录的 topic
         TopicItemBean targetTopic = TopicInMemoryUtils.findTopicByTopicId(msg.getTopicId(), topics);
         //在数据库中查找 如果执行了数据查找 可以认为 这是一个被清空历史的topic
-        if (targetTopic == null) {
-            targetTopic = TopicsReponsery.getInstance().getTopicFromDb(msg.getTopicId());
-            if (targetTopic == null) {
-                return;
-            }
-            //重新加入列表
-            topics.add(targetTopic);
-            if (targetTopic.isAlreadyDeletedLocalTopic()) {
-                // todo 是一个清空历史消息的 topic
-            }else {
-                //不是呢？
-            }
+
+        if (targetTopic.isAlreadyDeletedLocalTopic()) {
+            //如果收到消息的是一个清空历史记录的 topic 重置标志位
+            targetTopic.setAlreadyDeletedLocalTopic(false);
+            targetTopic.setLatestMsgIdWhenDeletedLocalTopic(-1);
+        } else {
+            //不是呢？
         }
 
         if (targetTopic.getMsgList() == null) {
@@ -210,7 +207,7 @@ public class TopicListPresenter implements TopicListContract.Presenter {
         //收到新消息后 进行日期处理
         processMsgListDateInfo(targetTopic.getMsgList());
         //通知Ui更新
-        final long topicId=targetTopic.getTopicId();
+        final long topicId = targetTopic.getTopicId();
         if (view != null) {
             mHandler.post(new Runnable() {
                 @Override

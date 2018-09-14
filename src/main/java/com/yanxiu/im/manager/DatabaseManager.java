@@ -2,6 +2,7 @@ package com.yanxiu.im.manager;
 
 import android.content.ContentValues;
 import android.support.annotation.NonNull;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.orhanobut.logger.Logger;
@@ -11,6 +12,7 @@ import com.yanxiu.im.bean.TopicItemBean;
 import com.yanxiu.im.bean.net_bean.ImMember_new;
 import com.yanxiu.im.bean.net_bean.ImMsg_new;
 import com.yanxiu.im.bean.net_bean.ImTopic_new;
+import com.yanxiu.im.business.utils.TopicInMemoryUtils;
 import com.yanxiu.im.db.DbGroup;
 import com.yanxiu.im.db.DbMember;
 import com.yanxiu.im.db.DbMsg;
@@ -51,7 +53,7 @@ public class DatabaseManager {
             return;
         }
 
-        LitePalDB db = new LitePalDB("new_db_" + userId, 1);
+        LitePalDB db = new LitePalDB("new_db_" + userId, 2);
         db.addClassName(DbMember.class.getName());
         db.addClassName(DbTopic.class.getName());
         db.addClassName(DbMsg.class.getName());
@@ -204,7 +206,7 @@ public class DatabaseManager {
                             Long.toString(topicId),
                             Long.toString(currentOtherMsgId))
                     .limit(1)
-                    .order("msgid desc")
+                    .order("msgid")
                     .find(DbMsg.class);
             //2.1 通过otherMsgId，查找到 otherMsgId < myMsgId <  previousOtherMsgId 的数据
             if (previousMsgList == null || previousMsgList.isEmpty()) {
@@ -481,8 +483,17 @@ public class DatabaseManager {
         topicItemBean.setLatestMsgTime(dbTopic_.latestMsgTime);
         topicItemBean.setMsgList(dbTopic_.getMergedMsgs());
         topicItemBean.setManagers(dbTopic_.getManagers());
+        if (dbTopic_.getMergedMsgs() != null) {
+            topicItemBean.setRequestMsgId(TopicInMemoryUtils.getMinMsgBeanRealIdInList(dbTopic_.getMergedMsgs()));
+        }else {
+            topicItemBean.setRequestMsgId(Long.MAX_VALUE);
+        }
 
-        topicItemBean.setSilence(dbTopic_.speak == 0);// 0开启禁言 1非禁言
+        if (TextUtils.equals("1", topicItemBean.getType())) {
+            topicItemBean.setSilence(false);//私聊没有禁言
+        } else {
+            topicItemBean.setSilence(dbTopic_.speak == 0);// 0开启禁言 1非禁言
+        }
         if (dbTopic_.getPersonalConfig() != null) {
             topicItemBean.setBlockNotice(dbTopic_.getPersonalConfig().getQuite() == 1);//1 开启免打扰 0 关闭免打扰
         } else {
@@ -593,6 +604,7 @@ public class DatabaseManager {
         } else { //新创建的topic，需要给一个时间latestTime，用于没有msg列表的topic排序
             dbTopic.setLatestMsgTime(System.currentTimeMillis());
         }
+        dbTopic.setLatestMsgId(topic.latestMsgId);
         dbTopic.setTopicId(topic.topicId);
         dbTopic.setName(topic.topicName);
         dbTopic.setType(topic.topicType);
@@ -615,9 +627,9 @@ public class DatabaseManager {
         if (topic.members != null) {
             //保存管理员信息
             //获取管理员信息
-            ArrayList<Long> managerIds=new ArrayList<>();
+            ArrayList<Long> managerIds = new ArrayList<>();
             for (ImTopic_new.Member member : topic.members) {
-                if (member.memberRole==2) {
+                if (member.memberRole == 2) {
                     managerIds.add(member.memberInfo.imId);
                 }
             }
@@ -791,9 +803,10 @@ public class DatabaseManager {
         dbMember.save();
         return dbMember;
     }
+
     /**
      * 创建一个 member 来组成 mocktopic
-     * */
+     */
     public static DbMember createMockMemberForMockTopic(long memberId, String memberName) {
         DbMember dbMember = new DbMember();
         dbMember.setImId(memberId);

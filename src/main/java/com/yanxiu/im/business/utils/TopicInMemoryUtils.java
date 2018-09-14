@@ -8,7 +8,6 @@ import com.yanxiu.im.bean.TopicItemBean;
 import com.yanxiu.im.db.DbMember;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -125,19 +124,17 @@ public class TopicInMemoryUtils {
         if (tempMsgs == null || tempMsgs.size() == 0) {
             return;
         }
-        //从数据库中获取了一页msg
-        //1、对msg列表进行去重
-        Iterator<MsgItemBean> dbMsgItemIterator = tempMsgs.iterator();
-        MsgItemBean dbMsgItem = null;
-        for (MsgItemBean uiMsgItemBean : currentMsgList) {
-            while (dbMsgItemIterator.hasNext()) {
-                dbMsgItem = dbMsgItemIterator.next();
-                if (TextUtils.equals(uiMsgItemBean.getReqId(), dbMsgItem.getReqId())) {
-                    dbMsgItemIterator.remove();
+        ArrayList<MsgItemBean> toBeRemoved = new ArrayList<>();
+        for (MsgItemBean dbMsg : tempMsgs) {
+            for (MsgItemBean uiMsg : currentMsgList) {
+                if (dbMsg.getRealMsgId() == uiMsg.getRealMsgId() ||
+                        TextUtils.equals(dbMsg.getReqId(), uiMsg.getReqId())) {
+                    toBeRemoved.add(dbMsg);
                     break;
                 }
             }
         }
+        tempMsgs.removeAll(toBeRemoved);
     }
 
 
@@ -390,7 +387,7 @@ public class TopicInMemoryUtils {
      * 更新所有topic下的这个member信息？
      */
     public static void updateMemberInfoInTopic(DbMember member, TopicItemBean targetToipc) {
-        if (targetToipc == null||member==null) {
+        if (targetToipc == null || member == null) {
             return;
         }
         if (targetToipc.getMembers() == null) {
@@ -407,14 +404,14 @@ public class TopicInMemoryUtils {
         }
     }
 
-    public static void updateMsgSenderInfo(DbMember member, ArrayList<TopicItemBean> topics){
-        if (topics == null||member==null) {
+    public static void updateMsgSenderInfo(DbMember member, ArrayList<TopicItemBean> topics) {
+        if (topics == null || member == null) {
             return;
         }
         for (TopicItemBean topic : topics) {
             if (topic.getMsgList() != null) {
                 for (MsgItemBean msgItemBean : topic.getMsgList()) {
-                    if (msgItemBean.getSenderId()==member.getImId()) {
+                    if (msgItemBean.getSenderId() == member.getImId()) {
                         msgItemBean.setMember(member);
                     }
                 }
@@ -423,10 +420,10 @@ public class TopicInMemoryUtils {
     }
 
 
-    public static void cutoffMsgListByMsgId(long msgId,List<MsgItemBean> msgs){
-        ArrayList<MsgItemBean> msgToBeRemoved=new ArrayList<>();
+    public static void cutoffMsgListByMsgId(long msgId, List<MsgItemBean> msgs) {
+        ArrayList<MsgItemBean> msgToBeRemoved = new ArrayList<>();
         for (MsgItemBean msg : msgs) {
-            if (msg.getRealMsgId()<=msgId) {
+            if (msg.getRealMsgId() <= msgId) {
                 msgToBeRemoved.add(msg);
             }
         }

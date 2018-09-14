@@ -58,7 +58,7 @@ public class MqttConnectManager {
     private final String TAG = getClass().getSimpleName();
 
     //保存所有本机连接的 mqtt 服务器
-    private HashMap<String, MqttAndroidClient> mqttConnections=new HashMap<>();
+    private HashMap<String, MqttAndroidClient> mqttConnections = new HashMap<>();
 
 
     private MqttAndroidClient mMqttClient;
@@ -89,7 +89,7 @@ public class MqttConnectManager {
 
 
     private String createClientId() {
-        return "android" + MqttClient.generateClientId();
+        return "android01" + MqttClient.generateClientId();
 //        return "android" + uuid++ + UUID.randomUUID().toString();
     }
 
@@ -102,7 +102,9 @@ public class MqttConnectManager {
              * @param request OkHttp Request
              */
             @Override
-            public void onRequestCreated(Request request) { }
+            public void onRequestCreated(Request request) {
+            }
+
             @Override
             public void onSuccess(YXRequestBase request, PolicyConfigResponse_new ret) {
                 String host = null;
@@ -136,10 +138,7 @@ public class MqttConnectManager {
     }
 
     public boolean isConnected() {
-        if (mMqttClient == null) {
-            return false;
-        }
-        return mMqttClient.isConnected();
+        return isConnected;
     }
 
     /**
@@ -156,11 +155,11 @@ public class MqttConnectManager {
             qoss[i] = 1;
         }
 
-        if (topicId.length==0) {
+        if (topicId.length == 0) {
             return;
         }
         try {
-            if (mMqttClient != null&&mMqttClient.isConnected()) {
+            if (mMqttClient != null && mMqttClient.isConnected()) {
                 mMqttClient.subscribe(topics, qoss);
             }
         } catch (MqttException e) {
@@ -173,11 +172,11 @@ public class MqttConnectManager {
         for (int i = 0; i < topics.length; i++) {
             topics[i] = constructTopicStr(topicId[i]);
         }
-        if (topics==null||topics.length==0) {
+        if (topics == null || topics.length == 0) {
             return;
         }
         try {
-            if (mMqttClient != null&&mMqttClient.isConnected()) {
+            if (mMqttClient != null && mMqttClient.isConnected()) {
                 mMqttClient.unsubscribe(topics);
             }
         } catch (MqttException e) {
@@ -187,7 +186,7 @@ public class MqttConnectManager {
 
     private void subscribeMember(long imId) {
         try {
-            if (mMqttClient != null&&mMqttClient.isConnected()) {
+            if (mMqttClient != null && mMqttClient.isConnected()) {
                 mMqttClient.subscribe(constructMemberStr(imId), 1);
             }
         } catch (MqttException e) {
@@ -197,7 +196,7 @@ public class MqttConnectManager {
 
     public void unsubscribeMember(long imId) {
         try {
-            if (mMqttClient != null&&mMqttClient.isConnected()) {
+            if (mMqttClient != null && mMqttClient.isConnected()) {
                 mMqttClient.unsubscribe(constructMemberStr(imId));
             }
         } catch (MqttException e) {
@@ -216,17 +215,18 @@ public class MqttConnectManager {
 
 
     public void disconnectMqttServer() {
+        isConnected = false;
+        userStop = true;
         Log.i(TAG, "disconnectMqttServer: ");
         if (mMqttClient != null) {
             try {
                 onlineOrOfflinePublish(0);
                 mQttHeartBeatManager.cancel();
-                mMqttClient.disconnect();
-            } catch (MqttException e) {
-                e.printStackTrace();
+                mReconnectManager.cancel();
+                disconnectClientOnExsist();
             } catch (NullPointerException e) {
                 YXLogger.e(TAG, e.getMessage());
-            } catch (Exception e){
+            } catch (Exception e) {
                 e.printStackTrace();
             }
             mMqttClient = null;
@@ -239,6 +239,7 @@ public class MqttConnectManager {
      */
     public void connectMqttServer(@Nullable final MqttServerConnectCallback connectCallback) {
         //获取 host
+        userStop = false;
         requestMqttHost(new GetMqttHostCallback() {
             @Override
             public void onGetHost(String host) {
@@ -266,7 +267,8 @@ public class MqttConnectManager {
 
 
     private boolean isConnectionLost = false;
-    private boolean isReconnecting = false;
+    private boolean isConnected = false;
+    private boolean userStop = false;
     private int retryTime = 999;
     private MqttReconnectManager mReconnectManager;
 
@@ -284,13 +286,11 @@ public class MqttConnectManager {
             }
             return;
         }
+        disconnectClientOnExsist();
         //设置连接参数
         final MqttConnectOptions options = getMqttConnectOptions();
         //检查 是否有其他 mqtt 连接在运行 如果有  断开连接
-        if (mMqttClient != null && mMqttClient.isConnected()) {
-            return;
-        }
-        Log.i(TAG, "disconnectMqttServer: connect ");
+        Log.i(TAG, "connectMqttServer: connect ");
         mMqttClient = new MqttAndroidClient(applicationContext, "tcp://" + host, createClientId());
         //保存....
         mqttConnections.put(host, mMqttClient);
@@ -298,22 +298,27 @@ public class MqttConnectManager {
         mMqttClient.setCallback(new MqttCallback() {
             @Override
             public void connectionLost(Throwable cause) {
+                Log.i(TAG, "connectionLost: ");
+                isConnected = false;
                 synchronized (MqttConnectManager.class) {
+                    if (userStop) {
+                        //如果是用户 进行了断开行为 不重试连接
+                        return;
+                    }
                     //连接丢失
                     isConnectionLost = true;
                     //进行重连 不限次数 30秒间隔
+
                     mReconnectManager = new MqttReconnectManager(-1, 30);
-                    isReconnecting = true;
+
                     mReconnectManager.start(new MqttReconnectManager.AlarmCallback() {
                         @Override
                         public void onTick() {
-                            Log.i(TAG, "onTick: attemp to reconnect");
                             doConnect(connectCallback, options);
                         }
                     });
-
                 }
-                Log.i(TAG, "connectionLost: ");
+
             }
 
             @Override
@@ -342,13 +347,14 @@ public class MqttConnectManager {
             mMqttClient.connect(options, new IMqttActionListener() {
                 @Override
                 public void onSuccess(IMqttToken asyncActionToken) {
+                    isConnected = true;
                     if (mReconnectManager != null) {
                         mReconnectManager.cancel();
                     }
                     YXLogger.d(TAG, "connect success");
                     //连接成功
                     onlineOrOfflinePublish(1);
-                    if(mQttHeartBeatManager != null ){
+                    if (mQttHeartBeatManager != null) {
                         mQttHeartBeatManager.cancel();
                     }
                     mQttHeartBeatManager = new MqttHeartBeatManager();
@@ -359,9 +365,6 @@ public class MqttConnectManager {
                     if (connectCallback != null) {
                         connectCallback.onSuccess();
                     }
-                    //发送 eventbus 通知 mqtt 连接成功
-                    EventBus.getDefault().post(new MqttConnectedEvent());
-                    subscribeMember(Constants.imId);
                 }
 
                 @Override
@@ -391,7 +394,6 @@ public class MqttConnectManager {
             if (client.isConnected()) {
                 try {
                     client.disconnect();
-
                 } catch (MqttException e) {
                     e.printStackTrace();
                 }
@@ -408,7 +410,7 @@ public class MqttConnectManager {
         //连接超时时间
         options.setConnectionTimeout(10);
         //设置 心跳包
-        options.setKeepAliveInterval(60);
+        options.setKeepAliveInterval(30);
         options.setUserName(userName);
         options.setPassword(passWord.toCharArray());
         //定义遗言
@@ -475,11 +477,10 @@ public class MqttConnectManager {
             mMqttClient.publish("im/v1.0/upstream/online", onlineState(onlineState), 0, false);
         } catch (MqttException e) {
             e.printStackTrace();
-        }catch (Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
-
 
 
 }
