@@ -197,6 +197,14 @@ public class ImTopicListFragment extends FaceShowBaseFragment
     }
 
     @Override
+    public void onResume() {
+        super.onResume();
+        if (topicListPresenter != null) {
+            topicListPresenter.doCheckRedDot(topicListPresenter.getTopicInMemory());
+        }
+    }
+
+    @Override
     public void onDestroy() {
         EventBus.getDefault().unregister(this);
         super.onDestroy();

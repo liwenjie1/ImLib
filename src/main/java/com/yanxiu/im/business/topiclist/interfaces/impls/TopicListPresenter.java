@@ -151,12 +151,13 @@ public class TopicListPresenter implements TopicListContract.Presenter {
         //处理红点
         boolean hasReddot = false;
         if (topics == null) {
-            return;
-        }
-        for (TopicItemBean topic : topics) {
-            if (topic.isShowDot()) {
-                hasReddot = true;
-                break;
+            hasReddot = false;
+        } else {
+            for (TopicItemBean topic : topics) {
+                if (topic.isShowDot()) {
+                    hasReddot = true;
+                    break;
+                }
             }
         }
         final boolean hasReddot2 = hasReddot;
