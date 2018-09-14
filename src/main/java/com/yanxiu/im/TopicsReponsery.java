@@ -469,6 +469,11 @@ public class TopicsReponsery {
 
         Log.i(TAG, "requestTopicMemberInfoFromServer: 需要更新 member");
 
+        if(bean == null){
+            Log.i(TAG, "requestTopicMemberInfoFromServer: topic 为空");
+            return;
+        }
+
         mHttpRequestManager.requestTopicMemberList(Constants.imToken, Long.toString(bean.getTopicId()), new HttpRequestManager.GetTopicMemberListCallback<ImTopic_new>() {
             @Override
             public void onGetTopicMembers(ImTopic_new topicWithMembers) {
