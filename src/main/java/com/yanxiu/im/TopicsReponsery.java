@@ -542,6 +542,10 @@ public class TopicsReponsery {
      * 如果返回了 topic 数据
      */
     private void requestTopicMemberInfoFromServer(final TopicItemBean bean, final GetTopicItemBeanCallback callback) {
+        if(bean == null){
+            Log.i(TAG, "requestTopicMemberInfoFromServer: topic 为空");
+            return;
+        }
         mHttpRequestManager.requestTopicMemberList(Constants.imToken, Long.toString(bean.getTopicId()), new HttpRequestManager.GetTopicMemberListCallback<ImTopic_new>() {
             @Override
             public void onGetTopicMembers(ImTopic_new topicWithMembers) {
