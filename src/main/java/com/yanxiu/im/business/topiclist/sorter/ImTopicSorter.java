@@ -7,7 +7,6 @@ import com.yanxiu.im.bean.TopicItemBean;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -46,30 +45,31 @@ public class ImTopicSorter {
      * 只对收到消息的topic 进行置顶操作
      * */
     public static void insertTopicToTop(long topicId, List<TopicItemBean> topicList){
-        if (topicList == null) {
-            return;
-        }
-        synchronized (topicList) {
-            if (topicList == null) {
-                return;
-            }
-            Iterator<TopicItemBean> iterator = topicList.iterator();
-            //首先找到目标topic
-            TopicItemBean targetTopic = null;
-            while (iterator.hasNext()) {
-                targetTopic = iterator.next();
-                if (topicId == targetTopic.getTopicId()) {
-                    //然后进行原有位置的移除操作
-                    iterator.remove();
-
-                    if (targetTopic != null) {
-                        topicList.add(0, targetTopic);
-                        groupTopicByType(topicList);
-                    }
-                    break;
-                }
-            }
-        }
+        sortByLatestTime(topicList);
+//        if (topicList == null) {
+//            return;
+//        }
+//        synchronized (topicList) {
+//            if (topicList == null) {
+//                return;
+//            }
+//            Iterator<TopicItemBean> iterator = topicList.iterator();
+//            //首先找到目标topic
+//            TopicItemBean targetTopic = null;
+//            while (iterator.hasNext()) {
+//                targetTopic = iterator.next();
+//                if (topicId == targetTopic.getTopicId()) {
+//                    //然后进行原有位置的移除操作
+//                    iterator.remove();
+//
+//                    if (targetTopic != null) {
+//                        topicList.add(0, targetTopic);
+//                        groupTopicByType(topicList);
+//                    }
+//                    break;
+//                }
+//            }
+//        }
     }
     /**
      * 应用启动后 获取全部topic的信息进行一次排序

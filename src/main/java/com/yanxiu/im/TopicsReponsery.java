@@ -104,6 +104,7 @@ public class TopicsReponsery {
                 }
             }
             topicInMemory.addAll(toAdd);
+            ImTopicSorter.sortByLatestTime(topicInMemory);
         }
     }
 
@@ -128,6 +129,7 @@ public class TopicsReponsery {
                 return;
             }
             TopicInMemoryUtils.removeTopicFromListById(bean.getTopicId(), topicInMemory);
+            ImTopicSorter.sortByLatestTime(topicInMemory);
         }
     }
 

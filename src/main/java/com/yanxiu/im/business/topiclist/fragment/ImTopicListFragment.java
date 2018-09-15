@@ -35,6 +35,7 @@ import com.yanxiu.im.business.topiclist.interfaces.MqttConnectContract;
 import com.yanxiu.im.business.topiclist.interfaces.TopicListContract;
 import com.yanxiu.im.business.topiclist.interfaces.impls.MqttConnectPresenter;
 import com.yanxiu.im.business.topiclist.interfaces.impls.TopicListPresenter;
+import com.yanxiu.im.business.topiclist.sorter.ImTopicSorter;
 import com.yanxiu.im.business.utils.TopicInMemoryUtils;
 import com.yanxiu.im.business.view.ImTitleLayout;
 import com.yanxiu.im.db.DbMember;
@@ -201,7 +202,9 @@ public class ImTopicListFragment extends FaceShowBaseFragment
     public void onResume() {
         super.onResume();
         if (topicListPresenter != null) {
+            ImTopicSorter.sortByLatestTime(topicListPresenter.getTopicInMemory());
             topicListPresenter.doCheckRedDot(topicListPresenter.getTopicInMemory());
+            mRecyclerAdapter.notifyDataSetChanged();
         }
     }
 

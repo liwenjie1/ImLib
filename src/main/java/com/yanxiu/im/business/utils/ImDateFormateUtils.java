@@ -114,6 +114,8 @@ public class ImDateFormateUtils {
         msgItemBean.setSenderId(Constants.imId);
         msgItemBean.setReqId(UUID.randomUUID().toString());
         msgItemBean.setSendTime(System.currentTimeMillis());
+
+        belongTopic.setLatestMsgTime(msgItemBean.getSendTime());
         //保存数据库
         DatabaseManager.createOrUpdateMyMsg(msgItemBean);
         return msgItemBean;
@@ -131,6 +133,8 @@ public class ImDateFormateUtils {
         Integer[] size = ImageFileUtils.getPicWithAndHeight(imgUrl);
         msgItemBean.setWidth(size[0]);
         msgItemBean.setHeight(size[1]);
+
+        belongTopic.setLatestMsgTime(msgItemBean.getSendTime());
         //保存数据库
         DatabaseManager.createOrUpdateMyMsg(msgItemBean);
         return msgItemBean;
