@@ -220,8 +220,6 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
         im_msglist_recyclerview.setAdapter(msgRecyclerAdapter);
         im_msglist_recyclerview.scrollToPosition(0);
 
-        //更新member信息
-        msgListPresenter.updateTopicInfo(currentTopic);
         if (Constants.showTopicSetting) {
             imTitleLayout.setTitleRightText("设置");
         }
@@ -274,6 +272,52 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
             break;
         }
     }
+    /*一个 本地的 topic 被打开*/
+    @Override
+    public void onRealTopicOpened(TopicItemBean realBean) {
+        //打开一个 本地存在的 realtopic
+        currentTopic = realBean;
+        setTitlemsg(realBean);
+        if (currentTopic != null) {
+            currentTopic.setShowDot(false);
+        }
+        showSlientNotice(currentTopic.isSilence());
+        //更新member信息
+        msgListPresenter.updateTopicInfo(currentTopic);
+    }
+    /*一个有 push 消息打开的 topic*/
+    @Override
+    public void onPushTopicOpend(final TopicItemBean tempBean) {
+        //打开一个 push 开启的topic
+        currentTopic = tempBean;
+        if (currentTopic != null) {
+            currentTopic.setShowDot(false);
+        }
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                setTitlemsg(tempBean);
+            }
+        });//更新member信息
+        msgListPresenter.updatePushTopicInfo(currentTopic);
+
+    }
+
+    /**
+     * 开启一个 临时的私聊界面
+     */
+    @Override
+    public void onNewPrivateTopicOpened(final String memberName) {
+        //设置 对话名称
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                imTitleLayout.setTitle(memberName);
+            }
+        });
+    }
+
+
 
 
     private void initImagePicker() {
@@ -665,7 +709,6 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
     public void onMqttConnected(MqttConnectedEvent event) {
         //mqtt 服务器连接通知 通知后 刷新数据列表
         msgListPresenter.updateTopicInfo(currentTopic);
-        Toast.makeText(this, "mqtt 连接成功", Toast.LENGTH_SHORT).show();
     }
 
 
@@ -685,19 +728,6 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
         im_msglist_recyclerview.scrollToPosition(0);
     }
 
-    /**
-     * 当前msglist中含有失败造成的断档
-     * 内部执行了merge操作 这时需要刷新的数据位置与直接加载不同
-     */
-    @Override
-    public void onLoadMoreWithMerge(int start, int end) {
-        Log.i(TAG, "onLoadMoreWithMerge: ");
-        msgRecyclerAdapter.removeFooterView();
-
-        msgRecyclerAdapter.notifyItemRangeInserted(start, end);
-        msgRecyclerAdapter.notifyItemRangeChanged(start, end);
-
-    }
 
     @Override
     public void onTopicInfoUpdate() {
@@ -738,25 +768,6 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
     }
 
     /**
-     * 当网络成功获取数据进行队尾拼接时调用
-     */
-    @Override
-    public void onLoadMoreFromHttp(int size) {
-        Log.i(TAG, "onLoadMoreFromHttp: ");
-        //队尾增加了 size 条数据
-        //清除 loading item
-        msgRecyclerAdapter.removeFooterView();
-        if (size == 0) {
-            Toast.makeText(this, "没有更多数据", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        int startPosition = Math.max(msgRecyclerAdapter.getItemCount() - size - 1, 0);
-        int endPosition = Math.max(msgRecyclerAdapter.getItemCount() - 1, 0);
-        msgRecyclerAdapter.notifyItemRangeInserted(startPosition, endPosition);
-        msgRecyclerAdapter.notifyItemRangeChanged(startPosition, endPosition);
-    }
-
-    /**
      * 重发消息完成后的回调
      * 更新 被重发消息的显示情况
      *
@@ -775,47 +786,7 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
     }
 
 
-    /**
-     * 开启一个 临时的私聊界面
-     */
-    @Override
-    public void onNewPrivateTopicOpened(final String memberName) {
-        //设置 对话名称
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                imTitleLayout.setTitle(memberName);
-            }
-        });
 
-    }
-
-    @Override
-    public void onRealTopicOpened(TopicItemBean realBean) {
-        //打开一个 本地存在的 realtopic
-        currentTopic = realBean;
-        setTitlemsg(realBean);
-        if (currentTopic != null) {
-            currentTopic.setShowDot(false);
-        }
-        showSlientNotice(currentTopic.isSilence());
-    }
-
-    @Override
-    public void onPushTopicOpend(final TopicItemBean tempBean) {
-        //打开一个 push 开启的topic
-        currentTopic = tempBean;
-        if (currentTopic != null) {
-            currentTopic.setShowDot(false);
-        }
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                setTitlemsg(tempBean);
-            }
-        });
-
-    }
 
     private void setTitlemsg(TopicItemBean topic) {
         StringBuilder titleStringBuilder = new StringBuilder();
@@ -839,8 +810,6 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
             }
 
         }
-
-
         //需要对转义字符处理
         imTitleLayout.setTitle(titleStringBuilder.toString());
     }
@@ -857,6 +826,7 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
     @Override
     protected void onDestroy() {
         EventBus.getDefault().unregister(this);
+        im_msglist_recyclerview.stopScroll();
         im_msglist_recyclerview.setAdapter(null);
         super.onDestroy();
     }

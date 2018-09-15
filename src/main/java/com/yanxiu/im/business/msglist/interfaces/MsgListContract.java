@@ -17,24 +17,11 @@ public interface MsgListContract {
         @MainThread
         void onNewMsg();
 
-        /**
-         * 加载了更多一页时的回调
-         *
-         * @param start 首个变动的位置
-         * @param end   最后一个变动的位置
-         */
-        @MainThread
-        void onLoadMoreWithMerge(int start, int end);
-
         @MainThread
         void onTopicInfoUpdate();
 
         @MainThread
         void onLoadMoreFromDb(int size);
-
-        @MainThread
-        void onLoadMoreFromHttp(int size);
-
         /**
          * 重发一条消息
          */

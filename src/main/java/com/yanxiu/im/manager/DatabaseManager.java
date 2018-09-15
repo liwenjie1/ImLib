@@ -61,6 +61,10 @@ public class DatabaseManager {
         db.addClassName(DbGroup.class.getName());
         LitePal.use(db);
     }
+    public static void deleteDb(String userId){
+        LitePal.getDatabase().close();
+        LitePal.deleteDatabase("new_db_"+userId);
+    }
 
     /**
      * 获取改topic里，从startMsgId开始的，count条数的msglist。

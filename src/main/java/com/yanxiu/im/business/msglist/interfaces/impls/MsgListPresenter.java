@@ -367,12 +367,41 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
             currentTopic.setRequestMsgId(TopicInMemoryUtils.getMinMsgBeanRealIdInList(remainMsgs));
         }
     }
+    /**
+     * 更新 pushtopic 信息
+     * @param pushTopic 本地获取的 topic bean 或 创建的临时 topic bean
+     * */
+    public void updatePushTopicInfo(@NonNull final TopicItemBean pushTopic) {
+        //首先更新 topic member 信息
+        TopicsReponsery.getInstance().updateTopicMemberInfoFromServer(pushTopic, new TopicsReponsery.GetTopicItemBeanCallback() {
+            @Override
+            public void onGetTopicItemBean(TopicItemBean updatedPushBean) {
+                //获取服务器上 pushtopic 的信息
+                if (updatedPushBean==null) {
+                    //获取失败
+                    return;
+                }
+                //获取了 topic 的 member 信息以及 相关信息后 获取 msglist
+                TopicsReponsery.getInstance().requestLastestMsgPageFromServer(updatedPushBean, new TopicsReponsery.GetTopicItemBeanCallback() {
+                    @Override
+                    public void onGetTopicItemBean(TopicItemBean bean) {
+                        //bean 理论上 不能为空
+                        if (bean == null) {
+                            return;
+                        }
+                        bean.setShowDot(false);
+                        DatabaseManager.updateTopicWithTopicItemBean(bean);
+                        view.onTopicInfoUpdate();
+                    }
+                });
+            }
+        });
+    }
 
     /**
      * 请求更新 topicinfo
      */
     public void updateTopicInfo(final TopicItemBean currentTopic) {
-        Log.i(TAG, "updateTopicInfo: ");
         if (currentTopic == null) {
             return;
         }
@@ -397,7 +426,6 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
      */
     @Override
     public void openPrivateTopicByMember(final long memberId, String mName, final long fromTopicId) {
-        Log.i(TAG, "openPrivateTopicByMember: ");
         //
         openPrivateTopic(memberId, mName, fromTopicId);
     }
@@ -406,14 +434,12 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
         TopicsReponsery.getInstance().getPrivateTopicByMemberid(memberId, fromTopicId, new TopicsReponsery.GetPrivateTopicCallback<TopicItemBean>() {
             @Override
             public void onFindRealPrivateTopic(TopicItemBean bean) {
-                Log.i(TAG, "onFindRealPrivateTopic: ");
                 //本地有 这个私聊 直接显示
                 view.onRealTopicOpened(bean);
             }
 
             @Override
             public void onNoTargetTopic(String memberName) {
-                Log.i(TAG, "onNoTargetTopic: ");
                 //本地没有这个私聊  进行 title 设置  等待下一步操作
                 if (TextUtils.isEmpty(memberName)) {
                     memberName = mName;
@@ -431,15 +457,15 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
      */
     @Override
     public void openTopicByTopicId(long topicId) {
-        Log.i(TAG, "openTopicByTopicId: ");
         TopicsReponsery.getInstance().getLocalTopic(topicId, new TopicsReponsery.GetTopicItemBeanCallback() {
             @Override
             public void onGetTopicItemBean(TopicItemBean targetTopic) {
-
                 //数据库获取最新一页 msg
                 ArrayList<MsgItemBean> msgsFromDb =
                         DatabaseManager.getTopicMsgs(targetTopic.getTopicId(), DatabaseManager.minMsgId, DatabaseManager.pagesize);
-                targetTopic.getMsgList().clear();
+                if (msgsFromDb != null&&msgsFromDb.size()!=0) {
+                    targetTopic.getMsgList().clear();
+                }
                 targetTopic.getMsgList().addAll(msgsFromDb);
                 targetTopic.setRequestMsgId(TopicInMemoryUtils.getMinMsgBeanRealIdInList(msgsFromDb));
                 //处理
@@ -447,7 +473,6 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
                 targetTopic.setName(targetTopic.getGroup());
                 targetTopic.setShowDot(false);
                 DatabaseManager.updateTopicWithTopicItemBean(targetTopic);
-
                 //判断 deletemsgid 对要展示的数据进行截断
                 long deleteMsgId = targetTopic.getLatestMsgIdWhenDeletedLocalTopic();
                 if (deleteMsgId > 0) {
@@ -468,7 +493,6 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
      */
     @Override
     public void openPushTopic(final long topicId) {
-        Log.i(TAG, "openPushTopic: ");
         //首先从本地获取
         TopicsReponsery.getInstance().getLocalTopic(topicId, new TopicsReponsery.GetTopicItemBeanCallback() {
             @Override
@@ -480,8 +504,6 @@ public class MsgListPresenter implements MsgListContract.IPresenter<MsgItemBean>
                 }
                 //将临时 topic 回调 给 UI
                 view.onPushTopicOpend(bean);
-                //请求服务器获取 push topic 的详细信息
-                updateTopicInfo(bean);
             }
         });
     }

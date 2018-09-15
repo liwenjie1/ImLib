@@ -63,7 +63,7 @@ public final class ImTopicListRecyclerViewAdapter<E extends TopicItemBean> exten
                 }
             }
         }
-        if (positon > 0 && positon < getItemCount()) {
+        if (positon >= 0 && positon < getItemCount()) {
             notifyItemChanged(positon);
         }
     }

@@ -3,6 +3,7 @@ package com.yanxiu;
 import android.text.TextUtils;
 
 import com.yanxiu.im.Constants;
+import com.yanxiu.im.TopicsReponsery;
 import com.yanxiu.im.bean.net_bean.ImTokenInfo_new;
 import com.yanxiu.im.manager.DatabaseManager;
 import com.yanxiu.im.manager.MqttConnectManager;
@@ -32,6 +33,15 @@ public class ImConfig {
 
     public static boolean isHasInitialazed() {
         return hasInitialazed;
+    }
+
+    public static void clear(){
+        hasInitialazed=false;
+        Constants.imId =-1;
+        Constants.imAvatar = null;
+        Constants.imToken = null;
+        Constants.token = null;
+        TopicsReponsery.getInstance().releaseResource();
     }
 
     /**
