@@ -600,7 +600,7 @@ public class TopicsReponsery {
                     DatabaseManager.updateDbMsgWithImMsg(imMsgNew, Constants.imId);
                 }
                 /*数据库 的最后一页 20 条*/
-                final ArrayList<MsgItemBean> latestDbPage = DatabaseManager.getTopicMsgs(itemBean.getTopicId(), DatabaseManager.minMsgId,1);
+                final ArrayList<MsgItemBean> latestDbPage = DatabaseManager.getTopicMsgs(itemBean.getTopicId(), DatabaseManager.minMsgId,DatabaseManager.pagesize);
                 //设置 load 标志 id
                 long startId = Long.MAX_VALUE;
                 if (latestDbPage != null) {
