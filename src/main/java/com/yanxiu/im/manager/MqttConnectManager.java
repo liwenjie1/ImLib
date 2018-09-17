@@ -26,7 +26,6 @@ import org.eclipse.paho.client.mqttv3.IMqttActionListener;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.IMqttToken;
 import org.eclipse.paho.client.mqttv3.MqttCallback;
-import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
@@ -80,18 +79,19 @@ public class MqttConnectManager {
 
     /*正式线mqtt 用户名和密码
  测试线没有对用户名和密码进行校验*/
-    private String userName = "yxwork";
-    private String passWord = "79A6g3pHb4tz2Bs8";
+    private final String userName = "yxwork";
+    private final String passWord = "79A6g3pHb4tz2Bs8";
     private String clientId = "android01";
 
     private MqttConnectManager(Context applicationContext) {
         this.applicationContext = applicationContext;
     }
 
+    private int uuid = 1;
 
     private String createClientId() {
-        return "android01" + MqttClient.generateClientId();
-//        return "android" + uuid++ + UUID.randomUUID().toString();
+//        return "android01" + MqttClient.generateClientId();
+        return "android" + (uuid++) + UUID.randomUUID().toString();
     }
 
     private void requestMqttHost(final GetMqttHostCallback callback) {
@@ -269,6 +269,7 @@ public class MqttConnectManager {
 
     private boolean isConnectionLost = false;
     private boolean isConnected = false;
+    private boolean isConnecting = false;
     private boolean userStop = false;
     private int retryTime = 999;
     private MqttReconnectManager mReconnectManager;
@@ -292,7 +293,8 @@ public class MqttConnectManager {
         final MqttConnectOptions options = getMqttConnectOptions();
         //检查 是否有其他 mqtt 连接在运行 如果有  断开连接
         Log.i(TAG, "connectMqttServer: connect ");
-        mMqttClient = new MqttAndroidClient(applicationContext, "tcp://" + host, createClientId());
+        String url = "tcp://" + host;
+        mMqttClient = new MqttAndroidClient(applicationContext, url, createClientId());
         //保存....
         mqttConnections.put(host, mMqttClient);
         //设置 mqtt 的监听
@@ -309,18 +311,7 @@ public class MqttConnectManager {
                     }
                     //连接丢失
                     isConnectionLost = true;
-                    //进行重连 不限次数 30秒间隔
-
-                    mReconnectManager = new MqttReconnectManager(-1, 30);
-
-                    mReconnectManager.start(new MqttReconnectManager.AlarmCallback() {
-                        @Override
-                        public void onTick() {
-                            YXToastUtil.showToast("mqtt try connectting... ");
-                            doConnect(connectCallback, options);
-                        }
-                    });
-
+                    reconnect(connectCallback, options);
                 }
 
             }
@@ -343,15 +334,28 @@ public class MqttConnectManager {
         doConnect(connectCallback, options);
     }
 
-    private void doConnect(final MqttServerConnectCallback connectCallback, MqttConnectOptions options) {
+    private void reconnect(final MqttServerConnectCallback connectCallback, final MqttConnectOptions options) {
+        //进行重连 不限次数 30秒间隔
+        mReconnectManager = new MqttReconnectManager(-1, 30);
+        mReconnectManager.start(new MqttReconnectManager.AlarmCallback() {
+            @Override
+            public void onTick() {
+                isConnecting = true;
+                doConnect(connectCallback, options);
+            }
+        });
+    }
+
+    private void doConnect(final MqttServerConnectCallback connectCallback, final MqttConnectOptions options) {
         if (mMqttClient == null) {
             return;
         }
         try {
-            mMqttClient.connect(options, new IMqttActionListener() {
+            mMqttClient.connect(options, null, new IMqttActionListener() {
                 @Override
                 public void onSuccess(IMqttToken asyncActionToken) {
                     isConnected = true;
+                    isConnecting = false;
                     if (mReconnectManager != null) {
                         mReconnectManager.cancel();
                     }
@@ -376,6 +380,9 @@ public class MqttConnectManager {
                 public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
                     YXToastUtil.showToast("mqtt connect failure");
                     YXLogger.d(TAG, "connect failure");
+                    if (!isConnecting) {
+                        reconnect(connectCallback, options);
+                    }
                     //失败
                     if (connectCallback != null) {
                         connectCallback.onFailure();
@@ -411,14 +418,16 @@ public class MqttConnectManager {
     @NonNull
     private MqttConnectOptions getMqttConnectOptions() {
         MqttConnectOptions options = new MqttConnectOptions();
+        options.setCleanSession(true);
+        options.setUserName("yxwork");
+        char[] psw = ("79A6g3pHb4tz2Bs8").toCharArray();
+        options.setPassword(psw);
         //设置自动重连
         options.setAutomaticReconnect(true);
         //连接超时时间
         options.setConnectionTimeout(10);
         //设置 心跳包
         options.setKeepAliveInterval(30);
-        options.setUserName(userName);
-        options.setPassword(passWord.toCharArray());
         //定义遗言
         options.setWill("im/v1.0/upstream/online", onlineState(1), 0, false);
         return options;

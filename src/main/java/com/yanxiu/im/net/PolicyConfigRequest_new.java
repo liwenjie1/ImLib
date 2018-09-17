@@ -7,7 +7,7 @@ package com.yanxiu.im.net;
 
 // 1.2 获取mqtt服务器配置
 public class PolicyConfigRequest_new extends ImRequestBase_new {
-    private String method="policy.mqtt.server";
+    public String method="policy.mqtt.server";
 
     public String type ="tcp";
 }
