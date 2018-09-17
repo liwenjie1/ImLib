@@ -191,12 +191,12 @@ public class TopicsReponsery {
                             has = true;
                             //是否有 member 更新
                             if (isMemberUpdate(imTopicNew, localTopic)) {
-                                Log.i(TAG, "onGetTopicList: 加入更新 member 集合 "+savedBean.getGroup());
+                                Log.i(TAG, "onGetTopicList: 加入更新 member 集合 " + savedBean.getGroup());
                                 needUpdateMemberTopics.add(localTopic);
                             }
                             //检查是否有 msg 更新
                             if (isMsgUpdate(imTopicNew, localTopic)) {
-                                Log.i(TAG, "onGetTopicList: 加入 更新消息集合  "+savedBean.getGroup());
+                                Log.i(TAG, "onGetTopicList: 加入 更新消息集合  " + savedBean.getGroup());
                                 needUpdateMsgTopics.add(localTopic);
                             }
                             //更新已有的
@@ -210,7 +210,7 @@ public class TopicsReponsery {
                         //新的 topic member 与 msg 都需要更新
                         needUpdateMsgTopics.add(savedBean);
                         needUpdateMemberTopics.add(savedBean);
-                        Log.i(TAG, "onGetTopicList: 加入更新 member + msg 集合 "+savedBean.getGroup());
+                        Log.i(TAG, "onGetTopicList: 加入更新 member + msg 集合 " + savedBean.getGroup());
                     }
                 }
                 uiHandler.post(new Runnable() {
@@ -451,7 +451,7 @@ public class TopicsReponsery {
             requestTopicMemberInfoFromServer(bean, new GetTopicItemBeanCallback() {
                 @Override
                 public void onGetTopicItemBean(TopicItemBean beanCreateFromDB) {
-                    Log.i(TAG, "onGetTopicItemBean:member 更新  "+bean.getGroup());
+                    Log.i(TAG, "onGetTopicItemBean:member 更新  " + bean.getGroup());
                     if (beanCreateFromDB != null) {
                         //更新 target 的 info
                         updateMemberInfo(bean, beanCreateFromDB);
@@ -491,7 +491,7 @@ public class TopicsReponsery {
     public void updateTopicMemberInfoFromServer(final TopicItemBean bean, final GetTopicItemBeanCallback callback) {
         requestTopicMemberInfoFromServer(bean, new GetTopicItemBeanCallback() {
             @Override
-            public void onGetTopicItemBean(TopicItemBean beanCreateFromDB) {
+            public void onGetTopicItemBean(final TopicItemBean beanCreateFromDB) {
                 if (beanCreateFromDB != null) {
                     //更新 target 的 info
                     updateMemberInfo(bean, beanCreateFromDB);
@@ -499,6 +499,7 @@ public class TopicsReponsery {
                     uiHandler.post(new Runnable() {
                         @Override
                         public void run() {
+                            ImTopicSorter.sortByLatestTime(topicInMemory);
                             callback.onGetTopicItemBean(bean);
                         }
                     });
@@ -544,7 +545,7 @@ public class TopicsReponsery {
      * 如果返回了 topic 数据
      */
     private void requestTopicMemberInfoFromServer(final TopicItemBean bean, final GetTopicItemBeanCallback callback) {
-        if(bean == null){
+        if (bean == null) {
             Log.i(TAG, "requestTopicMemberInfoFromServer: topic 为空");
             return;
         }
@@ -594,13 +595,13 @@ public class TopicsReponsery {
         mHttpRequestManager.requestTopicMsgList(Constants.imToken, Long.MAX_VALUE, itemBean.getTopicId(), new HttpRequestManager.GetTopicMsgListCallback<ImMsg_new>() {
             @Override
             public void onGetTopicMsgList(List<ImMsg_new> msgList) {
-                Log.i(TAG, "onGetTopicMsgList: "+itemBean.getGroup());
+                Log.i(TAG, "onGetTopicMsgList: " + itemBean.getGroup());
                 for (ImMsg_new imMsgNew : msgList) {
                     //获取 msglist 后  首先  保存数据库
                     DatabaseManager.updateDbMsgWithImMsg(imMsgNew, Constants.imId);
                 }
                 /*数据库 的最后一页 20 条*/
-                final ArrayList<MsgItemBean> latestDbPage = DatabaseManager.getTopicMsgs(itemBean.getTopicId(), DatabaseManager.minMsgId,DatabaseManager.pagesize);
+                final ArrayList<MsgItemBean> latestDbPage = DatabaseManager.getTopicMsgs(itemBean.getTopicId(), DatabaseManager.minMsgId, DatabaseManager.pagesize);
                 //设置 load 标志 id
                 long startId = Long.MAX_VALUE;
                 if (latestDbPage != null) {
@@ -623,7 +624,13 @@ public class TopicsReponsery {
                 latestDbPage.addAll(currentMsgList);
                 currentMsgList.clear();
                 currentMsgList.addAll(latestDbPage);
+                if (itemBean.getMsgList().size() > 0) {
+                    long realMsgId = itemBean.getMsgList().get(0).getRealMsgId();
+                    long realTime = itemBean.getMsgList().get(0).getSendTime();
+                    itemBean.setLatestMsgId(realMsgId);
+                    itemBean.setLatestMsgTime(realTime);
 
+                }
                 itemBean.setShowDot(true);
                 //执行了请求最新页  说明 本地保存的 latestmsgid 已经过期 有新消息可以显示被清空历史消息的 topic 了
                 itemBean.setAlreadyDeletedLocalTopic(false);
@@ -638,6 +645,7 @@ public class TopicsReponsery {
                 uiHandler.post(new Runnable() {
                     @Override
                     public void run() {
+                        ImTopicSorter.sortByLatestTime(topicInMemory);
                         callback.onGetTopicItemBean(itemBean);
                     }
                 });
@@ -746,12 +754,12 @@ public class TopicsReponsery {
      * 下拉加载
      */
     public void loadPageMsg(final TopicItemBean targetTopic, final long startId, final GetMsgPageCallback callback) {
-        Log.i(TAG, "loadPageMsg: "+targetTopic.getGroup());
+        Log.i(TAG, "loadPageMsg: " + targetTopic.getGroup());
         //首先有网络获取
         mHttpRequestManager.requestTopicMsgList(Constants.imToken, startId, targetTopic.getTopicId(), new HttpRequestManager.GetTopicMsgListCallback<ImMsg_new>() {
             @Override
             public void onGetTopicMsgList(List<ImMsg_new> msgList) {
-                Log.i(TAG, "onGetTopicMsgList: "+targetTopic.getGroup());
+                Log.i(TAG, "onGetTopicMsgList: " + targetTopic.getGroup());
                 //保存入数据库
                 for (ImMsg_new msgNew : msgList) {
                     /*检查 有服务器返回的msg 数据格式 防止空指针*/
