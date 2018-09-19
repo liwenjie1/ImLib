@@ -61,9 +61,10 @@ public class DatabaseManager {
         db.addClassName(DbGroup.class.getName());
         LitePal.use(db);
     }
-    public static void deleteDb(String userId){
+
+    public static void deleteDb(String userId) {
         LitePal.getDatabase().close();
-        LitePal.deleteDatabase("new_db_"+userId);
+        LitePal.deleteDatabase("new_db_" + userId);
     }
 
     /**
@@ -244,19 +245,38 @@ public class DatabaseManager {
                 }
             } else { //有上一个otherMsg，查询出otherMsgId < myMsgId < Math.min(previousOtherMsgId(),startMsgId)的数据
                 DbMsg previousOtherMsg = previousMsgList.get(0);
-                long minId = Math.min(previousOtherMsg.getMsgId(), startMsgId);//previousId和startid，取一个小值
-                List<DbMyMsg> myMsgList = DataSupport
-                        .where("topicId = ? and msgid > ? and msgid < ?",
-                                Long.toString(topicId),
-                                Long.toString(currentOtherMsgId),
-                                Long.toString(minId))
-                        .limit(count)
-                        .order("sendtime desc")
-                        .find(DbMyMsg.class);
-                if (myMsgList == null || myMsgList.isEmpty()) {
-                    //没有数据，啥也不干
-                } else {
-                    mergeMsgList.addAll(myMsgList);//添加myMsg
+                if (startMsgId==-100){
+                    //如果是 获取数据库最新一页的话
+                    long minId = Math.min(previousOtherMsg.getMsgId(), startMsgId);//previousId和startid，取一个小值
+                    List<DbMyMsg> myMsgList = DataSupport
+                            .where("topicId = ? and msgid > ? and msgid < ?",
+                                    Long.toString(topicId),
+                                    Long.toString(currentOtherMsgId),
+                                    Long.toString(previousOtherMsg.getMsgId()))
+                            .limit(count)
+                            .order("sendtime desc")
+                            .find(DbMyMsg.class);
+                    if (myMsgList == null || myMsgList.isEmpty()) {
+                        //没有数据，啥也不干
+                    } else {
+                        mergeMsgList.addAll(myMsgList);//添加myMsg
+                    }
+                }else {
+
+                    long minId = Math.min(previousOtherMsg.getMsgId(), startMsgId);//previousId和startid，取一个小值
+                    List<DbMyMsg> myMsgList = DataSupport
+                            .where("topicId = ? and msgid > ? and msgid < ?",
+                                    Long.toString(topicId),
+                                    Long.toString(currentOtherMsgId),
+                                    Long.toString(minId))
+                            .limit(count)
+                            .order("sendtime desc")
+                            .find(DbMyMsg.class);
+                    if (myMsgList == null || myMsgList.isEmpty()) {
+                        //没有数据，啥也不干
+                    } else {
+                        mergeMsgList.addAll(myMsgList);//添加myMsg
+                    }
                 }
             }
 
@@ -489,7 +509,7 @@ public class DatabaseManager {
         topicItemBean.setManagers(dbTopic_.getManagers());
         if (dbTopic_.getMergedMsgs() != null) {
             topicItemBean.setRequestMsgId(TopicInMemoryUtils.getMinMsgBeanRealIdInList(dbTopic_.getMergedMsgs()));
-        }else {
+        } else {
             topicItemBean.setRequestMsgId(Long.MAX_VALUE);
         }
 
