@@ -631,7 +631,7 @@ public class TopicsReponsery {
                     itemBean.setLatestMsgTime(realTime);
 
                 }
-                itemBean.setShowDot(true);
+                itemBean.setShowDot(itemBean.getLatestMsgId()!=0);
                 //执行了请求最新页  说明 本地保存的 latestmsgid 已经过期 有新消息可以显示被清空历史消息的 topic 了
                 itemBean.setAlreadyDeletedLocalTopic(false);
                 itemBean.setLatestMsgIdWhenDeletedLocalTopic(-1);
