@@ -309,8 +309,10 @@ public class MqttConnectManager {
             public void connectionLost(Throwable cause) {
                 Log.i(TAG, "connectionLost: ");
                 isConnected = false;
-                mMqttClient.close();
-                mMqttClient.unregisterResources();
+                if (mMqttClient != null) {
+                    mMqttClient.close();
+                    mMqttClient.unregisterResources();
+                }
                 synchronized (MqttConnectManager.class) {
                     if (userStop) {
                         //如果是用户 进行了断开行为 不重试连接
