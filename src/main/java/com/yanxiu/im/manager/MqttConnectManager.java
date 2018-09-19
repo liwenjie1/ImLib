@@ -294,6 +294,13 @@ public class MqttConnectManager {
         //检查 是否有其他 mqtt 连接在运行 如果有  断开连接
         Log.i(TAG, "connectMqttServer: connect ");
         String url = "tcp://" + host;
+        createClient(host, connectCallback, options, url);
+        //进行连接
+        //连接行为监听
+        doConnect(connectCallback);
+    }
+
+    private void createClient(@NonNull String host, final MqttServerConnectCallback connectCallback, final MqttConnectOptions options, String url) {
         mMqttClient = new MqttAndroidClient(applicationContext, url, createClientId());
         //保存....
         mqttConnections.put(host, mMqttClient);
@@ -304,6 +311,8 @@ public class MqttConnectManager {
                 Log.i(TAG, "connectionLost: ");
                 YXToastUtil.showToast("mqtt connection lost");
                 isConnected = false;
+                mMqttClient.close();
+                mMqttClient.unregisterResources();
                 synchronized (MqttConnectManager.class) {
                     if (userStop) {
                         //如果是用户 进行了断开行为 不重试连接
@@ -311,7 +320,7 @@ public class MqttConnectManager {
                     }
                     //连接丢失
                     isConnectionLost = true;
-                    reconnect(connectCallback, options);
+                    reconnect(connectCallback);
                 }
 
             }
@@ -329,27 +338,26 @@ public class MqttConnectManager {
                 Log.i(TAG, "deliveryComplete: ");
             }
         });
-        //进行连接
-        //连接行为监听
-        doConnect(connectCallback, options);
     }
 
-    private void reconnect(final MqttServerConnectCallback connectCallback, final MqttConnectOptions options) {
+    private void reconnect(final MqttServerConnectCallback connectCallback) {
         //进行重连 不限次数 30秒间隔
-        mReconnectManager = new MqttReconnectManager(-1, 30);
+        mReconnectManager = new MqttReconnectManager(-1, 15);
         mReconnectManager.start(new MqttReconnectManager.AlarmCallback() {
             @Override
             public void onTick() {
                 isConnecting = true;
-                doConnect(connectCallback, options);
+                connectMqttServer(connectCallback);
+//                doConnect(connectCallback);
             }
         });
     }
 
-    private void doConnect(final MqttServerConnectCallback connectCallback, final MqttConnectOptions options) {
+    private void doConnect(final MqttServerConnectCallback connectCallback) {
         if (mMqttClient == null) {
             return;
         }
+        final MqttConnectOptions options = getMqttConnectOptions();
         try {
             mMqttClient.connect(options, null, new IMqttActionListener() {
                 @Override
@@ -381,7 +389,7 @@ public class MqttConnectManager {
                     YXToastUtil.showToast("mqtt connect failure");
                     YXLogger.d(TAG, "connect failure");
                     if (!isConnecting) {
-                        reconnect(connectCallback, options);
+                        reconnect(connectCallback);
                     }
                     //失败
                     if (connectCallback != null) {
@@ -423,7 +431,7 @@ public class MqttConnectManager {
         char[] psw = ("79A6g3pHb4tz2Bs8").toCharArray();
         options.setPassword(psw);
         //设置自动重连
-        options.setAutomaticReconnect(true);
+//        options.setAutomaticReconnect(true);
         //连接超时时间
         options.setConnectionTimeout(10);
         //设置 心跳包
