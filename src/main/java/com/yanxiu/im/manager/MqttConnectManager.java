@@ -18,7 +18,6 @@ import com.yanxiu.im.protobuf.MqttMsgProto;
 import com.yanxiu.lib.yx_basic_library.YXApplication;
 import com.yanxiu.lib.yx_basic_library.network.IYXHttpCallback;
 import com.yanxiu.lib.yx_basic_library.network.YXRequestBase;
-import com.yanxiu.lib.yx_basic_library.util.YXToastUtil;
 import com.yanxiu.lib.yx_basic_library.util.logger.YXLogger;
 
 import org.eclipse.paho.android.service.MqttAndroidClient;
@@ -309,7 +308,6 @@ public class MqttConnectManager {
             @Override
             public void connectionLost(Throwable cause) {
                 Log.i(TAG, "connectionLost: ");
-                YXToastUtil.showToast("mqtt connection lost");
                 isConnected = false;
                 mMqttClient.close();
                 mMqttClient.unregisterResources();
@@ -367,7 +365,6 @@ public class MqttConnectManager {
                     if (mReconnectManager != null) {
                         mReconnectManager.cancel();
                     }
-                    YXToastUtil.showToast("mqtt connect success");
                     YXLogger.d(TAG, "connect success");
                     //连接成功
                     onlineOrOfflinePublish(1);
@@ -386,7 +383,6 @@ public class MqttConnectManager {
 
                 @Override
                 public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-                    YXToastUtil.showToast("mqtt connect failure");
                     YXLogger.d(TAG, "connect failure");
                     if (!isConnecting) {
                         reconnect(connectCallback);
