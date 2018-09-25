@@ -71,6 +71,10 @@ public class ImTopicListFragment extends FaceShowBaseFragment
         // Required empty public constructor
     }
 
+    public void showTitleBarRed(boolean show){
+
+    }
+
     public TitlebarActionListener titlebarActionListener;
     public ImUnreadMsgListener imUnreadMsgListener;
     private ImTitleLayout mImTitleLayout;
