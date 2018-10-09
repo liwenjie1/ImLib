@@ -54,8 +54,8 @@ public class ContactsPresenter implements ContactsContract.IPresenter {
     public void loadContacts() {
         mView.showLoading();
         //更改请求接口
-        loadClazsList();
-//        loadContactsList();
+//        loadClazsList();
+        loadContactsList();
     }
 
     private void loadContactsList() {
@@ -100,40 +100,7 @@ public class ContactsPresenter implements ContactsContract.IPresenter {
         });
     }
 
-    private void loadClazsList() {
-        GetClazsListRequest getSudentClazsesRequest = new GetClazsListRequest();
-        getSudentClazsesRequest.imToken=null;
-        getSudentClazsesRequest.reqId=null;
-        getSudentClazsesRequest.token=Constants.token;
-        getSudentClazsesRequest.bizSource=null;
-        getSudentClazsesRequest.startRequest(GetClazsListResponse.class, new IYXHttpCallback<GetClazsListResponse>() {
-            /**
-             * startRequest()中生成get url，post body以后，调用OkHttp Request之前调用此回调
-             *
-             * @param request OkHttp Request
-             */
-            @Override
-            public void onRequestCreated(Request request) {
 
-            }
-
-            @Override
-            public void onSuccess(YXRequestBase request, GetClazsListResponse ret) {
-                if (ret != null && ret.code == 0) {
-                    if (ret.getData() != null && ret.getData().getClazsInfos() != null && ret.getData().getClazsInfos().size() > 0) {
-                    } else {
-                    }
-                } else {
-                }
-            }
-
-            @Override
-            public void onFail(YXRequestBase request, Error error) {
-                mView.hideLoading();
-                mView.showNetError();
-            }
-        });
-    }
 
     @Override
     public void loadMembersByPosition(int position) {

@@ -17,6 +17,8 @@
             android:screenOrientation="portrait" />
         <activity android:name=".business.msglist.activity.ImSettingActivity" />
         <activity android:name=".business.contacts.activity.TopicMemberListActivity" />
+        <activity android:name=".business.contacts.activity.UserContactsActivity" />
+        <activity android:name=".business.contacts.activity.TopicMemberInfoActivity"></activity>
     </application>
 
 </manifest>

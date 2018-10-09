@@ -23,7 +23,7 @@ import com.yanxiu.im.R;
 import com.yanxiu.im.TopicsReponsery;
 import com.yanxiu.im.bean.MsgItemBean;
 import com.yanxiu.im.bean.TopicItemBean;
-import com.yanxiu.im.business.contacts.activity.ContactsActivity;
+import com.yanxiu.im.business.contacts.activity.UserContactsActivity;
 import com.yanxiu.im.business.interfaces.ImUnreadMsgListener;
 import com.yanxiu.im.business.interfaces.ImUserRemoveFromTopicListener;
 import com.yanxiu.im.business.interfaces.RecyclerViewItemLongClickListener;
@@ -148,7 +148,7 @@ public class ImTopicListFragment extends FaceShowBaseFragment
                 //学员端才有 通讯录功能
                 //事件统计 点击通讯录
                 EventUpdate.onClickContactEvent(getActivity());
-                ContactsActivity.invoke(ImTopicListFragment.this);
+                UserContactsActivity.invoke(ImTopicListFragment.this);
                 if (titlebarActionListener != null) {
                     titlebarActionListener.onRightComponpentClicked();
                 }

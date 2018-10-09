@@ -4,6 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
     tools:context=".business.contacts.activity.TopicMemberListActivity">
 
@@ -16,7 +17,21 @@
         titlelayout:im_title_bottom_line_color="@color/color_white"
         titlelayout:im_title_bottom_line_height="0dp"
         titlelayout:im_title_left_img="@drawable/im_selector_back" />
-
+    <android.support.v7.widget.SearchView
+        android:id="@+id/search_view"
+        android:layout_width="match_parent"
+        android:layout_height="34dp"
+        android:layout_gravity="center_vertical"
+        android:layout_marginBottom="10dp"
+        android:layout_marginLeft="10dp"
+        android:layout_marginRight="10dp"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/contacts_search_view_background_shape"
+        app:closeIcon="@drawable/contacts_search_view_delete_selector"
+        app:iconifiedByDefault="false"
+        app:queryBackground="@null"
+        app:queryHint="搜索"
+        app:searchIcon="@drawable/icon_search" />
     <com.jcodecraeer.xrecyclerview.XRecyclerView
         android:id="@+id/loadmore_recyclerview"
         android:layout_width="match_parent"
