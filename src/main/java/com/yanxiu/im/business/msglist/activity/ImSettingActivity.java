@@ -16,6 +16,7 @@ import com.test.yanxiu.common_base.ui.ImBaseActivity;
 import com.yanxiu.im.Constants;
 import com.yanxiu.im.R;
 import com.yanxiu.im.bean.TopicItemBean;
+import com.yanxiu.im.business.contacts.activity.ContactMemberListActivity;
 import com.yanxiu.im.business.msglist.interfaces.ImSettingContract;
 import com.yanxiu.im.business.msglist.interfaces.impls.ImSettingPresetner;
 import com.yanxiu.im.business.view.ImSettingItemView;
@@ -63,6 +64,8 @@ public class ImSettingActivity extends ImBaseActivity implements ImTitleLayout.T
 
     private TextView im_member_from_textview;
 
+    private LinearLayout im_setting_member_list_layout;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -84,6 +87,8 @@ public class ImSettingActivity extends ImBaseActivity implements ImTitleLayout.T
         im_setting_group_info_layout = findViewById(R.id.ll_group_info);
 
         im_member_from_textview = findViewById(R.id.im_setting_member_from);
+
+        im_setting_member_list_layout = findViewById(R.id.im_members_layout);
     }
 
 
@@ -154,6 +159,16 @@ public class ImSettingActivity extends ImBaseActivity implements ImTitleLayout.T
             }
         });
 
+        im_setting_member_list_layout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                //跳转到  群成员列表界面
+                if (currentTopic != null) {
+                    ContactMemberListActivity.invoke(ImSettingActivity.this, currentTopic.getTopicId());
+                }
+            }
+        });
+
     }
 
 
@@ -208,6 +223,8 @@ public class ImSettingActivity extends ImBaseActivity implements ImTitleLayout.T
         Log.i(TAG, "setPrivateTopicInfo: ");
         im_setting_group_info_layout.setVisibility(View.GONE);
         im_setting_private_info_layout.setVisibility(View.VISIBLE);
+        //如果是私聊  隐藏 群成员 item
+        im_setting_member_list_layout.setVisibility(View.GONE);
         //设置私聊 对象信息
         for (DbMember dbMember : topicBean.getMembers()) {
             if (dbMember.getImId() != Constants.imId) {
@@ -226,6 +243,7 @@ public class ImSettingActivity extends ImBaseActivity implements ImTitleLayout.T
         }
         //私聊没有 禁言功能
         mImTalkSettingItem.setVisibility(View.GONE);
+
         //获取  来自
 
         findViewById(R.id.im_from_layout).setVisibility(TextUtils.isEmpty(topicBean.getGroup()) ? View.GONE : View.VISIBLE);
@@ -242,7 +260,10 @@ public class ImSettingActivity extends ImBaseActivity implements ImTitleLayout.T
         //设置 群聊信息 名称
         TextView groupName = findViewById(R.id.im_setting_activity_classname_tv);
         groupName.setText(topicBean.getGroup() + "");
-
+        //如果 学员端 的群聊  显示 群成员 item
+        if (Constants.APP_TYPE == Constants.APP_TYPE_STUDENT) {
+            im_setting_member_list_layout.setVisibility(View.VISIBLE);
+        }
         //判断当前 im 是否是 topic 的管理员
         mImTalkSettingItem.setVisibility(View.GONE);
         final List<Long> managers = topicBean.getManagers();

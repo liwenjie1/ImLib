@@ -54,73 +54,100 @@
         <LinearLayout
             android:id="@+id/im_from_layout"
             android:layout_width="match_parent"
-            android:gravity="center_vertical"
             android:layout_height="46dp"
             android:layout_marginTop="5dp"
-            android:paddingLeft="15dp"
-            android:paddingRight="15dp"
             android:background="@color/color_white"
+            android:gravity="center_vertical"
             android:layoutAnimation="@null"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            android:paddingLeft="15dp"
+            android:paddingRight="15dp">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textSize="14dp"
                 android:layout_marginRight="5dp"
-                android:text="来自" />
+                android:text="来自"
+                android:textSize="14dp" />
 
             <TextView
                 android:id="@+id/im_setting_member_from"
-                android:singleLine="true"
-                android:background="@null"
-                android:ellipsize="end"
-                android:textSize="14dp"
-                android:layout_gravity="center_vertical|end"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical|end"
                 android:layout_marginLeft="15dp"
+                android:background="@null"
+                android:ellipsize="end"
                 android:gravity="center_vertical|right"
+                android:singleLine="true"
+                android:textSize="14dp"
                 tools:text="学员来自哪个班级学员来自哪个班级学员来自哪个班级学员来自哪个班级学员来自哪个班级学员来自哪个班级学员来自哪个班级学员来自哪个班级学员来自哪个班级学员来自哪个班级学员来自哪个班级学员来自哪个班级学员来自哪个班级学员来自哪个班级学员来自哪个班级学员来自哪个班级学员来自哪个班级学员来自哪个班级学员来自哪个班级学员来自哪个班级" />
 
         </LinearLayout>
 
+
+
     </LinearLayout>
-
-
     <LinearLayout
-        android:id="@+id/ll_group_info"
+        android:orientation="vertical"
         android:layout_width="match_parent"
-        android:layout_height="46dp"
-        android:layout_below="@+id/im_setting_title_layout"
-        android:layout_marginTop="5dp"
-        android:background="@color/color_white"
-        android:gravity="center_vertical"
-        android:layoutAnimation="@null"
-        android:orientation="horizontal"
-        android:paddingLeft="15dp"
-        android:paddingRight="15dp">
+        android:layout_height="wrap_content">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginRight="5dp"
-            android:background="@null"
-            android:gravity="left|center_vertical"
-            android:text="班级名称"
-            android:textSize="14dp"
-            android:visibility="visible" />
 
-        <TextView
-            android:id="@+id/im_setting_activity_classname_tv"
+        <LinearLayout
+            android:id="@+id/ll_group_info"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@null"
-            android:ellipsize="end"
-            android:gravity="center_vertical|end"
-            android:singleLine="true"
-            android:textSize="14dp"
-            tools:text="周杰伦三年二班学员来自哪个班级学员来自哪个班级学员来自哪个班级学员来自哪个班级学员来自哪个班级学员来自哪个班级学员来自哪个班级学员来自哪个班级学员来自哪个班级学员来自哪个班级学员来自哪个班级学员来自哪个班级学员来自哪个班级学员来自哪个班级学员来自哪个班级学员来自哪个班级学员来自哪个班级" />
+            android:layout_height="46dp"
+            android:layout_below="@+id/im_setting_title_layout"
+            android:layout_marginTop="5dp"
+            android:background="@color/color_white"
+            android:gravity="center_vertical"
+            android:layoutAnimation="@null"
+            android:orientation="horizontal"
+            android:paddingLeft="15dp"
+            android:paddingRight="15dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="5dp"
+                android:background="@null"
+                android:gravity="left|center_vertical"
+                android:text="班级名称"
+                android:textSize="14dp"
+                android:visibility="visible" />
+
+            <TextView
+                android:id="@+id/im_setting_activity_classname_tv"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@null"
+                android:ellipsize="end"
+                android:gravity="center_vertical|end"
+                android:singleLine="true"
+                android:textSize="14dp"
+                tools:text="周杰伦三年二班学员来自哪个班级学员来自哪个班级学员来自哪个班级学员来自哪个班级学员来自哪个班级学员来自哪个班级学员来自哪个班级学员来自哪个班级学员来自哪个班级学员来自哪个班级学员来自哪个班级学员来自哪个班级学员来自哪个班级学员来自哪个班级学员来自哪个班级学员来自哪个班级学员来自哪个班级" />
+        </LinearLayout>
+        <LinearLayout
+            android:id="@+id/im_members_layout"
+            android:layout_width="match_parent"
+            android:layout_height="46dp"
+            android:layout_marginTop="5dp"
+            android:background="@color/color_white"
+            android:gravity="center_vertical"
+            android:layoutAnimation="@null"
+            android:orientation="horizontal"
+            android:paddingLeft="15dp"
+            android:paddingRight="15dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="5dp"
+                android:text=" 群成员"
+                android:textSize="14dp" />
+
+        </LinearLayout>
 
     </LinearLayout>
 

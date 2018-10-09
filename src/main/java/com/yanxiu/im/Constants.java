@@ -1,5 +1,8 @@
 package com.yanxiu.im;
 
+import com.test.yanxiu.common_base.utils.SystemUtil;
+import com.yanxiu.lib.yx_basic_library.util.YXSystemUtil;
+
 /**
  * Created by cailei on 02/03/2018.
  */
@@ -24,7 +27,7 @@ public class Constants {
     //未定义
     public static final int APP_TYPE_UNDEFINE = -1;
 
-    public static int APP_TYPE = -APP_TYPE_UNDEFINE;
+    public static int APP_TYPE = APP_TYPE_UNDEFINE;
 
 
     //字段  是否显示通讯录功能
@@ -44,4 +47,15 @@ public class Constants {
     public static final int IM_REQUEST_CODE_CONTACT = IM_REQUEST_CODE_BASE + 2;
 
 
+
+
+    /*应付 */
+    public static final String OS = "android";
+    public static final String osType = "0";
+    public static final String pcode = "010110000";
+    public static final String BRAND = SystemUtil.getBrandName();
+    public static final String OPERTYPE = "app.upload.log";
+    public static String deviceId = "-";
+    public static String version = String.valueOf(YXSystemUtil.getVersionCode());
+    public static String versionName = YXSystemUtil.getVersionName();
 }

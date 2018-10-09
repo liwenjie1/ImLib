@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:titlelayout="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".business.contacts.activity.ContactMemberListActivity">
+
+    <com.yanxiu.im.business.view.ImTitleLayout
+        android:id="@+id/im_memberlist_title_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        titlelayout:im_left_margin="5dp"
+        titlelayout:im_right_margin="15dp"
+        titlelayout:im_title_bottom_line_color="@color/color_white"
+        titlelayout:im_title_bottom_line_height="0dp"
+        titlelayout:im_title_left_img="@drawable/im_selector_back" />
+
+    <com.jcodecraeer.xrecyclerview.XRecyclerView
+        android:id="@+id/loadmore_recyclerview"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+</LinearLayout>

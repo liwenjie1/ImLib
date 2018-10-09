@@ -26,20 +26,19 @@ android {
     //sourceSet 配置 资源 0代表 使用管理端资源  1代表使用 学员端资源
     sourceSets {
         main {
-            if(rootProject.ext.imlibResId==0){
-                res.srcDirs = ['src/main/res-admin','src/main/pub-res']
-            }else {
-                res.srcDirs = ['src/main/res','src/main/pub-res']
+            if (rootProject.ext.imlibResId == 0) {
+                res.srcDirs = ['src/main/res-admin', 'src/main/pub-res']
+            } else {
+                res.srcDirs = ['src/main/res', 'src/main/pub-res']
             }
         }
     }
-
-
-
 
 
 }
 dependencies {
     api imLibDependencies.values()
     api project(path: ':common_base')
+    api 'com.jcodecraeer:xrecyclerview:1.5.9'
+    implementation 'com.android.support.constraint:constraint-layout:1.1.3'
 }
