@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context=".business.contacts.activity.ContactMemberListActivity">
+    tools:context=".business.contacts.activity.TopicMemberListActivity">
 
     <com.yanxiu.im.business.view.ImTitleLayout
         android:id="@+id/im_memberlist_title_layout"

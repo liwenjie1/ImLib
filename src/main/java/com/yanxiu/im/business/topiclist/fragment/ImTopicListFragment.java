@@ -131,7 +131,7 @@ public class ImTopicListFragment extends FaceShowBaseFragment
         topicListPresenter = new TopicListPresenter(this, getActivity());
         mqttConnectPresenter = new MqttConnectPresenter(this);
         mRecyclerAdapter = new ImTopicListRecyclerViewAdapter<TopicItemBean>(getActivity());
-        redDot=view.findViewById(R.id.reddot_iv);
+//        redDot=view.findViewById(R.id.reddot_iv);
     }
 
     private void listenerInit() {

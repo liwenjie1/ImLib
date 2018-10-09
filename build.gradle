@@ -40,5 +40,4 @@ dependencies {
     api imLibDependencies.values()
     api project(path: ':common_base')
     api 'com.jcodecraeer:xrecyclerview:1.5.9'
-    implementation 'com.android.support.constraint:constraint-layout:1.1.3'
 }

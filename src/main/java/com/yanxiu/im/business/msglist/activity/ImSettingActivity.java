@@ -16,7 +16,7 @@ import com.test.yanxiu.common_base.ui.ImBaseActivity;
 import com.yanxiu.im.Constants;
 import com.yanxiu.im.R;
 import com.yanxiu.im.bean.TopicItemBean;
-import com.yanxiu.im.business.contacts.activity.ContactMemberListActivity;
+import com.yanxiu.im.business.contacts.activity.TopicMemberListActivity;
 import com.yanxiu.im.business.msglist.interfaces.ImSettingContract;
 import com.yanxiu.im.business.msglist.interfaces.impls.ImSettingPresetner;
 import com.yanxiu.im.business.view.ImSettingItemView;
@@ -164,7 +164,7 @@ public class ImSettingActivity extends ImBaseActivity implements ImTitleLayout.T
             public void onClick(View v) {
                 //跳转到  群成员列表界面
                 if (currentTopic != null) {
-                    ContactMemberListActivity.invoke(ImSettingActivity.this, currentTopic.getTopicId());
+                    TopicMemberListActivity.invoke(ImSettingActivity.this, currentTopic.getTopicId());
                 }
             }
         });

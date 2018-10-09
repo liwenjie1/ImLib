@@ -81,6 +81,13 @@ public class ImConfig {
             });
         }
     }
+    /**
+     * 将登陆获取的  intokeninfor 信息进行提取 保存
+     */
+    public static void init(ImTokenInfo_new imTokenInfo,long userId, String token) {
+       Constants.userId=userId;
+       init(imTokenInfo, token);
+    }
 
     public static void setClientType(ClientType type) {
         switch (type) {

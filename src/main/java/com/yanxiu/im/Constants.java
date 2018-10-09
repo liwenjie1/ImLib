@@ -15,6 +15,7 @@ public class Constants {
 
     // start *** im 用户信息，module对接用，因为已经写入所有code中，所以这样替换最为便捷
     public static long imId = -1;
+    public static long userId = -1;
     public static String imToken;
     public static String imAvatar;
     // end *** im 用户信息
