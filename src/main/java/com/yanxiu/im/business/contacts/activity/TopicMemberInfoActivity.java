@@ -85,6 +85,7 @@ public class TopicMemberInfoActivity extends ImBaseActivity {
     private UUID mGetImIdByUseridRequest;
     private long mImMemberId;//im member id
     private String mTopicGroup;
+    private String mTopicId;
 
     private PublicLoadLayout mPublicLoadLayout;
 
@@ -99,7 +100,7 @@ public class TopicMemberInfoActivity extends ImBaseActivity {
         Bundle data = getIntent().getBundleExtra("data");
         if (data != null) {
             mPeople = (GetContactMembersResponse_new.AdressBookPeople) data.getSerializable("data");
-            mTopicGroup = data.getString("topicId");
+            mTopicId = data.getString("topicId");
         }
         initView();
         requestData();
@@ -171,7 +172,7 @@ public class TopicMemberInfoActivity extends ImBaseActivity {
 //        } else {
 //            ll_is_teacher.setVisibility(View.VISIBLE);
 //        }
-        if (TextUtils.isEmpty(mTopicGroup)||mPeople.userId==Constants.userId) {
+        if (TextUtils.isEmpty( mTopicId)||mPeople.userId==Constants.userId) {
             iv_chat.setVisibility(View.GONE);
         }
         iv_chat.setOnClickListener(new View.OnClickListener() {
@@ -191,7 +192,7 @@ public class TopicMemberInfoActivity extends ImBaseActivity {
         getImIdRequest.userId = String.valueOf(userId);
         getImIdRequest.imToken = Constants.imToken;
 
-        getImIdRequest.fromGroupTopicId = mTopicGroup;
+        getImIdRequest.fromGroupTopicId = mTopicId;
         getImIdRequest.startRequest(GetImIdByUserIdResponse.class, new IYXHttpCallback<GetImIdByUserIdResponse>() {
 
             @Override
@@ -214,7 +215,7 @@ public class TopicMemberInfoActivity extends ImBaseActivity {
                             mImMemberId,
                             mPeople.realName,
                             mPeople.avatar,
-                            -1,
+                            Long.parseLong(mTopicId),
                             mTopicGroup, ImMsgListActivity.REQUEST_CODE_MEMBERID);
                 }
             }
@@ -222,7 +223,11 @@ public class TopicMemberInfoActivity extends ImBaseActivity {
             @Override
             public void onFail(YXRequestBase request, Error error) {
                 mPublicLoadLayout.hiddenLoadingView();
-                YXToastUtil.showToast(error.getMessage());
+                if (!TextUtils.isEmpty(error.getMessage())) {
+                    YXToastUtil.showToast(error.getMessage());
+                }else {
+                    YXToastUtil.showToast("请求失败");
+                }
             }
         });
     }
