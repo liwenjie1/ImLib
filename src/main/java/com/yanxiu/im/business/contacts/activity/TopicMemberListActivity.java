@@ -176,7 +176,6 @@ public class TopicMemberListActivity extends ImBaseActivity implements TopicMemb
         getImIdRequest.userId = String.valueOf(bean.getMemberInfo().getUserId());
         getImIdRequest.imToken = Constants.imToken;
         getImIdRequest.fromGroupTopicId = topicId;
-        mPublicLoadLayout.showLoadingView();
         getImIdRequest.startRequest(GetImIdByUserIdResponse.class, new IYXHttpCallback<GetImIdByUserIdResponse>() {
 
             @Override
@@ -268,7 +267,6 @@ public class TopicMemberListActivity extends ImBaseActivity implements TopicMemb
                 mPublicLoadLayout.setRetryButtonOnclickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        mPublicLoadLayout.showLoadingView();
                         mPublicLoadLayout.hiddenOtherErrorView();
                         mPresenter.doGetMemberList(mTopicGroup);
                     }
