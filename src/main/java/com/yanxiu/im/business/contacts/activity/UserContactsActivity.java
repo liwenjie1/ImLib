@@ -143,7 +143,9 @@ public class UserContactsActivity extends ImBaseActivity implements UserContacts
 
             @Override
             public boolean onQueryTextChange(String newText) {
-//                mMemberAdapter.getFilter().filter(newText);
+                mContactsPresenter.setKeyWords(newText);
+                GetClazsListResponse.ClazsInfosBean clazsInfoByPos = mGroupAdapter.getClazsInfoByPos(mGroupAdapter.mCurrentSelectedPosition);
+                mContactsPresenter.doGetMembersList(String.valueOf(clazsInfoByPos.getId()));
                 return true;
             }
         });

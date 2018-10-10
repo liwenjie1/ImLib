@@ -14,7 +14,7 @@ import com.yanxiu.lib.yx_basic_library.network.YXRequestBase;
 import okhttp3.Request;
 
 public class UserContactsPresenter implements UserContactsContract.IPresenter {
-
+    private String mKeyWords = "";
     private UserContactsContract.IView mIView;
     private final int PAGE_SIZE=20;
 
@@ -78,7 +78,7 @@ public class UserContactsPresenter implements UserContactsContract.IPresenter {
         request.reqId = null;
         request.bizSource = null;
         request.token = Constants.token;
-        request.keyWords = "";
+        request.keyWords = mKeyWords;
         request.startRequest(GetContactMembersResponse_new.class, new IYXHttpCallback<GetContactMembersResponse_new>() {
             @Override
             public void onRequestCreated(Request request) {
@@ -109,6 +109,9 @@ public class UserContactsPresenter implements UserContactsContract.IPresenter {
 
     }
 
+    public void setKeyWords(String keyWords){
+        mKeyWords = keyWords;
+    }
     @Override
     public void doGetMembersList(String clazsId) {
         GetContactMembersRequest_new request = new GetContactMembersRequest_new();
@@ -119,7 +122,7 @@ public class UserContactsPresenter implements UserContactsContract.IPresenter {
         request.reqId = null;
         request.bizSource = null;
         request.token = Constants.token;
-        request.keyWords = "";
+        request.keyWords = mKeyWords;
         request.startRequest(GetContactMembersResponse_new.class, new IYXHttpCallback<GetContactMembersResponse_new>() {
             @Override
             public void onRequestCreated(Request request) {
