@@ -8,6 +8,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -64,7 +65,7 @@ public class ImSettingActivity extends ImBaseActivity implements ImTitleLayout.T
 
     private TextView im_member_from_textview;
 
-    private LinearLayout im_setting_member_list_layout;
+    private RelativeLayout im_setting_member_list_layout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

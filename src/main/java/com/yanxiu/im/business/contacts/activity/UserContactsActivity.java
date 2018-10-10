@@ -20,7 +20,6 @@ import com.test.yanxiu.common_base.ui.ImBaseActivity;
 import com.test.yanxiu.common_base.ui.InputMethodUtil;
 import com.test.yanxiu.common_base.ui.PublicLoadLayout;
 import com.test.yanxiu.common_base.utils.talkingdata.EventUpdate;
-import com.yanxiu.im.Constants;
 import com.yanxiu.im.R;
 import com.yanxiu.im.business.contacts.adapter.UserContactsClazsAdapter;
 import com.yanxiu.im.business.contacts.adapter.UserContactsMemberAdapter;
@@ -182,9 +181,6 @@ public class UserContactsActivity extends ImBaseActivity implements UserContacts
                 //事件统计 点击头像
                 EventUpdate.onClickMsgContactImageEvent(UserContactsActivity.this);
                 GetContactMembersResponse_new.AdressBookPeople adressBookPeople = mMemberAdapter.getDataList().get(position);
-                if (adressBookPeople.userId== Constants.userId) {
-                    return;
-                }
                 // TODO: 2018/10/9  跳转到 成员详情页
                 Bundle bundle = new Bundle();
                 bundle.putSerializable("data", adressBookPeople);

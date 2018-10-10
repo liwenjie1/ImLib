@@ -21,7 +21,7 @@ public class GetContactMembersResponse_new extends ImResponseBase_new {
     }
 
 
-    public class AdressBookPeople implements Serializable {
+    public static class AdressBookPeople implements Serializable {
 
         /**
          * 0默认 1标题教师  2标题学生

@@ -32,44 +32,45 @@ public class UserContactsMemberAdapter extends RecyclerView.Adapter {
         return mStudentList;
     }
 
-    public void addStudentList(List<GetContactMembersResponse_new.AdressBookPeople> studentList){
-        if (mDataList==null) {
-            mDataList=new ArrayList<>();
+    public void addStudentList(List<GetContactMembersResponse_new.AdressBookPeople> studentList) {
+        if (mDataList == null) {
+            mDataList = new ArrayList<>();
         }
-        for (GetContactMembersResponse_new.AdressBookPeople master : mMasterList) {
-            for (GetContactMembersResponse_new.AdressBookPeople student : studentList) {
-                if (student.userId==master.userId) {
-                    studentList.remove(student);
-                    break;
-                }
-            }
-        }
+//        for (GetContactMembersResponse_new.AdressBookPeople master : mMasterList) {
+//            for (GetContactMembersResponse_new.AdressBookPeople student : studentList) {
+//                if (student.userId == master.userId) {
+//                    studentList.remove(student);
+//                    break;
+//                }
+//            }
+//        }
 
         mDataList.addAll(studentList);
     }
 
     public void setDataList(List<GetContactMembersResponse_new.AdressBookPeople> masterList, List<GetContactMembersResponse_new.AdressBookPeople> studentList) {
-        this.mMasterList=masterList;
-        this.mStudentList=studentList;
-        mDataList=new ArrayList<>();
+        this.mMasterList = masterList;
+        this.mStudentList = studentList;
+        mDataList = new ArrayList<>();
 
-        for (GetContactMembersResponse_new.AdressBookPeople master : mMasterList) {
-            for (GetContactMembersResponse_new.AdressBookPeople student : mStudentList) {
-                if (student.userId==master.userId) {
-                    mStudentList.remove(student);
-                    break;
-                }
-            }
-        }
-
+//        for (GetContactMembersResponse_new.AdressBookPeople master : mMasterList) {
+//            for (GetContactMembersResponse_new.AdressBookPeople student : mStudentList) {
+//                if (student.userId == master.userId) {
+//                    mStudentList.remove(student);
+//                    break;
+//                }
+//            }
+//        }
+        GetContactMembersResponse_new.AdressBookPeople masterHead=new GetContactMembersResponse_new.AdressBookPeople(1,"管理员");
+        masterHead.userId=-1;
+        GetContactMembersResponse_new.AdressBookPeople studentHead=new GetContactMembersResponse_new.AdressBookPeople(2,"学员");
+        studentHead.userId=-1;
+        mDataList.add(masterHead);
         mDataList.addAll(masterList);
+        mDataList.add(studentHead);
         mDataList.addAll(studentList);
     }
 
-
-    private void dulpRemoved(){
-
-    }
 
     public ArrayList<GetContactMembersResponse_new.AdressBookPeople> getDataList() {
         return mDataList;
@@ -77,27 +78,42 @@ public class UserContactsMemberAdapter extends RecyclerView.Adapter {
 
     @Override
     public int getItemViewType(int position) {
-        return HEAD_ITEM;
+        if (mDataList.get(position).userId == -1) {
+            return HEAD_ITEM;
+        } else {
+            return STUDENT_ITEM;
+        }
     }
 
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        View inflate = LayoutInflater.from(parent.getContext()).inflate(R.layout.adapter_adress_item, parent, false);
-        UserContactPeopleViewHolder holder = new UserContactPeopleViewHolder(parent.getContext(), inflate);
+        View inflate = null;
+        RecyclerView.ViewHolder holder = null;
+        if (viewType == STUDENT_ITEM) {
+            inflate = LayoutInflater.from(parent.getContext()).inflate(R.layout.adapter_adress_item, parent, false);
+            holder = new UserContactPeopleViewHolder(parent.getContext(), inflate);
+        } else {
+            inflate = LayoutInflater.from(parent.getContext()).inflate(R.layout.adapter_adress_head, parent, false);
+            holder = new HeadViewholder(parent.getContext(), inflate);
+        }
         return holder;
     }
 
     @Override
     public void onBindViewHolder(RecyclerView.ViewHolder holder, final int position) {
-        holder.itemView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (mRecyclerViewItemOnClickListener != null) {
-                    mRecyclerViewItemOnClickListener.onItemClicked(v, position);
+        if (getItemViewType(position) == STUDENT_ITEM) {
+            holder.itemView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (mRecyclerViewItemOnClickListener != null) {
+                        mRecyclerViewItemOnClickListener.onItemClicked(v, position);
+                    }
                 }
-            }
-        });
-        ((UserContactPeopleViewHolder) holder).setData(position, mDataList.get(position));
+            });
+            ((UserContactPeopleViewHolder) holder).setData(position, mDataList.get(position));
+        } else {
+            ((HeadViewholder) holder).setData(position, position == 0 ? "管理员" : "学员");
+        }
     }
 
     @Override
@@ -119,11 +135,14 @@ public class UserContactsMemberAdapter extends RecyclerView.Adapter {
 
         public HeadViewholder(Context context, View itemView) {
             super(context, itemView);
+            tv_title = itemView.findViewById(R.id.tv_title);
         }
+
+        private TextView tv_title;
 
         @Override
         public void setData(int position, String data) {
-
+            tv_title.setText(data);
         }
     }
 

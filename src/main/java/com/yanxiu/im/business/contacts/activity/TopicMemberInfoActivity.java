@@ -171,7 +171,7 @@ public class TopicMemberInfoActivity extends ImBaseActivity {
 //        } else {
 //            ll_is_teacher.setVisibility(View.VISIBLE);
 //        }
-        if (TextUtils.isEmpty(mTopicGroup)) {
+        if (TextUtils.isEmpty(mTopicGroup)||mPeople.userId==Constants.userId) {
             iv_chat.setVisibility(View.GONE);
         }
         iv_chat.setOnClickListener(new View.OnClickListener() {
