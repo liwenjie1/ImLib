@@ -11,6 +11,7 @@ import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
 import com.test.yanxiu.common_base.ui.ImBaseActivity;
+import com.test.yanxiu.common_base.ui.PublicLoadLayout;
 import com.yanxiu.im.R;
 import com.yanxiu.im.business.view.ImTitleLayout;
 import com.yanxiu.im.net.GetContactMemberInfoRequest;
@@ -18,7 +19,6 @@ import com.yanxiu.im.net.GetContactMemberInfoResponse;
 import com.yanxiu.im.net.GetContactMembersResponse_new;
 import com.yanxiu.lib.yx_basic_library.network.IYXHttpCallback;
 import com.yanxiu.lib.yx_basic_library.network.YXRequestBase;
-import com.yanxiu.lib.yx_basic_library.util.YXToastUtil;
 
 import java.util.UUID;
 
@@ -78,10 +78,13 @@ public class TopicMemberInfoActivity extends ImBaseActivity {
     private long mImMemberId;//im member id
     private String mTopicGroup;
 
+    private PublicLoadLayout mPublicLoadLayout;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.adressbook_activity_personaldetails_hubei);
+        mPublicLoadLayout.setContentView(R.layout.adressbook_activity_personaldetails_hubei);
+        setContentView(mPublicLoadLayout);
         mImTitleLayout = findViewById(R.id.im_title_layout);
 
         Bundle data = getIntent().getBundleExtra("data");
@@ -164,6 +167,7 @@ public class TopicMemberInfoActivity extends ImBaseActivity {
      * 个人详情
      */
     private void requestData() {
+        mPublicLoadLayout.showLoadingView();
         GetContactMemberInfoRequest mDetailsRequest = new GetContactMemberInfoRequest();
         mDetailsRequest.userId = String.valueOf(mPeople.userId);
         mDetailsRequest.startRequest(GetContactMemberInfoResponse.class, new IYXHttpCallback<GetContactMemberInfoResponse>() {
@@ -175,14 +179,24 @@ public class TopicMemberInfoActivity extends ImBaseActivity {
 
             @Override
             public void onSuccess(YXRequestBase request, GetContactMemberInfoResponse ret) {
+                mPublicLoadLayout.hiddenLoadingView();
                 if (ret != null && ret.data != null && ret.code == 0) {
                     setPersonalMessage(ret.data);
+                } else {
+                    mPublicLoadLayout.showOtherErrorView(ret.message);
                 }
             }
 
             @Override
-            public void onFail(YXRequestBase request, Error error) {
-                YXToastUtil.showToast(error.getMessage());
+            public void onFail(YXRequestBase request, final Error error) {
+                mPublicLoadLayout.hiddenLoadingView();
+                mPublicLoadLayout.showNetErrorView();
+                mPublicLoadLayout.setRetryButtonOnclickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        requestData();
+                    }
+                });
             }
         });
     }
