@@ -109,6 +109,7 @@ public class ImSettingActivity extends ImBaseActivity implements ImTitleLayout.T
             Log.i(TAG, "setPrivateTopicInfo: ");
             im_setting_group_info_layout.setVisibility(View.GONE);
             im_setting_private_info_layout.setVisibility(View.VISIBLE);
+            im_setting_member_list_layout.setVisibility(View.GONE);
             //设置私聊 对象信息
             ImageView memberAvaral = findViewById(R.id.im_setting_member_avaral);
             Glide.with(this)
