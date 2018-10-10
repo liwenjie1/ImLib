@@ -16,9 +16,9 @@ import okhttp3.Request;
 public class UserContactsPresenter implements UserContactsContract.IPresenter {
     private String mKeyWords = "";
     private UserContactsContract.IView mIView;
-    private final int PAGE_SIZE=20;
+    private final int PAGE_SIZE = 20;
 
-    private int studentOffset=0;
+    private int studentOffset = 0;
 
     private final String TAG = getClass().getSimpleName();
 
@@ -32,11 +32,13 @@ public class UserContactsPresenter implements UserContactsContract.IPresenter {
     }
 
     private void loadClazsList() {
+
         GetClazsListRequest getSudentClazsesRequest = new GetClazsListRequest();
         getSudentClazsesRequest.imToken = null;
         getSudentClazsesRequest.reqId = null;
         getSudentClazsesRequest.token = Constants.token;
         getSudentClazsesRequest.bizSource = null;
+        mIView.showLoading();
         getSudentClazsesRequest.startRequest(GetClazsListResponse.class, new IYXHttpCallback<GetClazsListResponse>() {
             /**
              * startRequest()中生成get url，post body以后，调用OkHttp Request之前调用此回调
@@ -50,6 +52,8 @@ public class UserContactsPresenter implements UserContactsContract.IPresenter {
 
             @Override
             public void onSuccess(YXRequestBase request, GetClazsListResponse ret) {
+                mIView.hideError();
+                mIView.hideLoading();
                 if (ret != null && ret.code == 0) {
                     if (ret.getData() != null && ret.getData().getClazsInfos() != null && ret.getData().getClazsInfos().size() > 0) {
                         mIView.showContactsGroupsList(0, ret.getData().getClazsInfos());
@@ -63,6 +67,7 @@ public class UserContactsPresenter implements UserContactsContract.IPresenter {
             @Override
             public void onFail(YXRequestBase request, Error error) {
                 mIView.hideLoading();
+                mIView.hideError();
                 mIView.showNetError();
             }
         });
@@ -90,7 +95,7 @@ public class UserContactsPresenter implements UserContactsContract.IPresenter {
                 Log.i(TAG, "onSuccess: ");
                 if (ret != null && ret.code == 0 && ret.data != null) {
                     //记录 offset
-                    studentOffset=ret.data.students.offset+ret.data.students.pageSize;
+                    studentOffset = ret.data.students.offset + ret.data.students.pageSize;
                     mIView.addLoadMember(ret.data);
                 } else {
                     if (ret != null) {
@@ -109,9 +114,10 @@ public class UserContactsPresenter implements UserContactsContract.IPresenter {
 
     }
 
-    public void setKeyWords(String keyWords){
+    public void setKeyWords(String keyWords) {
         mKeyWords = keyWords;
     }
+
     @Override
     public void doGetMembersList(String clazsId) {
         GetContactMembersRequest_new request = new GetContactMembersRequest_new();
@@ -133,7 +139,7 @@ public class UserContactsPresenter implements UserContactsContract.IPresenter {
             public void onSuccess(YXRequestBase request, GetContactMembersResponse_new ret) {
                 Log.i(TAG, "onSuccess: ");
                 if (ret != null && ret.code == 0 && ret.data != null) {
-                    studentOffset=ret.data.students.offset+ret.data.students.pageSize;
+                    studentOffset = ret.data.students.offset + ret.data.students.pageSize;
                     mIView.showContactsMembersList(ret.data);
                 } else {
                     if (ret != null) {
@@ -145,7 +151,6 @@ public class UserContactsPresenter implements UserContactsContract.IPresenter {
             @Override
             public void onFail(YXRequestBase request, Error error) {
                 Log.i(TAG, "onFail: ");
-                mIView.showNetError();
             }
         });
 

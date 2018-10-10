@@ -93,10 +93,11 @@
         android:layout_height="match_parent">
 
         <com.jcodecraeer.xrecyclerview.XRecyclerView
+
             android:id="@+id/rv_contacts_members"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@color/color_white" />
+            android:background="@android:color/transparent" />
 
         <LinearLayout
             android:id="@+id/ll_contacts_group"
@@ -113,6 +114,7 @@
                 android:background="@color/color_white" />
 
             <TextView
+                android:visibility="gone"
                 android:id="@+id/tv_select_ok"
                 android:layout_width="match_parent"
                 android:layout_height="45dp"

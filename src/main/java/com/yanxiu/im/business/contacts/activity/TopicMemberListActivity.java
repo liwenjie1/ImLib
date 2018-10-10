@@ -15,6 +15,7 @@ import android.widget.LinearLayout;
 import com.jcodecraeer.xrecyclerview.XRecyclerView;
 import com.test.yanxiu.common_base.ui.ImBaseActivity;
 import com.test.yanxiu.common_base.ui.InputMethodUtil;
+import com.test.yanxiu.common_base.ui.PublicLoadLayout;
 import com.yanxiu.im.Constants;
 import com.yanxiu.im.R;
 import com.yanxiu.im.business.contacts.adapter.TopicMemberAdapter;
@@ -52,10 +53,14 @@ public class TopicMemberListActivity extends ImBaseActivity implements TopicMemb
 
     private final String TAG = getClass().getSimpleName();
 
+    private PublicLoadLayout mPublicLoadLayout;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_contact_member_list);
+        mPublicLoadLayout = new PublicLoadLayout(this);
+        mPublicLoadLayout.setContentView(R.layout.activity_contact_member_list);
+        setContentView(mPublicLoadLayout);
         mPresenter = new TopicMemberListPresenter(this);
         initView();
         initListener();
@@ -171,6 +176,7 @@ public class TopicMemberListActivity extends ImBaseActivity implements TopicMemb
         getImIdRequest.userId = String.valueOf(bean.getMemberInfo().getUserId());
         getImIdRequest.imToken = Constants.imToken;
         getImIdRequest.fromGroupTopicId = topicId;
+        mPublicLoadLayout.showLoadingView();
         getImIdRequest.startRequest(GetImIdByUserIdResponse.class, new IYXHttpCallback<GetImIdByUserIdResponse>() {
 
             @Override
@@ -183,23 +189,32 @@ public class TopicMemberListActivity extends ImBaseActivity implements TopicMemb
                 if (ret != null && ret.data != null && ret.code == 0) {
                     mImMemberId = ret.data.memberId;
                     mTopicGroup = ret.data.topic.topicGroup;
-
                     if (mImMemberId == Constants.imId) {
                         return;
                     }
-
                     ImMsgListActivity.invoke(TopicMemberListActivity.this,
                             mImMemberId,
                             bean.getMemberInfo().getMemberName(),
                             bean.getMemberInfo().getAvatar(),
                             Long.parseLong(topicId),
                             mTopicGroup, ImMsgListActivity.REQUEST_CODE_MEMBERID);
+                } else {
+                    if (!TextUtils.isEmpty(ret.message)) {
+                        YXToastUtil.showToast(ret.message);
+                    } else {
+                        YXToastUtil.showToast("请求失败");
+                    }
+
                 }
             }
 
             @Override
             public void onFail(YXRequestBase request, Error error) {
-                YXToastUtil.showToast(error.getMessage());
+                if (!TextUtils.isEmpty(error.getMessage())) {
+                    YXToastUtil.showToast(error.getMessage());
+                } else {
+                    YXToastUtil.showToast("请求失败");
+                }
             }
         });
     }
@@ -208,7 +223,9 @@ public class TopicMemberListActivity extends ImBaseActivity implements TopicMemb
     private void initData() {
         //初始化数据 首先获取一页 member 信息
         topicId = getIntent().getStringExtra("topicId");
+
         if (!TextUtils.isEmpty(topicId)) {
+            mPublicLoadLayout.showLoadingView();
             mPresenter.doGetMemberList(topicId);
         }
     }
@@ -222,6 +239,9 @@ public class TopicMemberListActivity extends ImBaseActivity implements TopicMemb
 
     @Override
     public void onGetMemberList(ArrayList memberList) {
+        mPublicLoadLayout.hiddenLoadingView();
+        mPublicLoadLayout.hiddenOtherErrorView();
+
         mXRecyclerView.refreshComplete();
         Log.i(TAG, "onGetMemberList: ");
         mTopicMemberAdapter.setDatas(memberList);
@@ -230,6 +250,7 @@ public class TopicMemberListActivity extends ImBaseActivity implements TopicMemb
 
     @Override
     public void onLoadMemberList(ArrayList memberList) {
+        mPublicLoadLayout.hiddenLoadingView();
         mXRecyclerView.refreshComplete();
         Log.i(TAG, "onLoadMemberList: ");
     }
@@ -237,10 +258,21 @@ public class TopicMemberListActivity extends ImBaseActivity implements TopicMemb
     @Override
     public void onException(final String msg) {
         Log.i(TAG, "onException: " + msg);
+
+
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                YXToastUtil.showToast(msg);
+                mPublicLoadLayout.hiddenLoadingView();
+                mPublicLoadLayout.showOtherErrorView(msg);
+                mPublicLoadLayout.setRetryButtonOnclickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        mPublicLoadLayout.showLoadingView();
+                        mPublicLoadLayout.hiddenOtherErrorView();
+                        mPresenter.doGetMemberList(mTopicGroup);
+                    }
+                });
             }
         });
 

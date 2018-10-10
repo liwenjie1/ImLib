@@ -7,6 +7,7 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SearchView;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.TranslateAnimation;
@@ -15,6 +16,7 @@ import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import com.jcodecraeer.xrecyclerview.CustomFooterViewCallBack;
 import com.jcodecraeer.xrecyclerview.XRecyclerView;
 import com.test.yanxiu.common_base.ui.ImBaseActivity;
 import com.test.yanxiu.common_base.ui.InputMethodUtil;
@@ -123,6 +125,23 @@ public class UserContactsActivity extends ImBaseActivity implements UserContacts
         rv_contacts_members.setAdapter(mMemberAdapter);
         rv_contacts_members.setLoadingMoreEnabled(true);
         rv_contacts_members.setPullRefreshEnabled(true);
+        View foot = LayoutInflater.from(this).inflate(R.layout.loading_more_foot_layout, rv_contacts_members, false);
+        rv_contacts_members.setFootView(foot, new CustomFooterViewCallBack() {
+            @Override
+            public void onLoadingMore(View yourFooterView) {
+                yourFooterView.setVisibility(View.VISIBLE);
+            }
+
+            @Override
+            public void onLoadMoreComplete(View yourFooterView) {
+                yourFooterView.setVisibility(View.GONE);
+            }
+
+            @Override
+            public void onSetNoMore(View yourFooterView, boolean noMore) {
+
+            }
+        });
     }
 
     private void initListener() {
@@ -132,6 +151,7 @@ public class UserContactsActivity extends ImBaseActivity implements UserContacts
         mRootView.setRetryButtonOnclickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+
                 mContactsPresenter.doLoadClazsList();
             }
         });
@@ -267,6 +287,7 @@ public class UserContactsActivity extends ImBaseActivity implements UserContacts
 
     @Override
     public void addLoadMember(GetContactMembersResponse_new.AdressData memberBeans) {
+
         rv_contacts_members.loadMoreComplete();
         mMemberAdapter.addStudentList(memberBeans.students.elements);
         mMemberAdapter.notifyDataSetChanged();

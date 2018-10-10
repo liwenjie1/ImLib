@@ -15,10 +15,14 @@
         <activity
             android:name=".business.contacts.activity.ContactsActivity"
             android:screenOrientation="portrait" />
-        <activity android:name=".business.msglist.activity.ImSettingActivity" />
-        <activity android:name=".business.contacts.activity.TopicMemberListActivity" />
-        <activity android:name=".business.contacts.activity.UserContactsActivity" />
-        <activity android:name=".business.contacts.activity.TopicMemberInfoActivity"></activity>
+        <activity android:name=".business.msglist.activity.ImSettingActivity"
+            android:screenOrientation="portrait" />
+        <activity android:name=".business.contacts.activity.TopicMemberListActivity"
+            android:screenOrientation="portrait" />
+        <activity android:name=".business.contacts.activity.UserContactsActivity"
+            android:screenOrientation="portrait" />
+        <activity android:name=".business.contacts.activity.TopicMemberInfoActivity"
+            android:screenOrientation="portrait" />
     </application>
 
 </manifest>
