@@ -5,6 +5,8 @@ import java.util.List;
 public interface UserContactsContract {
     interface IView<E,T> {
 
+            void complet();
+
          void showLoading();
 
          void hideLoading();

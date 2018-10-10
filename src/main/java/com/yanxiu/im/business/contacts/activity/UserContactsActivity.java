@@ -190,7 +190,7 @@ public class UserContactsActivity extends ImBaseActivity implements UserContacts
             @Override
             public void onLoadMore() {
                 GetClazsListResponse.ClazsInfosBean clazsInfoByPos = mGroupAdapter.getClazsInfoByPos(mGroupAdapter.mCurrentSelectedPosition);
-                mContactsPresenter.doLoadMembersList(String.valueOf(clazsInfoByPos.getId()), mMemberAdapter.getStudentList().size()-1, 40);
+                mContactsPresenter.doLoadMembersList(String.valueOf(clazsInfoByPos.getId()), mMemberAdapter.getStudentList().size() - 1, 40);
 
             }
         });
@@ -243,6 +243,12 @@ public class UserContactsActivity extends ImBaseActivity implements UserContacts
     }
 
     @Override
+    public void complet() {
+        rv_contacts_members.loadMoreComplete();
+        rv_contacts_members.refreshComplete();
+    }
+
+    @Override
     public void showLoading() {
         mRootView.showLoadingView();
     }
@@ -281,13 +287,12 @@ public class UserContactsActivity extends ImBaseActivity implements UserContacts
     @Override
     public void showContactsMembersList(GetContactMembersResponse_new.AdressData memberBeans) {
         rv_contacts_members.refreshComplete();
-        mMemberAdapter.setDataList(memberBeans.masters,memberBeans.students.elements);
+        mMemberAdapter.setDataList(memberBeans.masters, memberBeans.students.elements);
         mMemberAdapter.notifyDataSetChanged();
     }
 
     @Override
     public void addLoadMember(GetContactMembersResponse_new.AdressData memberBeans) {
-
         rv_contacts_members.loadMoreComplete();
         mMemberAdapter.addStudentList(memberBeans.students.elements);
         mMemberAdapter.notifyDataSetChanged();

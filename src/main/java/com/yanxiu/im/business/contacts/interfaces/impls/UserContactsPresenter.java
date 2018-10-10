@@ -1,5 +1,6 @@
 package com.yanxiu.im.business.contacts.interfaces.impls;
 
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.yanxiu.im.Constants;
@@ -10,6 +11,7 @@ import com.yanxiu.im.net.GetContactMembersRequest_new;
 import com.yanxiu.im.net.GetContactMembersResponse_new;
 import com.yanxiu.lib.yx_basic_library.network.IYXHttpCallback;
 import com.yanxiu.lib.yx_basic_library.network.YXRequestBase;
+import com.yanxiu.lib.yx_basic_library.util.YXToastUtil;
 
 import okhttp3.Request;
 
@@ -58,9 +60,18 @@ public class UserContactsPresenter implements UserContactsContract.IPresenter {
                     if (ret.getData() != null && ret.getData().getClazsInfos() != null && ret.getData().getClazsInfos().size() > 0) {
                         mIView.showContactsGroupsList(0, ret.getData().getClazsInfos());
                     } else {
-
+                        if (!TextUtils.isEmpty(ret.message)) {
+                            mIView.showOtherError(ret.message);
+                        } else {
+                            mIView.showOtherError("请求失败");
+                        }
                     }
                 } else {
+                    if (!TextUtils.isEmpty(ret.message)) {
+                        mIView.showOtherError(ret.message);
+                    } else {
+                        mIView.showOtherError("请求失败");
+                    }
                 }
             }
 
@@ -99,7 +110,12 @@ public class UserContactsPresenter implements UserContactsContract.IPresenter {
                     mIView.addLoadMember(ret.data);
                 } else {
                     if (ret != null) {
-                        mIView.showOtherError(ret.message);
+                        if (!TextUtils.isEmpty(ret.message)) {
+                            YXToastUtil.showToast(ret.message);
+                        }else {
+                            YXToastUtil.showToast("请求失败");
+                        }
+                        mIView.complet();
                     }
                 }
             }
@@ -107,7 +123,12 @@ public class UserContactsPresenter implements UserContactsContract.IPresenter {
             @Override
             public void onFail(YXRequestBase request, Error error) {
                 Log.i(TAG, "onFail: ");
-                mIView.showNetError();
+                if (!TextUtils.isEmpty(error.getMessage())) {
+                    YXToastUtil.showToast(error.getMessage());
+                }else {
+                    YXToastUtil.showToast("请求失败");
+                }
+                mIView.complet();
             }
         });
 
@@ -143,7 +164,12 @@ public class UserContactsPresenter implements UserContactsContract.IPresenter {
                     mIView.showContactsMembersList(ret.data);
                 } else {
                     if (ret != null) {
-                        mIView.showOtherError(ret.message);
+                        if (!TextUtils.isEmpty(ret.message)) {
+                            YXToastUtil.showToast(ret.message);
+                        }else {
+                            YXToastUtil.showToast("请求失败");
+                        }
+                        mIView.complet();
                     }
                 }
             }
@@ -151,6 +177,12 @@ public class UserContactsPresenter implements UserContactsContract.IPresenter {
             @Override
             public void onFail(YXRequestBase request, Error error) {
                 Log.i(TAG, "onFail: ");
+                if (!TextUtils.isEmpty(error.getMessage())) {
+                    YXToastUtil.showToast(error.getMessage());
+                }else {
+                    YXToastUtil.showToast("请求失败");
+                }
+                mIView.complet();
             }
         });
 
