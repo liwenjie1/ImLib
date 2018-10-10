@@ -163,12 +163,14 @@ public class TopicMemberInfoActivity extends ImBaseActivity {
 
             }
         });
-        if (isTeacher) {
-            ll_is_teacher.setVisibility(View.GONE);
-        } else {
-            ll_is_teacher.setVisibility(View.VISIBLE);
+//        if (isTeacher) {
+//            ll_is_teacher.setVisibility(View.GONE);
+//        } else {
+//            ll_is_teacher.setVisibility(View.VISIBLE);
+//        }
+        if (TextUtils.isEmpty(mTopicGroup)) {
+            iv_chat.setVisibility(View.GONE);
         }
-
         iv_chat.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -185,6 +187,7 @@ public class TopicMemberInfoActivity extends ImBaseActivity {
         GetImIdByUseridRequest getImIdRequest = new GetImIdByUseridRequest();
         getImIdRequest.userId = String.valueOf(userId);
         getImIdRequest.imToken = Constants.imToken;
+
         getImIdRequest.fromGroupTopicId=mTopicGroup;
         getImIdRequest.startRequest(GetImIdByUserIdResponse.class, new IYXHttpCallback<GetImIdByUserIdResponse>() {
 

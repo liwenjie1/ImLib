@@ -185,7 +185,7 @@ public class UserContactsActivity extends ImBaseActivity implements UserContacts
                 Bundle bundle = new Bundle();
                 bundle.putSerializable("data", adressBookPeople);
                 GetClazsListResponse.ClazsInfosBean clazsInfoByPos = mGroupAdapter.getClazsInfoByPos(mGroupAdapter.mCurrentSelectedPosition);
-                bundle.putString("topicId",clazsInfoByPos.getTopicId());
+                bundle.putString("topicId", clazsInfoByPos.getTopicId());
                 TopicMemberInfoActivity.incoke(UserContactsActivity.this, bundle);
                 //检查数据库
 //                final ImMember_new memberInfo = mMemberAdapter.getDatas().get(position).getMemberInfo();

@@ -278,11 +278,12 @@
                     android:textSize="14dp" />
             </LinearLayout>
 
-            <include layout="@layout/line" />
+            <!--<include layout="@layout/line" />-->
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="45dp"
+                android:visibility="gone"
                 android:layout_marginEnd="15dp"
                 android:layout_marginStart="15dp"
                 android:gravity="center_vertical"
@@ -305,10 +306,11 @@
                     android:textSize="14dp" />
             </LinearLayout>
 
-            <include layout="@layout/line" />
+            <!--<include layout="@layout/line" />-->
 
             <LinearLayout
                 android:layout_width="match_parent"
+                android:visibility="gone"
                 android:layout_height="45dp"
                 android:layout_marginEnd="15dp"
                 android:layout_marginStart="15dp"
@@ -332,9 +334,10 @@
                     android:textSize="14dp" />
             </LinearLayout>
 
-            <include layout="@layout/line" />
+            <!--<include layout="@layout/line" />-->
 
             <LinearLayout
+                android:visibility="gone"
                 android:layout_width="match_parent"
                 android:layout_height="45dp"
                 android:layout_marginEnd="15dp"
@@ -359,9 +362,10 @@
                     android:textSize="14dp" />
             </LinearLayout>
 
-            <include layout="@layout/line" />
+            <!--<include layout="@layout/line" />-->
 
             <LinearLayout
+                android:visibility="gone"
                 android:layout_width="match_parent"
                 android:layout_height="45dp"
                 android:layout_marginEnd="15dp"
@@ -386,9 +390,10 @@
                     android:textSize="14dp" />
             </LinearLayout>
 
-            <include layout="@layout/line" />
+            <!--<include layout="@layout/line" />-->
 
             <LinearLayout
+                android:visibility="gone"
                 android:layout_width="match_parent"
                 android:layout_height="45dp"
                 android:layout_marginEnd="15dp"
@@ -413,9 +418,10 @@
                     android:textSize="14dp" />
             </LinearLayout>
 
-            <include layout="@layout/line" />
+            <!--<include layout="@layout/line" />-->
 
             <LinearLayout
+                android:visibility="gone"
                 android:layout_width="match_parent"
                 android:layout_height="45dp"
                 android:layout_marginEnd="15dp"
@@ -440,9 +446,10 @@
                     android:textSize="14dp" />
             </LinearLayout>
 
-            <include layout="@layout/line" />
+            <!--<include layout="@layout/line" />-->
 
             <LinearLayout
+                android:visibility="gone"
                 android:layout_width="match_parent"
                 android:layout_height="45dp"
                 android:layout_marginEnd="15dp"
@@ -467,9 +474,10 @@
                     android:textSize="14dp" />
             </LinearLayout>
 
-            <include layout="@layout/line" />
+            <!--<include layout="@layout/line" />-->
 
             <LinearLayout
+                android:visibility="gone"
                 android:layout_width="match_parent"
                 android:layout_height="45dp"
                 android:layout_marginEnd="15dp"
@@ -494,9 +502,10 @@
                     android:textSize="14dp" />
             </LinearLayout>
 
-            <include layout="@layout/line" />
+            <!--<include layout="@layout/line" />-->
 
             <LinearLayout
+                android:visibility="gone"
                 android:layout_width="match_parent"
                 android:layout_height="45dp"
                 android:layout_marginEnd="15dp"
@@ -521,9 +530,10 @@
                     android:textSize="14dp" />
             </LinearLayout>
 
-            <include layout="@layout/line" />
+            <!--<include layout="@layout/line" />-->
 
             <LinearLayout
+                android:visibility="gone"
                 android:layout_width="match_parent"
                 android:layout_height="45dp"
                 android:layout_marginEnd="15dp"
@@ -548,9 +558,10 @@
                     android:textSize="14dp" />
             </LinearLayout>
 
-            <include layout="@layout/line" />
+            <!--<include layout="@layout/line" />-->
 
             <LinearLayout
+                android:visibility="gone"
                 android:layout_width="match_parent"
                 android:layout_height="45dp"
                 android:layout_marginEnd="15dp"
@@ -575,9 +586,10 @@
                     android:textSize="14dp" />
             </LinearLayout>
 
-            <include layout="@layout/line" />
+            <!--<include layout="@layout/line" />-->
 
             <LinearLayout
+                android:visibility="gone"
                 android:layout_width="match_parent"
                 android:layout_height="45dp"
                 android:layout_marginEnd="15dp"
@@ -602,9 +614,10 @@
                     android:textSize="14dp" />
             </LinearLayout>
 
-            <include layout="@layout/line" />
+            <!--<include layout="@layout/line" />-->
 
             <LinearLayout
+                android:visibility="gone"
                 android:layout_width="match_parent"
                 android:layout_height="45dp"
                 android:layout_marginEnd="15dp"
@@ -629,9 +642,10 @@
                     android:textSize="14dp" />
             </LinearLayout>
 
-            <include layout="@layout/line" />
+            <!--<include layout="@layout/line" />-->
 
             <LinearLayout
+                android:visibility="gone"
                 android:layout_width="match_parent"
                 android:layout_height="45dp"
                 android:layout_marginEnd="15dp"
@@ -658,6 +672,7 @@
 
 
             <LinearLayout
+                android:visibility="gone"
                 android:id="@+id/ll_is_teacher"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -666,6 +681,7 @@
                 <!--<include layout="@layout/big_line" />-->
 
                 <LinearLayout
+
                     android:id="@+id/ll_is_teacher_false_2"
                     android:layout_width="match_parent"
                     android:layout_height="45dp"
