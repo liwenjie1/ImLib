@@ -44,8 +44,8 @@
                     android:layout_alignParentRight="true"
                     android:layout_centerVertical="true"
                     android:layout_marginRight="15dp"
-                    android:src="@drawable/im_chat_default"
-                    android:visibility="gone" />
+                    android:src="@drawable/chat"
+                    android:visibility="visible" />
 
                 <TextView
                     android:id="@+id/tv_name"

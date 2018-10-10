@@ -12,13 +12,18 @@ import android.widget.TextView;
 import com.bumptech.glide.Glide;
 import com.test.yanxiu.common_base.ui.ImBaseActivity;
 import com.test.yanxiu.common_base.ui.PublicLoadLayout;
+import com.yanxiu.im.Constants;
 import com.yanxiu.im.R;
+import com.yanxiu.im.business.msglist.activity.ImMsgListActivity;
 import com.yanxiu.im.business.view.ImTitleLayout;
 import com.yanxiu.im.net.GetContactMemberInfoRequest;
 import com.yanxiu.im.net.GetContactMemberInfoResponse;
 import com.yanxiu.im.net.GetContactMembersResponse_new;
+import com.yanxiu.im.net.GetImIdByUserIdResponse;
+import com.yanxiu.im.net.GetImIdByUseridRequest;
 import com.yanxiu.lib.yx_basic_library.network.IYXHttpCallback;
 import com.yanxiu.lib.yx_basic_library.network.YXRequestBase;
+import com.yanxiu.lib.yx_basic_library.util.YXToastUtil;
 
 import java.util.UUID;
 
@@ -83,6 +88,7 @@ public class TopicMemberInfoActivity extends ImBaseActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        mPublicLoadLayout = new PublicLoadLayout(this);
         mPublicLoadLayout.setContentView(R.layout.adressbook_activity_personaldetails_hubei);
         setContentView(mPublicLoadLayout);
         mImTitleLayout = findViewById(R.id.im_title_layout);
@@ -90,6 +96,7 @@ public class TopicMemberInfoActivity extends ImBaseActivity {
         Bundle data = getIntent().getBundleExtra("data");
         if (data != null) {
             mPeople = (GetContactMembersResponse_new.AdressBookPeople) data.getSerializable("data");
+            mTopicGroup=data.getString("topicId");
         }
         initView();
         requestData();
@@ -161,7 +168,59 @@ public class TopicMemberInfoActivity extends ImBaseActivity {
         } else {
             ll_is_teacher.setVisibility(View.VISIBLE);
         }
+
+        iv_chat.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                requestImId(true, mPeople.userId);
+            }
+        });
     }
+
+    /**
+     * 根据用户id获取Im id
+     */
+    private void requestImId(final boolean isFirst, final long userId) {
+        mPublicLoadLayout.showLoadingView();
+        GetImIdByUseridRequest getImIdRequest = new GetImIdByUseridRequest();
+        getImIdRequest.userId = String.valueOf(userId);
+        getImIdRequest.imToken = Constants.imToken;
+        getImIdRequest.fromGroupTopicId=mTopicGroup;
+        getImIdRequest.startRequest(GetImIdByUserIdResponse.class, new IYXHttpCallback<GetImIdByUserIdResponse>() {
+
+            @Override
+            public void onRequestCreated(Request request) {
+
+            }
+
+            @Override
+            public void onSuccess(YXRequestBase request, GetImIdByUserIdResponse ret) {
+                mPublicLoadLayout.hiddenLoadingView();
+                if (ret != null && ret.data != null && ret.code == 0) {
+                    mImMemberId = ret.data.memberId;
+                    mTopicGroup = ret.data.topic.topicGroup;
+
+                    if (mImMemberId == Constants.imId) {
+                        return;
+                    }
+
+                    ImMsgListActivity.invoke(TopicMemberInfoActivity.this,
+                            mImMemberId,
+                            mPeople.realName,
+                            mPeople.avatar,
+                            -1,
+                            mTopicGroup, ImMsgListActivity.REQUEST_CODE_MEMBERID);
+                }
+            }
+
+            @Override
+            public void onFail(YXRequestBase request, Error error) {
+                mPublicLoadLayout.hiddenLoadingView();
+                YXToastUtil.showToast(error.getMessage());
+            }
+        });
+    }
+
 
     /**
      * 个人详情
