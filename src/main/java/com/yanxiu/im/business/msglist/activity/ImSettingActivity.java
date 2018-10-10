@@ -214,7 +214,7 @@ public class ImSettingActivity extends ImBaseActivity implements ImTitleLayout.T
     public void onFromTopicFound(TopicItemBean fromTopicBean) {
         Log.i(TAG, "onFromTopicFound: ");
         if (fromTopicBean != null) {
-            im_member_from_textview.setText(fromTopicBean.getName() + "");
+            im_member_from_textview.setText(fromTopicBean.getGroup() + "");
         }
     }
 

@@ -88,6 +88,15 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
         activity.startActivityForResult(intent, requestCode);
     }
 
+    public static void invoke(Activity activity, long memberId, String memberName, String groupName, int requestCode) {
+        Intent intent = new Intent(activity, ImMsgListActivity.class);
+        intent.putExtra("memberId", memberId);
+        intent.putExtra("memberName", memberName);
+        intent.putExtra("groupName", groupName);
+        intent.putExtra("requestCode", requestCode);
+        activity.startActivityForResult(intent, requestCode);
+    }
+
     /**
      * 这个方法一般为 由通讯录、群聊进入私聊界面
      * <p>
@@ -922,8 +931,11 @@ public class ImMsgListActivity extends ImBaseActivity implements MsgListContract
                 //事件统计 群聊点击 用户头像
                 EventUpdate.onClickGroupAvatarEvent(ImMsgListActivity.this);
                 shouldScrollToBottom = false;
+//                ImMsgListActivity.invoke(ImMsgListActivity.this,
+//                        msgItemBean.getSenderId(), msgItemBean.getMember().getName(), currentTopic.getTopicId(), REQUEST_CODE_MEMBERID);
+//
                 ImMsgListActivity.invoke(ImMsgListActivity.this,
-                        msgItemBean.getSenderId(), msgItemBean.getMember().getName(), currentTopic.getTopicId(), REQUEST_CODE_MEMBERID);
+                        msgItemBean.getSenderId(), msgItemBean.getMember().getName(), currentTopic.getGroup(), REQUEST_CODE_MEMBERID);
             }
         } else {
             //用户不存在 给出提示
