@@ -36,6 +36,15 @@ public class UserContactsMemberAdapter extends RecyclerView.Adapter {
         if (mDataList==null) {
             mDataList=new ArrayList<>();
         }
+        for (GetContactMembersResponse_new.AdressBookPeople master : mMasterList) {
+            for (GetContactMembersResponse_new.AdressBookPeople student : studentList) {
+                if (student.userId==master.userId) {
+                    studentList.remove(student);
+                    break;
+                }
+            }
+        }
+
         mDataList.addAll(studentList);
     }
 
@@ -43,8 +52,23 @@ public class UserContactsMemberAdapter extends RecyclerView.Adapter {
         this.mMasterList=masterList;
         this.mStudentList=studentList;
         mDataList=new ArrayList<>();
+
+        for (GetContactMembersResponse_new.AdressBookPeople master : mMasterList) {
+            for (GetContactMembersResponse_new.AdressBookPeople student : mStudentList) {
+                if (student.userId==master.userId) {
+                    mStudentList.remove(student);
+                    break;
+                }
+            }
+        }
+
         mDataList.addAll(masterList);
         mDataList.addAll(studentList);
+    }
+
+
+    private void dulpRemoved(){
+
     }
 
     public ArrayList<GetContactMembersResponse_new.AdressBookPeople> getDataList() {
