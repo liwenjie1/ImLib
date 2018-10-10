@@ -12,8 +12,10 @@ import android.widget.TextView;
 import com.bumptech.glide.Glide;
 import com.test.yanxiu.common_base.ui.ImBaseActivity;
 import com.test.yanxiu.common_base.ui.PublicLoadLayout;
+import com.test.yanxiu.common_base.utils.areas.FileUtils;
 import com.yanxiu.im.Constants;
 import com.yanxiu.im.R;
+import com.yanxiu.im.business.contacts.areas.AreaBean;
 import com.yanxiu.im.business.msglist.activity.ImMsgListActivity;
 import com.yanxiu.im.business.view.ImTitleLayout;
 import com.yanxiu.im.net.GetContactMemberInfoRequest;
@@ -25,6 +27,7 @@ import com.yanxiu.lib.yx_basic_library.network.IYXHttpCallback;
 import com.yanxiu.lib.yx_basic_library.network.YXRequestBase;
 import com.yanxiu.lib.yx_basic_library.util.YXToastUtil;
 
+import java.util.ArrayList;
 import java.util.UUID;
 
 import okhttp3.Request;
@@ -96,7 +99,7 @@ public class TopicMemberInfoActivity extends ImBaseActivity {
         Bundle data = getIntent().getBundleExtra("data");
         if (data != null) {
             mPeople = (GetContactMembersResponse_new.AdressBookPeople) data.getSerializable("data");
-            mTopicGroup=data.getString("topicId");
+            mTopicGroup = data.getString("topicId");
         }
         initView();
         requestData();
@@ -188,7 +191,7 @@ public class TopicMemberInfoActivity extends ImBaseActivity {
         getImIdRequest.userId = String.valueOf(userId);
         getImIdRequest.imToken = Constants.imToken;
 
-        getImIdRequest.fromGroupTopicId=mTopicGroup;
+        getImIdRequest.fromGroupTopicId = mTopicGroup;
         getImIdRequest.startRequest(GetImIdByUserIdResponse.class, new IYXHttpCallback<GetImIdByUserIdResponse>() {
 
             @Override
@@ -388,43 +391,86 @@ public class TopicMemberInfoActivity extends ImBaseActivity {
         }
     }
 
+    public class AreaData {
+        public ArrayList<AreaBean> data;
+
+    }
     private void setAreaInfo(GetContactMemberInfoResponse.PersonalDetailsData message) {
-//        ArrayList<AreaBean> areaBeans = AreaManager.getAreaData();
-//        AreaBean provinceBean = null;
-//        AreaBean cityBean = null;
-//        if (!TextUtils.isEmpty(message.aui.province)) {
-//            provinceBean = getProvinceBean(areaBeans, message.aui.province);
-//            if (provinceBean != null) {
-//                tv_province.setText(provinceBean.getName());
-//            } else {
-//                tv_province.setText("暂无");
-//            }
-//        } else {
-//            tv_province.setText("暂无");
-//        }
-//
-//        if (!TextUtils.isEmpty(message.aui.city) && provinceBean != null) {
-//            cityBean = getCityBean(provinceBean, message.aui.city);
-//            if (cityBean != null) {
-//                tv_city.setText(cityBean.getName());
-//            } else {
-//                tv_city.setText("暂无");
-//            }
-//
-//        } else {
-//            tv_city.setText("暂无");
-//        }
-//
-//        if (!TextUtils.isEmpty(message.aui.country) && cityBean != null) {
-//            AreaBean countyBean = getCountyBean(cityBean, message.aui.country);
-//            if (countyBean != null) {
-//                tv_county.setText(countyBean.getName());
-//            } else {
-//                tv_county.setText("暂无");
-//            }
-//        } else {
-//            tv_county.setText("暂无");
-//        }
+
+        AreaData data = FileUtils.parserJsonFromAssets(AreaData.class, "area.json",TopicMemberInfoActivity.this);
+        ArrayList<AreaBean> areaBeans = data.data;
+
+        AreaBean provinceBean = null;
+        AreaBean cityBean = null;
+        if (!TextUtils.isEmpty(message.aui.province)) {
+            provinceBean = getProvinceBean(areaBeans, message.aui.province);
+            if (provinceBean != null) {
+                tv_province.setText(provinceBean.getName());
+            } else {
+                tv_province.setText("暂无");
+            }
+        } else {
+            tv_province.setText("暂无");
+        }
+
+        if (!TextUtils.isEmpty(message.aui.city) && provinceBean != null) {
+            cityBean = getCityBean(provinceBean, message.aui.city);
+            if (cityBean != null) {
+                tv_city.setText(cityBean.getName());
+            } else {
+                tv_city.setText("暂无");
+            }
+
+        } else {
+            tv_city.setText("暂无");
+        }
+
+        if (!TextUtils.isEmpty(message.aui.country) && cityBean != null) {
+            AreaBean countyBean = getCountyBean(cityBean, message.aui.country);
+            if (countyBean != null) {
+                tv_county.setText(countyBean.getName());
+            } else {
+                tv_county.setText("暂无");
+            }
+        } else {
+            tv_county.setText("暂无");
+        }
+    }
+
+    private AreaBean getProvinceBean(ArrayList<AreaBean> areaBeans, String provinceId) {
+        if (TextUtils.isEmpty(provinceId))
+            return null;
+        ArrayList<AreaBean> provinceList = areaBeans;
+        for (AreaBean provinceBean : provinceList) {
+            if (provinceBean.getId().equals(provinceId)) {
+                return provinceBean;
+            }
+        }
+        return null;
+    }
+
+    private AreaBean getCityBean(AreaBean provinceBean, String cityId) {
+        if (TextUtils.isEmpty(cityId) || provinceBean == null)
+            return null;
+        ArrayList<AreaBean> cityList = provinceBean.getSub();
+        for (AreaBean cityBean : cityList) {
+            if (cityBean.getId().equals(cityId)) {
+                return cityBean;
+            }
+        }
+        return null;
+    }
+
+    private AreaBean getCountyBean(AreaBean cityBean, String countyId) {
+        if (TextUtils.isEmpty(countyId) || cityBean == null)
+            return null;
+        ArrayList<AreaBean> countyList = cityBean.getSub();
+        for (AreaBean countyBean : countyList) {
+            if (countyBean.getId().equals(countyId)) {
+                return countyBean;
+            }
+        }
+        return null;
     }
 
 
