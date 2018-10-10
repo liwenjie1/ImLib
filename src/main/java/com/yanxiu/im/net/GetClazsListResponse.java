@@ -47,7 +47,7 @@ public class GetClazsListResponse extends ImResponseBase_new {
         private String startTime;
         private String endTime;
         private String description;
-        private Object topicId;
+        private String topicId;
         private Object manager;
         private Object master;
         private String clazsStatusName;
@@ -125,11 +125,11 @@ public class GetClazsListResponse extends ImResponseBase_new {
             this.description = description;
         }
 
-        public Object getTopicId() {
+        public String getTopicId() {
             return topicId;
         }
 
-        public void setTopicId(Object topicId) {
+        public void setTopicId(String topicId) {
             this.topicId = topicId;
         }
 
